@@ -1,1 +1,42 @@
- 
+ {% extends 'base.html' %}
+
+{% block title %}Cadastro - Criar Conta{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <h2>Criar Conta</h2>
+    
+    <!-- Bloco para exibição de erros do formulário de cadastro do Django -->
+    {% if form.errors %}
+        <div class="error-msg">
+            <p>Por favor, corrija os erros abaixo.</p>
+        </div>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        
+
+        <div class="input-group">
+            <label for="id_email">E-mail</label>
+            <input type="email" id="id_email" name="email" placeholder="Seu melhor e-mail" required>
+        </div>
+        
+        <div class="input-group">
+            <label for="id_password1">Senha</label>
+            <input type="password" id="id_password1" name="password1" placeholder="Crie uma senha forte" required>
+        </div>
+
+        <div class="input-group">
+            <label for="id_password2">Confirmar Senha</label>
+            <input type="password" id="id_password2" name="password2" placeholder="Digite a senha novamente" required>
+        </div>
+        
+        <button type="submit" class="login-btn">Cadastrar</button>
+        
+        <div class="form-footer">
+            <a href="{% url 'login' %}">Já tem uma conta? Faça login</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+/* ==========================================================================
+   1. RESET & CONFIGURAÇÕES GERAIS
+   ========================================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Fundo branco absoluto e centralização dos formulários na tela */
+body {
+    background-color: #ffffff;
+    color: #000000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Main container para herança do base.html */
+main {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ==========================================================================
+   2. ESTRUTURA DO CARD DE AUTENTICAÇÃO (LOGIN / CADASTRO)
+   ========================================================================== */
+.login-container {
+    background-color: #ffffff;
+    border: 2px solid #000000;
+    padding: 40px;
+    width: 100%;
+    max-width: 420px;
+}
+
+/* Título em caixa alta com espaçamento entre letras */
+.login-container h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 24px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   3. CAMPOS DE ENTRADA (INPUTS) E LABELS
+   ========================================================================== */
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Inputs com borda preta fina e fundo branco */
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #000000;
+    background-color: #ffffff;
+    color: #000000;
+    font-size: 15px;
+    outline: none;
+    transition: border-width 0.1s ease;
+}
+
+/* Efeito de foco: a borda fica mais grossa e destacada */
+.input-group input:focus {
+    border-width: 2px;
+}
+
+/* Ajuste para o placeholder (texto de dica interno) */
+.input-group input::placeholder {
+    color: #a0a0a0;
+}
+
+/* ==========================================================================
+   4. BOTÃO DE ENVIO (SUBMIT)
+   ========================================================================== */
+/* Botão totalmente preto com texto branco */
+.login-btn {
+    width: 100%;
+    padding: 14px;
+    background-color: #000000;
+    color: #ffffff;
+    border: 2px solid #000000;
+    font-size: 15px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    margin-top: 10px;
+}
+
+/* Efeito hover: inverte as cores (fundo branco e texto preto) */
+.login-btn:hover {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* ==========================================================================
+   5. RODAPÉ DO FORMULÁRIO (LINKS DE NAVEGAÇÃO)
+   ========================================================================== */
+.form-footer {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.form-footer a {
+    color: #000000;
+    text-decoration: none;
+    transition: text-decoration 0.2s ease;
+}
+
+.form-footer a:hover {
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   6. ALERTAS E MENSAGENS DE ERRO DO DJANGO
+   ========================================================================== */
+.error-msg {
+    color: #000000;
+    background-color: #ffffff;
+    border: 2px dashed #000000;
+    padding: 12px;
+    margin-bottom: 25px;
+    font-size: 13px;
+    text-align: center;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}

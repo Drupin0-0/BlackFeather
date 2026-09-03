@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gerenciador de Tarefas{% endblock %}</title>
+    
+    <!-- É ESTA LINHA ABAIXO QUE FAZ O CSS FUNCIONAR EM TODO O SITE -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+    <main>
+        <!-- O Django vai injetar o login ou o register exatamente aqui dentro -->
+        {% block content %}
+        {% endblock %}
+    </main>
+</body>
+</html>
