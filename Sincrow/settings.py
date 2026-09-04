@@ -121,10 +121,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = 'static/'
+
 STATICFILES_DIRS = [
-    BASE_DIR / 'static/css',
+    BASE_DIR / 'static',  # Remova o '/css' daqui
 ]
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Diretório onde os arquivos estáticos serão coletados
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
@@ -143,3 +147,6 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
 }
+
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'accounts:dashboard'

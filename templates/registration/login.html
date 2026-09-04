@@ -28,8 +28,7 @@
         <div class="form-footer">
             <a href="#">Esqueceu sua senha?</a>
             <br><br>
-            <a href="{% url 'register' %}" style="font-weight: bold;">Não tem uma conta? Cadastre-se</a>
-        </div>
+        <a href="{% url 'accounts:register' %}" style="font-weight: bold;">Não tem uma conta? Cadastre-se</a>        </div>
     </form>
 </div>
 {% endblock %}
