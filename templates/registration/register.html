@@ -1,37 +1,60 @@
 {% extends 'base.html' %}
 
-{% block title %}Cadastro - Criar Conta{% endblock %}
+{% block title %}Cadastro | Criar Conta{% endblock %}
 
 {% block content %}
+<!-- Caixa estrutural principal (Quadrada com borda preta) -->
 <div class="login-container">
-    <h2>Criar Conta</h2>
     
-    {% if form.errors %}
+    <!-- Logo redonda no topo -->
+    <div class="logo-container">
+        <img src="/static/images/logo.png" alt="BlackFeather Logo">
+    </div>
+
+    <h2>Criar conta no BlackFeather</h2>
+
+    {% if form.non_field_errors %}
         <div class="error-msg">
-            <p>Por favor, corrija os erros sinalizados no formulário.</p>
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
         </div>
     {% endif %}
 
     <form method="post">
         {% csrf_token %}
-        
+
+        <!-- Loop dinâmico do Django para renderizar os campos -->
         {% for field in form %}
             <div class="input-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                <div class="label-row">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                </div>
+                
                 {{ field }}
+                
                 {% if field.errors %}
-                    <div class="field-error" style="color: red; font-size: 0.85rem; margin-top: 4px;">
+                    <div class="error-msg" style="margin-top: 5px; margin-bottom: 0; padding: 5px; font-size: 12px;">
                         {{ field.errors|striptags }}
                     </div>
                 {% endif %}
             </div>
         {% endfor %}
-        
+
+        <!-- Botão principal de cadastro (Preto e quadrado) -->
         <button type="submit" class="login-btn">Cadastrar</button>
-        
+
+        <!-- Link para voltar ao login -->
         <div class="form-footer">
-            <a href="{% url 'accounts:login' %}">Já tem uma conta? Faça login</a>
+            <span>Já tem uma conta? <a href="{% url 'accounts:login' %}">Faça login</a></span>
         </div>
     </form>
+</div>
+
+<!-- Rodapé externo fora da caixa preta -->
+<div class="external-footer">
+    <a href="#">Termos</a>
+    <a href="#">Privacidade</a>
+    <a href="#">Ajuda</a>
 </div>
 {% endblock %}

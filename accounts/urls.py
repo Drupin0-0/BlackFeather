@@ -7,7 +7,7 @@ from .views import (
     verificar_codigo_view
 )
 
-app_name = 'accounts'
+app_name = "accounts"
 
 urlpatterns = [
     path('login/', CustomLoginView.as_view(), name='login'),

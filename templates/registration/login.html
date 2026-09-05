@@ -1,34 +1,62 @@
 {% extends 'base.html' %}
 
-{% block title %}Login - Entrar{% endblock %}
+{% block title %}Login | Entrar{% endblock %}
 
 {% block content %}
+<!-- Caixa estrutural principal -->
 <div class="login-container">
-    <h2>Entrar</h2>
     
+    <!-- Logo redonda no topo -->
+    <div class="logo-container">
+        <img src="/static/images/logo.png" alt="BlackFeather Logo">
+    </div>
+
+    <h2>Entrar no BlackFeather</h2>
+
     {% if form.errors %}
-        <p class="error-msg">E-mail ou senha incorretos.</p>
+        <div class="error-msg">E-mail ou senha incorretos.</div>
     {% endif %}
 
     <form method="post">
         {% csrf_token %}
-        
+
+        <!-- Campo de Usuário ou E-mail -->
         <div class="input-group">
-            <label for="id_username">E-mail</label>
+            <label for="id_username">Usuário ou e-mail</label>
             <input type="email" id="id_username" name="username" placeholder="Digite seu e-mail" required autocomplete="email">
         </div>
-        
+
+        <!-- Campo de Senha com o link alinhado à direita -->
         <div class="input-group">
-            <label for="id_password">Senha</label>
+            <div class="label-row">
+                <label for="id_password">Senha</label>
+                <a href="#" class="forgot-password">Esqueceu a senha?</a>
+            </div>
             <input type="password" id="id_password" name="password" placeholder="Digite sua senha" required autocomplete="current-password">
         </div>
-        
-        <button type="submit" class="login-btn">Acessar</button>
-        
+
+        <!-- Botão principal roxo (estilizado via CSS) -->
+        <button type="submit" class="login-btn">Entrar</button>
+
+        <!-- Linha divisória "ou" -->
+        <div class="divider-container">
+            <span class="divider-text">ou</span>
+        </div>
+
+        <!-- Botão de conta secundária -->
+        <a href="#" class="secondary-btn">Entrar com sua conta da equipe</a>
+
+        <!-- Link para criar conta -->
         <div class="form-footer">
-            <a href="#">Esqueceu sua senha?</a>
-            <br><br>
-        <a href="{% url 'accounts:register' %}" style="font-weight: bold;">Não tem uma conta? Cadastre-se</a>        </div>
+            <span>Novo no BlackFeather? <a href="{% url 'accounts:register' %}">Criar conta</a></span>
+        </div>
     </form>
+</div>
+
+<!-- Rodapé externo fora da caixa preta -->
+<div class="external-footer">
+    <a href="#">Termos</a>
+    <a href="#">Privacidade</a>
+    <a href="#">Ajuda</a>
 </div>
 {% endblock %}
