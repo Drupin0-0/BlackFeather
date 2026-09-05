@@ -1,16 +1,18 @@
-from datetime import datetime, timedelta
-import secrets
 from django.shortcuts import render, redirect
 from django.views import View
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import get_user_model  # <-- Importação correta
+from django.contrib.auth import get_user_model
 from django.contrib import messages
 from django.urls import reverse_lazy
+from django.core.cache import cache
+import secrets
+
 from .forms import CustomUserCreationForm
 from .services import enviar_email_codigo
 
 User = get_user_model()
+
 
 class RegisterView(View):
     def get(self, request):
@@ -40,33 +42,24 @@ def dashboard_view(request):
 
 # --- FLUXO DE RECUPERAÇÃO DE SENHA ---
 
-# Dicionário temporário para guardar os códigos de recuperação
-codigos_temporarios = {}
-
 def solicitar_codigo_view(request):
     if request.method == 'POST':
         email = request.POST.get('email')
-        
-        # Verifica se o usuário existe no banco de dados
+
         if User.objects.filter(email=email).exists():
-            # Gera código aleatório de 6 dígitos
             codigo = f"{secrets.randbelow(900000) + 100000}"
-            expiracao = datetime.now() + timedelta(minutes=10)
-            
-            codigos_temporarios[email] = {
-                'codigo': codigo,
-                'expiracao': expiracao
-            }
-            
-            # Dispara o e-mail usando o services.py
+
+            # Salva o código no cache por 10 minutos
+            cache.set(f'reset_code_{email}', codigo, timeout=600)
+
             enviar_email_codigo(email, codigo)
-            
+
             request.session['email_recuperacao'] = email
             messages.success(request, 'Código enviado para o seu e-mail!')
             return redirect('accounts:verificar_codigo')
         else:
             messages.error(request, 'E-mail não encontrado no sistema.')
-            
+
     return render(request, 'registration/solicitar_codigo.html')
 
 
@@ -78,22 +71,26 @@ def verificar_codigo_view(request):
     if request.method == 'POST':
         codigo_digitado = request.POST.get('codigo')
         nova_senha = request.POST.get('nova_senha')
-        
-        dados = codigos_temporarios.get(email)
-        
-        # Valida o código e o tempo de expiração
-        if dados and dados['codigo'] == codigo_digitado and datetime.now() <= dados['expiracao']:
+        confirmar_senha = request.POST.get('confirmar_senha')
+
+        codigo_salvo = cache.get(f'reset_code_{email}')
+
+        if not codigo_salvo or codigo_salvo != codigo_digitado:
+            messages.error(request, 'Código inválido ou expirado.')
+        elif nova_senha != confirmar_senha:
+            messages.error(request, 'As senhas não coincidem.')
+        elif len(nova_senha) < 8:
+            messages.error(request, 'A senha deve ter pelo menos 8 caracteres.')
+        else:
             user = User.objects.get(email=email)
             user.set_password(nova_senha)
             user.save()
-            
-            # Limpa os dados temporários e a sessão
-            del codigos_temporarios[email]
+
+            # Limpa código do cache e a sessão
+            cache.delete(f'reset_code_{email}')
             del request.session['email_recuperacao']
-            
+
             messages.success(request, 'Senha alterada com sucesso! Faça login.')
             return redirect('accounts:login')
-        else:
-            messages.error(request, 'Código inválido ou expirado.')
 
     return render(request, 'registration/verificar_codigo.html')

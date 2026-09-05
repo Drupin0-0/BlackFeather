@@ -1,25 +1,14 @@
 import os
-import smtplib
 import secrets
-from email.message import EmailMessage
-from dotenv import load_dotenv
-
-load_dotenv()
+from django.core.mail import EmailMultiAlternatives
+from django.conf import settings
 
 def gerar_codigo_verificacao():
-    # Gera um número aleatório de 6 dígitos (ex: 483921)
     return f"{secrets.randbelow(900000) + 100000}"
 
 def enviar_email_codigo(destinatario_email, codigo):
-    remetente = 'blackfeatherldta@gmail.com'
-    senha = 'aksz voke ipny zclo'
-
-    msg = EmailMessage()
-    msg['Subject'] = 'Seu código de recuperação - BlackFeather'
-    msg['From'] = remetente
-    msg['To'] = destinatario_email
-    
-    # Corpo do e-mail destacando o código
+    assunto = 'Seu código de recuperação - BlackFeather'
+    corpo_texto = f'Seu código de recuperação é: {codigo}'
     corpo_html = f"""
     <h2>Recuperação de Senha</h2>
     <p>Você solicitou a alteração de senha. Use o código abaixo para continuar:</p>
@@ -27,14 +16,19 @@ def enviar_email_codigo(destinatario_email, codigo):
     <p>Este código expira em 10 minutos.</p>
     <p>Se não foi você, ignore este e-mail.</p>
     """
-    
-    msg.set_content(f'Seu código de recuperação é: {codigo}')
-    msg.add_alternative(corpo_html, subtype='html')
+
+    # Garante que o remetente seja lido das configurações do Django
+    remetente = settings.EMAIL_HOST_USER
 
     try:
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(remetente, senha)
-            smtp.send_message(msg)
+        email = EmailMultiAlternatives(
+            subject=assunto,
+            body=corpo_texto,
+            from_email=remetente,  # IMPORTANTE: define explicitamente o remetente
+            to=[destinatario_email]
+        )
+        email.attach_alternative(corpo_html, "text/html")
+        email.send()
         print(f'E-mail com o código enviado para {destinatario_email}.')
         return True
     except Exception as e:
