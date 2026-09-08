@@ -179,3 +179,4 @@ REST_FRAMEWORK = {
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'accounts:dashboard'
+SOCIALACCOUNT_LOGIN_ON_GET = True
