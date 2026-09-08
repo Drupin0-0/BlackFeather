@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Esqueci minha senha</title>
+</head>
+<body>
+    <h2>Recuperação de Senha</h2>
+    
+    {% for message in messages %}
+        <p style="color: red;">{{ message }}</p>
+    {% endfor %}
+
+    <form method="POST">
+        {% csrf_token %}
+        <label>Digite seu e-mail cadastrado:</label><br>
+        <input type="email" name="email" required><br><br>
+        <button type="submit">Enviar Código</button>
+    </form>
+    
+    <br>
+    <a href="{% url 'accounts:login' %}">Voltar para o Login</a>
+</body>
+</html>
