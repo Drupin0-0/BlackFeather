@@ -34,11 +34,6 @@ class CustomLoginView(LoginView):
     def get_success_url(self):
         return reverse_lazy('accounts:dashboard')
 
-
-
-def logout_view(request):
-    logout(request)
-    return redirect("login")
 @login_required
 def dashboard_view(request):
     return render(request, 'dashboard.html')
