@@ -1,17 +1,63 @@
-{% load static %}
 <!DOCTYPE html>
-<html lang="pt-BR">
+{% load static %}
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Gerenciador de Tarefas{% endblock %}</title>
-    
-    <!-- É ESTA LINHA ABAIXO QUE FAZ O CSS FUNCIONAR EM TODO O SITE -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <title>BlackFeather</title>
+    
+    <!-- Motor de estilos (Tailwind) -->
+    <script src="https://tailwindcss.com"></script>
+    
+    <!-- Estilos customizados dos inputs inseridos diretamente aqui (Seguro e sem mexer no settings.py) -->
+    <style>
+        .django-form-styled p {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.25rem;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 400;
+            letter-spacing: 0.15em;
+            color: #737373;
+        }
+
+        .django-form-styled input[type="text"],
+        .django-form-styled input[type="email"],
+        .django-form-styled input[type="password"] {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid #262626;
+            background-color: #000000;
+            color: #ffffff;
+            font-size: 0.875rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .django-form-styled input:focus {
+            outline: none;
+            border-color: #ffffff;
+            box-shadow: 0 0 0 1px #ffffff;
+        }
+
+        .django-form-styled .errorlist {
+            font-size: 0.75rem;
+            color: #ffffff;
+            background-color: #171717;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-left: 2px solid #ffffff;
+            list-style: none;
+        }
+    </style>
 </head>
-<body>
+<body class="bg-black text-white antialiased">
     <main>
-        <!-- O Django vai injetar o login ou o register exatamente aqui dentro -->
         {% block content %}
         {% endblock %}
     </main>
