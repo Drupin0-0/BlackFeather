@@ -413,11 +413,4 @@ body {
     font-weight: bold;
     text-transform: uppercase;
     border: 1px solid #000000;
-    background-color: #000000;
-    color: #ffffff;
-}
-
-.status-tag.em-andamento {
-    background-color: #ffffff;
-    color: #000000;
 }

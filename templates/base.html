@@ -4,62 +4,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BlackFeather | Task Manager{% endblock %}</title>
+    
+    <!-- Mantido como pedido -->
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
-    <title>BlackFeather</title>
+    <!-- Tipografia Profissional Inter -->
+    <link rel="preconnect" href="https://googleapis.com">
+    <link rel="preconnect" href="https://gstatic.com" crossorigin>
+    <link href="https://googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Motor de estilos (Tailwind) -->
-    <script src="https://tailwindcss.com"></script>
+
+    <!-- Script Oficial e Estável do Lottie Player -->
+    <script src="https://unpkg.com"></script>
     
-    <!-- Estilos customizados dos inputs inseridos diretamente aqui (Seguro e sem mexer no settings.py) -->
+    <!-- Estilização Direta e Robusta -->
     <style>
-        .django-form-styled p {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
-            margin-bottom: 1.25rem;
-            font-size: 0.7rem;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Container Principal do Card */
+        .auth-card {
+            width: 100%;
+            max-width: 400px;
+            background-color: #0a0a0a;
+            border: 1px solid #262626;
+            border-radius: 12px;
+            padding: 40px 32px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+            text-align: center;
+        }
+
+        h2 {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+            color: #ffffff;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: #737373;
+            margin-bottom: 24px;
+        }
+
+        /* Inputs e Grupos de Formulário */
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #a3a3a3;
             text-transform: uppercase;
-            font-weight: 400;
-            letter-spacing: 0.15em;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 14px;
+            background-color: #000000;
+            border: 1px solid #262626;
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input:focus {
+            border-color: #ffffff;
+        }
+
+        /* Links */
+        a {
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 13px;
+            transition: opacity 0.2s ease;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .forgot-link {
+            font-size: 12px;
             color: #737373;
         }
 
-        .django-form-styled input[type="text"],
-        .django-form-styled input[type="email"],
-        .django-form-styled input[type="password"] {
+        /* Botões Estilo SaaS Minimalista */
+        .btn-primary {
             width: 100%;
-            padding: 0.85rem 1rem;
-            border-radius: 0.75rem;
-            border: 1px solid #262626;
+            background-color: #ffffff;
+            color: #000000;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #e5e5e5;
+        }
+
+        .btn-secondary {
+            width: 100%;
             background-color: #000000;
             color: #ffffff;
-            font-size: 0.875rem;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            border: 1px solid #262626;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-block;
+            text-align: center;
+            transition: all 0.2s ease;
         }
 
-        .django-form-styled input:focus {
-            outline: none;
-            border-color: #ffffff;
-            box-shadow: 0 0 0 1px #ffffff;
+        .btn-secondary:hover {
+            background-color: #121212;
+            border-color: #404040;
         }
 
-        .django-form-styled .errorlist {
-            font-size: 0.75rem;
-            color: #ffffff;
-            background-color: #171717;
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.5rem;
-            margin-bottom: 0.5rem;
-            border-left: 2px solid #ffffff;
-            list-style: none;
+        /* Divisória */
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #404040;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .divider::before, .divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #1f1f1f;
+        }
+
+        .divider:not(:empty)::before { margin-right: 12px; }
+        .divider:not(:empty)::after { margin-left: 12px; }
+
+        /* Rodapés */
+        .card-footer {
+            margin-top: 24px;
+            font-size: 13px;
+            color: #737373;
+        }
+
+        .external-footer {
+            margin-top: 24px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .external-footer a {
+            font-size: 12px;
+            color: #404040;
+        }
+
+        .external-footer a:hover {
+            color: #737373;
+        }
+
+        /* Erros */
+        .error-msg {
+            font-size: 13px;
+            color: #f87171;
+            background-color: rgba(248, 113, 113, 0.1);
+            border: 1px solid rgba(248, 113, 113, 0.2);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        /* Ajuste para encapsular o loop do formulário do Django */
+        .django-form-styled p {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .django-form-styled p label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #a3a3a3;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
     </style>
 </head>
-<body class="bg-black text-white antialiased">
-    <main>
-        {% block content %}
-        {% endblock %}
-    </main>
+<body>
+
+    {% block content %}
+    {% endblock %}
+
 </body>
 </html>
