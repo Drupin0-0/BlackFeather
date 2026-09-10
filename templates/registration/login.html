@@ -1,95 +1,194 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load socialaccount %}
 
 {% block title %}Entrar | BlackFeather{% endblock %}
 
 {% block content %}
+
 <div class="auth-card">
-    
-    <!-- SOMBRA DO CORVO VOANDO (DIRETO E ULTRA MINIMALISTA) -->
-    <div class="crow-emblem-wrapper">
-        <svg xmlns="http://w3.org" viewBox="0 0 24 24" fill="currentColor" class="crow-svg">
-            <!-- Silhueta geométrica limpa de um corvo com as asas totalmente abertas -->
-            <path d="M12 2s-.5.5-1 1.5c-.8 1.6-1.5 3-3.5 4.5-2.5 1.8-6 2.5-7.5 3 2.5.5 5 1.5 6.5 3 2 2 2.5 4.5 3.5 7 .5-2.5 1.5-4.5 3-6.5 1.5-1.5 4-2.5 6.5-3-1.5-.5-5-1.2-7.5-3-2-1.5-2.7-2.9-3.5-4.5C12.5 2.5 12 2 12 2z"/>
-        </svg>
+
+    <!-- ================================================= -->
+    <!-- LOGO / CORVO SVG                                  -->
+    <!-- ================================================= -->
+    <div class="crow-logo">
+
+        <!-- >>> O LINK/CAMINHO DO SVG FICA AQUI <<< -->
+        <img
+            src="{% static 'images/favicon.svg' %}"
+            alt="BlackFeather"
+        >
+
     </div>
 
-    <!-- Animação sutil de voo cíclico (Sobe e desce suavemente) -->
-    <style>
-        .crow-emblem-wrapper {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 24px;
-            width: 100%;
-        }
-        
-        .crow-svg {
-            width: 64px;
-            height: 64px;
-            color: #ffffff; /* Sombra branca pura no fundo escuro */
-            animation: crowFly 3s ease-in-out infinite;
-            filter: drop-shadow(0px 4px 12px rgba(255, 255, 255, 0.1));
-        }
 
-        @keyframes crowFly {
-            0% {
-                transform: translateY(0px) scaleX(1);
-            }
-            50% {
-                transform: translateY(-8px) scaleX(1.03); /* Simula o planar do voo */
-            }
-            100% {
-                transform: translateY(0px) scaleX(1);
-            }
-        }
-    </style>
+    <!-- ================================================= -->
+    <!-- TÍTULO                                            -->
+    <!-- ================================================= -->
 
     <h2>Entrar no BlackFeather</h2>
-    <p class="subtitle">Gerencie suas tarefas e aumente seu foco.</p>
+
+    <p class="subtitle">
+        Gerencie suas tarefas e aumente seu foco.
+    </p>
+
+
+    <!-- ================================================= -->
+    <!-- MENSAGEM DE ERRO                                  -->
+    <!-- ================================================= -->
 
     {% if form.errors %}
-        <div class="error-msg">E-mail ou senha incorretos.</div>
+        <div class="error-msg">
+            E-mail ou senha incorretos.
+        </div>
     {% endif %}
 
+
+    <!-- ================================================= -->
+    <!-- FORMULÁRIO                                        -->
+    <!-- ================================================= -->
+
     <form method="post">
+
         {% csrf_token %}
 
+
         <!-- Usuário -->
+
         <div class="form-group">
-            <label for="id_username">Usuário ou e-mail</label>
-            <input type="email" id="id_username" name="username" placeholder="seu@email.com" required autocomplete="email">
+
+            <label for="id_username">
+                Usuário ou e-mail
+            </label>
+
+            <input
+                type="email"
+                id="id_username"
+                name="username"
+                placeholder="seu@email.com"
+                required
+                autocomplete="email"
+            >
+
         </div>
+
 
         <!-- Senha -->
+
         <div class="form-group">
+
             <div class="label-row">
-                <label for="id_password">Senha</label>
-                <a href="#" class="forgot-link">Esqueceu a senha?</a>
+
+                <label for="id_password">
+                    Senha
+                </label>
+
+                <a href="#" class="forgot-link">
+                    Esqueceu a senha?
+                </a>
+
             </div>
-            <input type="password" id="id_password" name="password" placeholder="••••••••" required autocomplete="current-password">
+
+            <input
+                type="password"
+                id="id_password"
+                name="password"
+                placeholder="••••••••"
+                required
+                autocomplete="current-password"
+            >
+
         </div>
+
 
         <!-- Botão Entrar -->
-        <button type="submit" class="btn-primary">Entrar</button>
+
+        <button
+            type="submit"
+            class="btn-primary"
+        >
+            Entrar
+        </button>
+
 
         <!-- Divisória -->
-        <div class="divider">ou</div>
 
-        <!-- Google Login -->
-        <a href="{% provider_login_url 'google' %}" class="btn-secondary">Entrar com o Google</a>
-
-        <!-- Mudar tela -->
-        <div class="card-footer">
-            Novo no BlackFeather? <a href="{% url 'accounts:register' %}" style="font-weight: 500;">Criar conta</a>
+        <div class="divider">
+            ou
         </div>
+
+
+        <!-- Google -->
+
+        <a
+            href="{% provider_login_url 'google' %}"
+            class="btn-secondary"
+        >
+            Entrar com o Google
+        </a>
+
+
+        <!-- Criar conta -->
+
+        <div class="card-footer">
+
+            Novo no BlackFeather?
+
+            <a
+                href="{% url 'accounts:register' %}"
+                style="font-weight: 500;"
+            >
+                Criar conta
+            </a>
+
+        </div>
+
     </form>
+
 </div>
 
-<!-- Rodapé Externo -->
+
+<!-- ===================================================== -->
+<!-- RODAPÉ EXTERNO                                       -->
+<!-- ===================================================== -->
+
 <div class="external-footer">
+
     <a href="#">Termos</a>
+
     <a href="#">Privacidade</a>
+
     <a href="#">Ajuda</a>
+
 </div>
+
+
+<!-- ===================================================== -->
+<!-- ESTILO DA LOGO                                       -->
+<!-- ===================================================== -->
+
+<style>
+
+    .crow-logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        width: 100%;
+
+        margin-bottom: 24px;
+    }
+
+
+    .crow-logo img {
+        width: 128px;
+        height: 128px;
+
+        display: block;
+
+        object-fit: contain;
+    }
+
+</style>
+
 {% endblock %}
