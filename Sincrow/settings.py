@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    "Tasks",
 ]
 
 SITE_ID = 1
@@ -166,6 +167,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_REMETENTE')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_SENHA')
 DEFAULT_FROM_EMAIL = os.getenv('EMAIL_REMETENTE')
+EMAIL_TIMEOUT = 10
 
 AUTH_USER_MODEL = 'accounts.User'
 REST_FRAMEWORK = {
@@ -189,5 +191,5 @@ SOCIALACCOUNT_AUTO_CONNECT = True
 
 # Garante que o Allauth vai pedir e exigir o e-mail do provedor social
 SOCIALACCOUNT_QUERY_EMAIL = True
-ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
