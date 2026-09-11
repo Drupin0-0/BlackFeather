@@ -1,4 +1,4 @@
-From python: 3.11-slim
+From python:3.12-slim
 
 WORKDIR /BlackFeather
 

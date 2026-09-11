@@ -1,5 +1,3 @@
-version: "27.5.1"
-
 services:
   web:
     build: .
@@ -8,4 +6,27 @@ services:
     volumes:
       - .:/Sincrow
     environment:
-      - PYTHONUNBUFFERED=1
+      PYTHONUNBUFFERED: "1"
+      DEBUG: "True"
+      SECRET_KEY: "django-dev-secret-key-blackfeather"
+      DB_NAME: sincrow
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_HOST: db
+      DB_PORT: "5432"
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: sincrow
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
