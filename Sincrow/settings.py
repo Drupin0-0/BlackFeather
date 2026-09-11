@@ -14,9 +14,9 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -41,7 +41,33 @@ INSTALLED_APPS = [
 
     'rest_framework',
     'accounts',
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    "Tasks",
 ]
+
+SITE_ID = 1
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        }
+    }
+}
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -50,6 +76,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',        
 ]
 
 ROOT_URLCONF = 'Sincrow.urls'
@@ -133,11 +160,15 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'  # Diretório onde os arquivos estáticos
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_REMETENTE')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_SENHA')
+DEFAULT_FROM_EMAIL = os.getenv('EMAIL_REMETENTE')
+EMAIL_TIMEOUT = 10
+
 AUTH_USER_MODEL = 'accounts.User'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -150,3 +181,15 @@ REST_FRAMEWORK = {
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'accounts:dashboard'
+SOCIALACCOUNT_LOGIN_ON_GET = True
+# Tenta pular o formulário de cadastro se o provedor já enviar os dados necessários
+SOCIALACCOUNT_AUTO_SIGNUP = True  
+
+# Se o e-mail do Google já existir no seu banco de dados, vincula a conta automaticamente
+# em vez de travar no formulário de cadastro.
+SOCIALACCOUNT_AUTO_CONNECT = True
+
+# Garante que o Allauth vai pedir e exigir o e-mail do provedor social
+SOCIALACCOUNT_QUERY_EMAIL = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']

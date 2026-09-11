@@ -1,37 +1,62 @@
 {% extends 'base.html' %}
 
-{% block title %}Cadastro - Criar Conta{% endblock %}
+{% block title %}Criar Conta | BlackFeather{% endblock %}
 
 {% block content %}
-<div class="login-container">
-    <h2>Criar Conta</h2>
+<div class="auth-card">
     
-    {% if form.errors %}
+    <!-- Container da Animação do Corvo -->
+    <div style="display: flex; justify-content: center; margin-bottom: 8px; height: 70px; overflow: hidden;">
+        <dotlottie-player 
+            src="https://lottie.host" 
+            background="transparent" 
+            speed="1" 
+            style="width: 90px; height: 90px;" 
+            loop 
+            autoplay>
+        </dotlottie-player>
+    </div>
+
+    <h2>Criar conta no BlackFeather</h2>
+    <p class="subtitle">Organize seus projetos e tarefas com simplicidade.</p>
+
+    {% if form.non_field_errors %}
         <div class="error-msg">
-            <p>Por favor, corrija os erros sinalizados no formulário.</p>
+            {% for error in form.non_field_errors %}
+                <p style="margin: 0;">{{ error }}</p>
+            {% endfor %}
         </div>
     {% endif %}
 
-    <form method="post">
+    <form method="post" class="django-form-styled">
         {% csrf_token %}
-        
+
+        <!-- Loop dinâmico do Django estilizado automaticamente -->
         {% for field in form %}
-            <div class="input-group">
+            <p>
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {{ field }}
+                
                 {% if field.errors %}
-                    <div class="field-error" style="color: red; font-size: 0.85rem; margin-top: 4px;">
+                    <span style="color: #f87171; font-size: 12px; text-align: left; display: block; margin-top: 2px;">
                         {{ field.errors|striptags }}
-                    </div>
+                    </span>
                 {% endif %}
-            </div>
+            </p>
         {% endfor %}
-        
-        <button type="submit" class="login-btn">Cadastrar</button>
-        
-        <div class="form-footer">
-            <a href="{% url 'accounts:login' %}">Já tem uma conta? Faça login</a>
+
+        <button type="submit" class="btn-primary" style="margin-top: 8px;">Criar conta</button>
+
+        <div class="card-footer">
+            Já tem uma conta? <a href="{% url 'accounts:login' %}" style="font-weight: 500;">Faça login</a>
         </div>
     </form>
+</div>
+
+<!-- Rodapé Externo -->
+<div class="external-footer">
+    <a href="#">Termos</a>
+    <a href="#">Privacidade</a>
+    <a href="#">Ajuda</a>
 </div>
 {% endblock %}

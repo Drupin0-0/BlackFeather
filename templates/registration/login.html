@@ -1,34 +1,194 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load socialaccount %}
 
-{% block title %}Login - Entrar{% endblock %}
+{% block title %}Entrar | BlackFeather{% endblock %}
 
 {% block content %}
-<div class="login-container">
-    <h2>Entrar</h2>
-    
+
+<div class="auth-card">
+
+    <!-- ================================================= -->
+    <!-- LOGO / CORVO SVG                                  -->
+    <!-- ================================================= -->
+    <div class="crow-logo">
+
+        <!-- >>> O LINK/CAMINHO DO SVG FICA AQUI <<< -->
+        <img
+            src="{% static 'images/favicon.svg' %}"
+            alt="BlackFeather"
+        >
+
+    </div>
+
+
+    <!-- ================================================= -->
+    <!-- TÍTULO                                            -->
+    <!-- ================================================= -->
+
+    <h2>Entrar no BlackFeather</h2>
+
+    <p class="subtitle">
+        Gerencie suas tarefas e aumente seu foco.
+    </p>
+
+
+    <!-- ================================================= -->
+    <!-- MENSAGEM DE ERRO                                  -->
+    <!-- ================================================= -->
+
     {% if form.errors %}
-        <p class="error-msg">E-mail ou senha incorretos.</p>
+        <div class="error-msg">
+            E-mail ou senha incorretos.
+        </div>
     {% endif %}
 
+
+    <!-- ================================================= -->
+    <!-- FORMULÁRIO                                        -->
+    <!-- ================================================= -->
+
     <form method="post">
+
         {% csrf_token %}
-        
-        <div class="input-group">
-            <label for="id_username">E-mail</label>
-            <input type="email" id="id_username" name="username" placeholder="Digite seu e-mail" required autocomplete="email">
+
+
+        <!-- Usuário -->
+
+        <div class="form-group">
+
+            <label for="id_username">
+                Usuário ou e-mail
+            </label>
+
+            <input
+                type="email"
+                id="id_username"
+                name="username"
+                placeholder="seu@email.com"
+                required
+                autocomplete="email"
+            >
+
         </div>
-        
-        <div class="input-group">
-            <label for="id_password">Senha</label>
-            <input type="password" id="id_password" name="password" placeholder="Digite sua senha" required autocomplete="current-password">
+
+
+        <!-- Senha -->
+
+        <div class="form-group">
+
+            <div class="label-row">
+
+                <label for="id_password">
+                    Senha
+                </label>
+
+                <a href="#" class="forgot-link">
+                    Esqueceu a senha?
+                </a>
+
+            </div>
+
+            <input
+                type="password"
+                id="id_password"
+                name="password"
+                placeholder="••••••••"
+                required
+                autocomplete="current-password"
+            >
+
         </div>
-        
-        <button type="submit" class="login-btn">Acessar</button>
-        
-        <div class="form-footer">
-            <a href="#">Esqueceu sua senha?</a>
-            <br><br>
-        <a href="{% url 'accounts:register' %}" style="font-weight: bold;">Não tem uma conta? Cadastre-se</a>        </div>
+
+
+        <!-- Botão Entrar -->
+
+        <button
+            type="submit"
+            class="btn-primary"
+        >
+            Entrar
+        </button>
+
+
+        <!-- Divisória -->
+
+        <div class="divider">
+            ou
+        </div>
+
+
+        <!-- Google -->
+
+        <a
+            href="{% provider_login_url 'google' %}"
+            class="btn-secondary"
+        >
+            Entrar com o Google
+        </a>
+
+
+        <!-- Criar conta -->
+
+        <div class="card-footer">
+
+            Novo no BlackFeather?
+
+            <a
+                href="{% url 'accounts:register' %}"
+                style="font-weight: 500;"
+            >
+                Criar conta
+            </a>
+
+        </div>
+
     </form>
+
 </div>
+
+
+<!-- ===================================================== -->
+<!-- RODAPÉ EXTERNO                                       -->
+<!-- ===================================================== -->
+
+<div class="external-footer">
+
+    <a href="#">Termos</a>
+
+    <a href="#">Privacidade</a>
+
+    <a href="#">Ajuda</a>
+
+</div>
+
+
+<!-- ===================================================== -->
+<!-- ESTILO DA LOGO                                       -->
+<!-- ===================================================== -->
+
+<style>
+
+    .crow-logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        width: 100%;
+
+        margin-bottom: 24px;
+    }
+
+
+    .crow-logo img {
+        width: 128px;
+        height: 128px;
+
+        display: block;
+
+        object-fit: contain;
+    }
+
+</style>
+
 {% endblock %}
