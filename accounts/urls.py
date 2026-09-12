@@ -15,7 +15,6 @@ urlpatterns = [
     path('dashboard/', dashboard_view, name='dashboard'),
     path('register/', RegisterView.as_view(), name='register'),
     path('logout/', LogoutView.as_view(), name='logout'),
-    # Novas rotas de recuperação de senha com código
     path('esqueci-senha/', solicitar_codigo_view, name='solicitar_codigo'),
     path('verificar-codigo/', verificar_codigo_view, name='verificar_codigo'),
 ]
