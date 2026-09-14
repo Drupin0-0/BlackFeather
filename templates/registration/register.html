@@ -1,20 +1,42 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Criar Conta | BlackFeather{% endblock %}
 
 {% block content %}
+
+<!-- BLOCO ADICIONADO PARA REMOVER A ROLAGEM EXCLUSIVAMENTE NESTA TELA -->
+<style>
+    body {
+        height: 100vh !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+    }
+
+    /* Estilo para a imagem do corvo ficar perfeita no topo */
+    .crow-logo {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 16px;
+    }
+
+    .crow-logo img {
+         width: 128px;  
+        height: 128px; 
+        display: block;
+        object-fit: contain;
+    }
+</style>
+
 <div class="auth-card">
     
-    <!-- Container da Animação do Corvo -->
-    <div style="display: flex; justify-content: center; margin-bottom: 8px; height: 70px; overflow: hidden;">
-        <dotlottie-player 
-            src="https://lottie.host" 
-            background="transparent" 
-            speed="1" 
-            style="width: 90px; height: 90px;" 
-            loop 
-            autoplay>
-        </dotlottie-player>
+    <!-- ================================================= -->
+    <!-- LOGO / CORVO ADICIONADO NO TOPO                  -->
+    <!-- ================================================= -->
+    <div class="crow-logo">
+        <img src="{% static 'images/favicon.svg' %}" alt="BlackFeather">
     </div>
 
     <h2>Criar conta no BlackFeather</h2>
@@ -31,7 +53,7 @@
     <form method="post" class="django-form-styled">
         {% csrf_token %}
 
-        <!-- Loop dinâmico do Django estilizado automaticamente -->
+        <!-- Loop dinâmico do Django mantido intacto para não quebrar o formulário -->
         {% for field in form %}
             <p>
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
