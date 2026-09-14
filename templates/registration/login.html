@@ -6,190 +6,132 @@
 
 {% block content %}
 
-<div class="auth-card">
-
-    <!-- ================================================= -->
-    <!-- LOGO / CORVO SVG                                  -->
-    <!-- ================================================= -->
-    <div class="crow-logo">
-
-        <!-- >>> O LINK/CAMINHO DO SVG FICA AQUI <<< -->
-        <img
-            src="{% static 'images/favicon.svg' %}"
-            alt="BlackFeather"
-        >
-
-    </div>
-
-
-    <!-- ================================================= -->
-    <!-- TÍTULO                                            -->
-    <!-- ================================================= -->
-
-    <h2>Entrar no BlackFeather</h2>
-
-    <p class="subtitle">
-        Gerencie suas tarefas e aumente seu foco.
-    </p>
-
-
-    <!-- ================================================= -->
-    <!-- MENSAGEM DE ERRO                                  -->
-    <!-- ================================================= -->
-
-    {% if form.errors %}
-        <div class="error-msg">
-            E-mail ou senha incorretos.
-        </div>
-    {% endif %}
-
-
-    <!-- ================================================= -->
-    <!-- FORMULÁRIO                                        -->
-    <!-- ================================================= -->
-
-    <form method="post">
-
-        {% csrf_token %}
-
-
-        <!-- Usuário -->
-
-        <div class="form-group">
-
-            <label for="id_username">
-                Usuário ou e-mail
-            </label>
-
-            <input
-                type="email"
-                id="id_username"
-                name="username"
-                placeholder="seu@email.com"
-                required
-                autocomplete="email"
-            >
-
-        </div>
-
-
-        <!-- Senha -->
-
-        <div class="form-group">
-
-            <div class="label-row">
-
-                <label for="id_password">
-                    Senha
-                </label>
-
-                <a href="#" class="forgot-link">
-                    Esqueceu a senha?
-                </a>
-
-            </div>
-
-            <input
-                type="password"
-                id="id_password"
-                name="password"
-                placeholder="••••••••"
-                required
-                autocomplete="current-password"
-            >
-
-        </div>
-
-
-        <!-- Botão Entrar -->
-
-        <button
-            type="submit"
-            class="btn-primary"
-        >
-            Entrar
-        </button>
-
-
-        <!-- Divisória -->
-
-        <div class="divider">
-            ou
-        </div>
-
-<!--
-        <!-- Google -->
-        {% comment %}
-        <a
-            href="{% provider_login_url 'google' %}"
-            class="btn-secondary"
-        >
-            Entrar com o Google
-        </a>
-        {% endcomment %}
-
-
-        <!-- Criar conta -->
-
-        <div class="card-footer">
-
-            Novo no BlackFeather?
-
-            <a
-                href="{% url 'accounts:register' %}"
-                style="font-weight: 500;"
-            >
-                Criar conta
-            </a>
-
-        </div>
-
-    </form>
-
-</div>
-
-
-<!-- ===================================================== -->
-<!-- RODAPÉ EXTERNO                                       -->
-<!-- ===================================================== -->
-
-<div class="external-footer">
-
-    <a href="#">Termos</a>
-
-    <a href="#">Privacidade</a>
-
-    <a href="#">Ajuda</a>
-
-</div>
-
-
-<!-- ===================================================== -->
-<!-- ESTILO DA LOGO                                       -->
-<!-- ===================================================== -->
-
+<!-- Estilo isolado para travar a tela e tirar a rolagem -->
 <style>
+    body {
+        height: 100vh !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    .login-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 400px;
+    }
 
     .crow-logo {
         display: flex;
         justify-content: center;
         align-items: center;
-
         width: 100%;
-
         margin-bottom: 24px;
     }
-
 
     .crow-logo img {
         width: 128px;
         height: 128px;
-
         display: block;
-
         object-fit: contain;
     }
-
 </style>
+
+<div class="login-wrapper">
+
+    <div class="auth-card">
+
+        <!-- LOGO / CORVO SVG -->
+        <div class="crow-logo">
+            <img src="{% static 'images/favicon.svg' %}" alt="BlackFeather">
+        </div>
+
+        <!-- TÍTULO -->
+        <h2>Entrar no BlackFeather</h2>
+        <p class="subtitle">
+            Gerencie suas tarefas e aumente seu foco.
+        </p>
+
+        <!-- MENSAGEM DE ERRO -->
+        {% if form.errors %}
+            <div class="error-msg">
+                E-mail ou senha incorretos.
+            </div>
+        {% endif %}
+
+        <!-- FORMULÁRIO -->
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Usuário -->
+            <div class="form-group">
+                <label for="id_username">
+                    Usuário ou e-mail
+                </label>
+                <input
+                    type="email"
+                    id="id_username"
+                    name="username"
+                    placeholder="seu@email.com"
+                    required
+                    autocomplete="email"
+                >
+            </div>
+
+            <!-- Senha -->
+            <div class="form-group">
+                <div class="label-row">
+                    <label for="id_password">
+                        Senha
+                    </label>
+                    <a href="#" class="forgot-link">
+                        Esqueceu a senha?
+                    </a>
+                </div>
+                <input
+                    type="password"
+                    id="id_password"
+                    name="password"
+                    placeholder="••••••••"
+                    required
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <!-- Botão Entrar -->
+            <button type="submit" class="btn-primary">
+                Entrar
+            </button>
+
+            <!-- Divisória -->
+            <div class="divider">
+                ou
+            </div>
+
+            <!-- Criar conta -->
+            <div class="card-footer">
+                Novo no BlackFeather?
+                <a href="{% url 'accounts:register' %}" style="font-weight: 500;">
+                    Criar conta
+                </a>
+            </div>
+
+        </form>
+
+    </div>
+
+    <!-- RODAPÉ EXTERNO -->
+    <div class="external-footer">
+        <a href="#">Termos</a>
+        <a href="#">Privacidade</a>
+        <a href="#">Ajuda</a>
+    </div>
+
+</div>
 
 {% endblock %}
