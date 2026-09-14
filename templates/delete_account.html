@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Excluir conta - Sincrow</title>
+</head>
+
+<body>
+
+    <h1>Excluir conta</h1>
+
+    <p>Tem certeza que deseja excluir sua conta?</p>
+
+    <p>Essa ação não poderá ser desfeita.</p>
+
+    <form method="POST" action="{% url 'accounts:delete_account' %}">
+        {% csrf_token %}
+
+        <button type="submit">
+            Sim, excluir minha conta
+        </button>
+    </form>
+
+    <a href="{% url 'accounts:dashboard' %}">
+        Cancelar
+    </a>
+
+</body>
+</html>
