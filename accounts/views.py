@@ -7,7 +7,7 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.core.cache import cache
 import secrets
-
+from django.contrib.auth import logout
 from .forms import CustomUserCreationForm
 from .services import enviar_email_codigo
 
@@ -93,3 +93,23 @@ def verificar_codigo_view(request):
             return redirect('accounts:login')
 
     return render(request, 'registration/verificar_codigo.html')
+
+@login_required
+def delete_account_view(request):
+    if request.method == "POST":
+        user = request.user
+
+        print("EXCLUINDO:", user.id, user.email)
+
+        logout(request)
+        user.delete()
+
+        print("USUÁRIO EXCLUÍDO")
+
+        return redirect('accounts:login')
+
+    return redirect('accounts:dashboard')
+
+@login_required
+def delete_account_page(request):
+    return render(request, 'delete_account.html')
