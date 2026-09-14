@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configure seu perfil - Sincrow</title>
+</head>
+<body>
+
+```
+<h1>Configure seu perfil</h1>
+
+<p>Antes de começar, precisamos de algumas informações sobre você.</p>
+
+<form method="POST">
+    {% csrf_token %}
+
+    <div>
+        <label for="bio">Bio</label>
+        <textarea
+            id="bio"
+            name="bio"
+            placeholder="Conte um pouco sobre você"
+        >{{ profile.bio }}</textarea>
+    </div>
+
+    <div>
+        <label for="location">Localização</label>
+        <input
+            type="text"
+            id="location"
+            name="location"
+            value="{{ profile.location }}"
+            placeholder="Ex: São Paulo, SP"
+        >
+    </div>
+
+    <div>
+        <label for="birth_date">Data de nascimento</label>
+        <input
+            type="date"
+            id="birth_date"
+            name="birth_date"
+            value="{{ profile.birth_date|date:'Y-m-d' }}"
+        >
+    </div>
+
+    <button type="submit">Continuar</button>
+</form>
+```
+
+</body>
+</html>
