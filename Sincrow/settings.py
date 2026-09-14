@@ -179,7 +179,7 @@ REST_FRAMEWORK = {
     ],
 }
 
-LOGIN_URL = 'login'
+LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'accounts:dashboard'
 SOCIALACCOUNT_LOGIN_ON_GET = True
 # Tenta pular o formulário de cadastro se o provedor já enviar os dados necessários
