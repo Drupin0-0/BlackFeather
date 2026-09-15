@@ -10,22 +10,32 @@ import secrets
 from django.contrib.auth import logout
 from .forms import CustomUserCreationForm
 from .services import enviar_email_codigo
-
+from .models import UserProfile
+from django.contrib.auth import login
 User = get_user_model()
 
 
 class RegisterView(View):
+
     def get(self, request):
         form = CustomUserCreationForm()
         return render(request, 'registration/register.html', {'form': form})
 
     def post(self, request):
         form = CustomUserCreationForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('accounts:login')
-        return render(request, 'registration/register.html', {'form': form})
 
+        if form.is_valid():
+            user = form.save()
+
+            login(
+                request,
+                user,
+                backend='django.contrib.auth.backends.ModelBackend'
+            )
+
+            return redirect('accounts:setup_profile')
+
+        return render(request, 'registration/register.html', {'form': form})
 
 class CustomLoginView(LoginView):
     template_name = 'registration/login.html'
@@ -36,8 +46,12 @@ class CustomLoginView(LoginView):
 
 @login_required
 def dashboard_view(request):
-    return render(request, 'dashboard.html')
+    profile = getattr(request.user, 'profile', None)
 
+    if not profile:
+        return redirect('accounts:setup_profile')
+
+    return render(request, 'dashboard.html')
 
 # --- FLUXO DE RECUPERAÇÃO DE SENHA ---
 
@@ -113,3 +127,22 @@ def delete_account_view(request):
 @login_required
 def delete_account_page(request):
     return render(request, 'delete_account.html')
+
+
+@login_required
+def setup_profile_view(request):
+    profile, created = UserProfile.objects.get_or_create(
+        user=request.user
+    )
+
+    if request.method == "POST":
+        profile.bio = request.POST.get("bio", "")
+        profile.location = request.POST.get("location", "")
+        profile.birth_date = request.POST.get("birth_date") or None
+        profile.save()
+
+        return redirect('accounts:dashboard')
+
+    return render(request, 'profile/setup.html', {
+        'profile': profile
+    })

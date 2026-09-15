@@ -1,4 +1,4 @@
-from .models import User
+from .models import User, UserProfile
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 
@@ -22,3 +22,7 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         user.save()
 
         return user
+class UserProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserProfile
+        fields = ['bio', 'location', 'birth_date']

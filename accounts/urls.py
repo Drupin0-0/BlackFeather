@@ -4,6 +4,7 @@ from .views import (
     CustomLoginView,
     dashboard_view,
     RegisterView,
+    setup_profile_view,
     solicitar_codigo_view,
     verificar_codigo_view,
     delete_account_view,
@@ -21,5 +22,7 @@ urlpatterns = [
     path('verificar-codigo/', verificar_codigo_view, name='verificar_codigo'),
     path('deletar-conta/', delete_account_page, name='delete_account_page'),
     path('deletar-conta/confirmar/', delete_account_view, name='delete_account'),
+    path('perfil/configurar/',setup_profile_view, name='setup_profile'
+),
 ]
 

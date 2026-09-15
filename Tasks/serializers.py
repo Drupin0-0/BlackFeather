@@ -9,7 +9,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ['title', 'description', 'owner', 'members', 'created_at', 'updated_at']
         read_only_fields = ['owner']  
-class TaskSerializer(serializers.ModelSerializer):
+class TaskSerializer(serializers.ModelSerializer): 
     created_at = serializers.DateTimeField(format="%Y-%m-%d ", read_only=True)
     updated_at = serializers.DateTimeField(format="%Y-%m-%d ", read_only=True)
 
