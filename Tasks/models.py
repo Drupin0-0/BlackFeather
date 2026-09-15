@@ -1,5 +1,14 @@
+from datetime import timedelta
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
+
+
+def validate_future_date(value):
+    """Garante que a data informada não seja anterior ao dia atual."""
+    if value and value < timezone.localdate():
+        raise ValidationError("A data limite não pode ser anterior à data atual.")
 
 
 class Project(models.Model):
@@ -14,7 +23,6 @@ class Project(models.Model):
         settings.AUTH_USER_MODEL,
         blank=True,
         related_name='projects'
-        
     )
 
     description = models.TextField(null=True, blank=True)
@@ -56,10 +64,15 @@ class Task(models.Model):
         default='medium'
     )
 
-    deadline = models.DateField(null=True, blank=True)
+    deadline = models.DateField(
+        null=True,
+        blank=True,
+        validators=[validate_future_date]
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
     task_responsible = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
