@@ -1,15 +1,16 @@
 /* ==========================================================================
-   RESET E CONFIGURAÇÕES GERAIS
+   RESET E CONFIGURAÇÕES GERAIS (DARK MODE MODERNO)
    ========================================================================== */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Arial', sans-serif;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 body {
-    background-color: #ffffff;
+    background-color: #0b0b0b; /* Fundo dark profundo idêntico à imagem de login */
+    color: #ffffff;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -18,32 +19,51 @@ body {
     padding: 20px;
 }
 
+/* --- ANIMAÇÃO DE ENTRADA SUAVE --- */
+@keyframes smoothFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* ==========================================================================
-   ESTILOS DAS TELAS DE AUTENTICAÇÃO (LOGIN E CADASTRO)
+   ESTILOS DAS TELAS DE AUTENTICAÇÃO (LOGIN, CADASTRO E RECUPERAÇÃO)
    ========================================================================== */
 
-/* CONTAINER PRINCIPAL DA CAIXA (QUADRADA COM BORDA PRETA) */
+/* CONTAINER PRINCIPAL DA CAIXA (DARK E ELEGANTE) */
 .login-container {
     width: 100%;
-    max-width: 450px;
-    border: 2px solid #000000;
-    border-radius: 0px;
-    padding: 40px 35px;
-    background-color: #ffffff;
+    max-width: 440px;
+    padding: 20px 10px;
+    background-color: transparent;
     text-align: center;
+    animation: smoothFadeIn 0.4s ease-out forwards;
 }
 
 /* TÍTULO PRINCIPAL */
 .login-container h2 {
     font-size: 24px;
-    font-weight: bold;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+}
+
+/* SUBTÍTULO DA TELA DE LOGIN */
+.login-container .subtitle {
+    font-size: 14px;
+    color: #777777;
     margin-bottom: 30px;
-    color: #000000;
 }
 
 /* GRUPOS DE CAMPOS DE ENTRADA */
 .input-group {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
     text-align: left;
 }
 
@@ -52,69 +72,77 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
 }
 
 .input-group label {
-    font-size: 13px;
+    font-size: 11px;
     font-weight: bold;
-    color: #000000;
+    color: #888888;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
 }
 
 .forgot-password {
     font-size: 12px;
-    color: #000000;
+    color: #555555;
     text-decoration: none;
+    transition: color 0.2s ease;
 }
 
 .forgot-password:hover {
-    text-decoration: underline;
+    color: #888888;
 }
 
-/* INPUTS MANUAIS E DO DJANGO (QUADRADOS COM BORDAS PRETAS) */
+/* INPUTS MODERNO BLACKFEATHER (BORDAS FINAS E ESCUROS) */
 .input-group input {
     width: 100%;
-    padding: 12px 15px;
-    border: 2px solid #000000;
-    border-radius: 0px;
-    background-color: #ffffff;
+    padding: 14px 16px;
+    border: 1px solid #222222;
+    border-radius: 6px;
+    background-color: #000000;
     font-size: 14px;
-    color: #000000;
+    color: #ffffff;
     outline: none;
     box-sizing: border-box;
-    transition: background-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .input-group input:focus {
-    background-color: #f8f9fa;
+    border-color: #444444;
+    box-shadow: 0 0 0 1px #444444;
 }
 
 .input-group input::placeholder {
-    color: #a0a0a0;
+    color: #3d3d3d;
 }
 
-/* BOTÃO DE AÇÃO PRINCIPAL (PRETO INTEIRO E QUADRADO) */
+/* BOTÃO DE AÇÃO PRINCIPAL (BRANCO INTEIRO E ARREDONDADO) */
 .login-btn {
     width: 100%;
-    background-color: #000000;
-    color: #ffffff;
-    border: 2px solid #000000;
-    border-radius: 0px;
+    background-color: #ffffff;
+    color: #000000;
+    border: 1px solid #ffffff;
+    border-radius: 6px;
     padding: 14px;
     font-size: 14px;
-    font-weight: bold;
+    font-weight: 600;
     cursor: pointer;
     margin-top: 10px;
-    margin-bottom: 15px;
-    transition: background-color 0.2s ease, color 0.2s ease;
+    margin-bottom: 20px;
+    transition: opacity 0.2s ease, transform 0.1s ease;
 }
 
 .login-btn:hover {
-    background-color: #ffffff;
-    color: #000000;
+    opacity: 0.9;
+    transform: translateY(-1px);
 }
 
-/* DIVISÓRIA "OU" COM LINHA PRETA */
+.login-btn:active {
+    transform: translateY(0);
+}
+
+/* DIVISÓRIA "OU" MODERNA */
 .divider-container {
     display: flex;
     align-items: center;
@@ -127,59 +155,58 @@ body {
 .divider-container::after {
     content: '';
     flex: 1;
-    border-bottom: 2px solid #000000;
-}
-
-.divider-container:not(:empty)::before {
-    margin-right: .5em;
-}
-
-.divider-container:not(:empty)::after {
-    margin-left: .5em;
+    border-bottom: 1px solid #1c1c1c;
 }
 
 .divider-text {
-    font-size: 13px;
-    font-weight: bold;
-    color: #000000;
+    font-size: 12px;
+    font-weight: 600;
+    color: #444444;
+    padding: 0 15px;
+    text-transform: uppercase;
 }
 
-/* BOTÃO SECUNDÁRIO DA EQUIPE (QUADRADO COM BORDA PRETA) */
+/* BOTÃO SECUNDÁRIO DA EQUIPE */
 .secondary-btn {
     width: 100%;
-    background-color: #ffffff;
-    color: #000000;
-    border: 2px solid #000000;
-    border-radius: 0px;
-    padding: 12px;
+    background-color: transparent;
+    color: #ffffff;
+    border: 1px solid #222222;
+    border-radius: 6px;
+    padding: 13px;
     font-size: 14px;
-    font-weight: normal;
+    font-weight: 500;
     cursor: pointer;
     text-decoration: none;
     display: block;
     box-sizing: border-box;
     text-align: center;
     margin-bottom: 20px;
-    transition: background-color 0.2s ease;
+    transition: border-color 0.2s ease;
 }
 
 .secondary-btn:hover {
-    background-color: #f8f9fa;
+    border-color: #444444;
 }
 
 /* LINK DE CRIAR CONTA NO RODAPÉ DA CAIXA */
 .form-footer {
-    margin-top: 10px;
+    font-size: 14px;
+    color: #666666;
 }
 
 .form-footer span {
     font-size: 14px;
-    color: #000000;
+    color: #666666;
 }
 
 .form-footer a {
-    color: #000000;
-    font-weight: bold;
+    color: #ffffff;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.form-footer a:hover {
     text-decoration: underline;
 }
 
@@ -193,43 +220,42 @@ body {
 
 .external-footer a {
     font-size: 13px;
-    color: #000000;
+    color: #666666;
     text-decoration: none;
     font-weight: bold;
 }
 
 .external-footer a:hover {
-    text-decoration: underline;
+    color: #ffffff;
 }
 
 /* IMAGEM DA LOGO (REDONDA NO TOPO) */
 .logo-container {
-    margin-bottom: 15px;
+    margin-bottom: 25px;
     text-align: center;
 }
 
 .logo-container img {
-    width: 75px;
-    height: 75px;
-    border-radius: 50%;
-    border: 2px solid #000000;
+    width: 80px;
+    height: 80px;
     object-fit: cover;
 }
 
-/* MENSAGENS DE ERRO */
+/* MENSAGENS DE ERRO (DARK RED IDÊNTICO À SUAIMAGEM DE LOGIN) */
 .error-msg {
-    color: #000000;
-    background-color: #ffffff;
-    border: 2px solid #000000;
-    padding: 10px;
+    color: #ff5252;
+    background-color: rgba(255, 82, 82, 0.08);
+    border: 1px solid rgba(255, 82, 82, 0.15);
+    border-radius: 6px;
+    padding: 14px;
     font-size: 13px;
-    font-weight: bold;
-    margin-bottom: 20px;
-    text-align: center;
+    font-weight: 500;
+    margin-bottom: 25px;
+    text-align: left;
 }
 
 /* ==========================================================================
-   ESTILOS DO DASHBOARD (ÁREA INTERNA LOGADA)
+   ESTILOS DO DASHBOARD (ÁREA INTERNA LOGADA ADAPTADA AO LAYOUT DARK)
    ========================================================================== */
 
 .dashboard-wrapper {
@@ -239,13 +265,13 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    background-color: #ffffff;
+    background-color: #000000;
 }
 
 .dashboard-sidebar {
     width: 260px;
-    border-right: 2px solid #000000;
-    background-color: #ffffff;
+    border-right: 1px solid #1c1c1c;
+    background-color: #050505;
     display: flex;
     flex-direction: column;
     padding: 30px 20px;
@@ -261,14 +287,15 @@ body {
     letter-spacing: 1px;
     margin-bottom: 40px;
     padding-bottom: 20px;
-    border-bottom: 2px solid #000000;
+    border-bottom: 1px solid #1c1c1c;
+    color: #ffffff;
 }
 
 .sidebar-logo {
     width: 35px;
     height: 35px;
     border-radius: 50%;
-    border: 2px solid #000000;
+    border: 1px solid #ffffff;
 }
 
 .sidebar-menu {
@@ -279,49 +306,48 @@ body {
 }
 
 .menu-item {
-    color: #000000;
+    color: #888888;
     text-decoration: none;
     font-size: 14px;
     font-weight: bold;
     text-transform: uppercase;
     padding: 12px 15px;
-    border: 2px solid transparent;
-    transition: background-color 0.2s, border-color 0.2s;
+    border-radius: 6px;
+    transition: background-color 0.2s, color 0.2s;
 }
 
 .menu-item:hover, .menu-item.active {
-    background-color: #000000;
-    color: #ffffff;
-    border-color: #000000;
+    background-color: #ffffff;
+    color: #000000;
 }
 
 .sidebar-footer {
     padding-top: 20px;
-    border-top: 2px solid #000000;
+    border-top: 1px solid #1c1c1c;
 }
 
 .logout-btn {
     display: block;
     text-align: center;
-    color: #000000;
+    color: #ff5252;
     text-decoration: none;
     font-size: 13px;
     font-weight: bold;
     text-transform: uppercase;
     padding: 10px;
-    border: 2px solid #000000;
+    border: 1px solid #ff5252;
+    border-radius: 6px;
     transition: background-color 0.2s, color 0.2s;
 }
 
 .logout-btn:hover {
-    background-color: #ff0000;
+    background-color: #ff5252;
     color: #ffffff;
-    border-color: #ff0000;
 }
 
 .dashboard-main {
     flex-grow: 1;
-    background-color: #ffffff;
+    background-color: #000000;
     padding: 40px;
     overflow-y: auto;
     display: block;
@@ -334,17 +360,19 @@ body {
     align-items: center;
     margin-bottom: 40px;
     padding-bottom: 15px;
-    border-bottom: 2px solid #000000;
+    border-bottom: 1px solid #1c1c1c;
 }
 
 .main-header h1 {
     font-size: 28px;
     text-transform: uppercase;
     letter-spacing: 1px;
+    color: #ffffff;
 }
 
 .user-profile {
     font-size: 14px;
+    color: #888888;
 }
 
 .dashboard-grid {
@@ -355,9 +383,10 @@ body {
 }
 
 .data-card {
-    border: 2px solid #000000;
+    border: 1px solid #222222;
+    border-radius: 8px;
     padding: 25px;
-    background-color: #ffffff;
+    background-color: #050505;
 }
 
 .data-card h3 {
@@ -371,7 +400,7 @@ body {
 .card-value {
     font-size: 36px;
     font-weight: 900;
-    color: #000000;
+    color: #ffffff;
 }
 
 .table-container h2 {
@@ -379,6 +408,7 @@ body {
     text-transform: uppercase;
     margin-bottom: 15px;
     letter-spacing: 0.5px;
+    color: #ffffff;
 }
 
 .dashboard-table {
@@ -388,14 +418,15 @@ body {
 }
 
 .dashboard-table th, .dashboard-table td {
-    border: 2px solid #000000;
+    border: 1px solid #222222;
     padding: 12px 15px;
     font-size: 14px;
     text-align: left;
+    color: #ffffff;
 }
 
 .dashboard-table th {
-    background-color: #000000;
+    background-color: #111111;
     color: #ffffff;
     text-transform: uppercase;
     font-size: 12px;
@@ -403,7 +434,7 @@ body {
 }
 
 .dashboard-table tr:nth-child(even) {
-    background-color: #f8f9fa;
+    background-color: #050505;
 }
 
 .status-tag {
@@ -412,5 +443,6 @@ body {
     font-size: 11px;
     font-weight: bold;
     text-transform: uppercase;
-    border: 1px solid #000000;
+    border: 1px solid #ffffff;
+    color: #ffffff;
 }
