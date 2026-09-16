@@ -14,18 +14,18 @@
         </div>
 
         <nav class="sidebar-menu">
-            <a href="#" class="menu-item active">Painel</a>
+            <a href="{% url 'accounts:dashboard' %}" class="menu-item active">Painel</a>
             <a href="#" class="menu-item">Projetos</a>
             <a href="#" class="menu-item">Minhas Tarefas</a>
             <a href="#" class="menu-item">Configurações</a>
         </nav>
 
         <div class="sidebar-footer">
-            <a href="#" class="logout-btn">Sair</a>
+            <a href="{% url 'accounts:logout' %}" class="logout-btn">Sair</a>
         </div>
     </aside>
 
-    <!-- CONTEÚDO PRINCIPAL LIMPO -->
+    <!-- CONTEÚDO PRINCIPAL -->
     <main class="dashboard-main">
         
         <!-- CABEÇALHO -->
@@ -36,16 +36,47 @@
             </div>
         </header>
 
-        <!-- MENSAGEM LIMPA DE PROJETO INEXISTENTE -->
-        <div class="empty-project-box">
-            <h2>Não tem um projeto?</h2>
-            <p>Você ainda não possui nenhum projeto cadastrado ou associado à sua conta. Crie um novo workspace para começar ou entre em uma equipe existente.</p>
+        <!-- VERIFICAÇÃO DE PROJETO NO BANCO DE DADOS -->
+        {% if projects %}
             
-            <div class="actions-group">
-                <a href="#" class="btn-primary">+ Criar Projeto</a>
-                <a href="#" class="btn-secondary-action">Entrar com Código</a>
+            <!-- CABEÇALHO DA SEÇÃO DE PROJETO -->
+            <div class="projects-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                <h2 style="color: #ffffff; font-size: 18px; font-weight: 600;">Seus Workspaces</h2>
+                <a href="{% url 'project_create' %}" class="btn-primary" style="text-decoration: none; padding: 8px 16px; font-size: 13px;">+ Criar Projeto</a>
             </div>
-        </div>
+
+            <!-- GRID DE CARDS DOS PROJETOS -->
+            <div class="projects-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px;">
+                {% for project in projects %}
+                    <div class="project-card" style="background-color: #080808; border: 1px solid #222222; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; transition: border-color 0.2s ease;">
+                        <div>
+                            <h3 style="color: #ffffff; font-size: 16px; font-weight: 600; margin-bottom: 8px;">{{ project.title }}</h3>
+                            <p style="color: #888888; font-size: 13px; line-height: 1.4; margin-bottom: 20px;">
+                                {{ project.description|default:"Nenhuma descrição cadastrada."|truncatewords:20 }}
+                            </p>
+                        </div>
+                        <div style="font-size: 11px; color: #555555; border-top: 1px solid #1a1a1a; pt: 12px; padding-top: 12px; display: flex; justify-content: space-between;">
+                            <span>Criado em: {{ project.created_at|date:"d/m/Y" }}</span>
+                            <span>Dono: {{ project.owner.username }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+        {% else %}
+
+            <!-- CAIXA DE PROJETO INEXISTENTE (QUANDO NÃO HOUVER PROJETOS) -->
+            <div class="empty-project-box">
+                <h2>Não tem um projeto?</h2>
+                <p>Você ainda não possui nenhum projeto cadastrado ou associado à sua conta. Crie um novo workspace para começar ou entre em uma equipe existente.</p>
+                
+                <div class="actions-group">
+                    <a href="{% url 'project_create' %}" class="btn-primary" style="text-decoration: none;">+ Criar Projeto</a>
+                    <button class="btn-secondary-action">Entrar com Código</button>
+                </div>
+            </div>
+
+        {% endif %}
 
         <!-- RESUMO NO RODAPÉ DA PÁGINA -->
         <div class="quick-summary">
@@ -55,7 +86,7 @@
             </div>
             <div class="summary-item">
                 <label>Projetos Vinculados</label>
-                <span>0 projetos</span>
+                <span>{{ projects_count|default:"0" }} projeto(s)</span>
             </div>
             <div class="summary-item">
                 <label>Tarefas Pendentes</label>
