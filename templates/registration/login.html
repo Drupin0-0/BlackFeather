@@ -84,24 +84,25 @@
             </div>
 
             <!-- Senha -->
-            <div class="form-group">
-                <div class="label-row">
-                    <label for="id_password">
-                        Senha
-                    </label>
-                    <a href="#" class="forgot-link">
-                        Esqueceu a senha?
-                    </a>
-                </div>
-                <input
-                    type="password"
-                    id="id_password"
-                    name="password"
-                    placeholder="••••••••"
-                    required
-                    autocomplete="current-password"
-                >
-            </div>
+ <div class="form-group">
+    <div class="label-row">
+        <label for="id_password">
+            Senha
+        </label>
+        <a href="{% url 'accounts:solicitar_codigo' %}" class="forgot-link">
+            Esqueceu a senha?
+        </a>
+    </div>
+    <input
+        type="password"
+        id="id_password"
+        name="password"
+        placeholder="••••••••"
+        required
+        autocomplete="current-password"
+    >
+</div>
+
 
             <!-- Botão Entrar -->
             <button type="submit" class="btn-primary">
