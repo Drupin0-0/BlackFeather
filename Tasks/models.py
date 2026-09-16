@@ -4,12 +4,20 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 import random
+import secrets
+import string
 
 def validate_future_date(value):
     """Garante que a data informada não seja anterior ao dia atual."""
     if value and value < timezone.localdate():
         raise ValidationError("A data limite não pode ser anterior à data atual.")
 
+def code_genereator():
+    characters = string.ascii_uppercase + string.digits
+    while True:
+        code = ''.join(secrets.choice(characters) for _ in range(6))
+        if not Project.objects.filter(code=code).exists():
+            return code
 
 class Project(models.Model):
     title = models.CharField(max_length=100)
@@ -29,6 +37,14 @@ class Project(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    code = models.CharField(max_length=6, unique=True, blank=True)
+
+    def Save(self, *args, **kwargs):
+        if not self.code:
+            self.code = code_genereator()
+        super().save(*args, **kwargs)
+
 
     def __str__(self):
         return self.title
