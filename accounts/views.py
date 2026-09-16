@@ -12,8 +12,9 @@ from .forms import CustomUserCreationForm
 from .services import enviar_email_codigo
 from .models import UserProfile
 from django.contrib.auth import login
+from django.db.models import Q
 User = get_user_model()
-
+from Tasks.models import Project
 
 class RegisterView(View):
 
@@ -46,12 +47,16 @@ class CustomLoginView(LoginView):
 
 @login_required
 def dashboard_view(request):
-    profile = getattr(request.user, 'profile', None)
+    # Busca os projetos onde o usuário é dono ou membro
+    projects = Project.objects.filter(
+        Q(owner=request.user) | Q(members=request.user)
+    ).distinct().order_by('-created_at')
 
-    if not profile:
-        return redirect('accounts:setup_profile')
-
-    return render(request, 'dashboard.html')
+    context = {
+        'projects': projects,
+        'projects_count': projects.count()
+    }
+    return render(request, 'dashboard.html', context)
 
 # --- FLUXO DE RECUPERAÇÃO DE SENHA ---
 

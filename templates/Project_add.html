@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Criar Projeto - Sincrow{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper">
+    <main class="dashboard-main" style="max-width: 600px; margin: 40px auto;">
+        <div class="card-box" style="background-color: #080808; border: 1px solid #222222; padding: 30px; border-radius: 8px;">
+            <h2 style="color: #fff; margin-bottom: 8px;">Criar Novo Projeto</h2>
+            <p style="color: #888; margin-bottom: 24px; font-size: 14px;">Preencha os detalhes para iniciar um novo workspace.</p>
+
+            <form method="POST" action="{% url 'project_create' %}">
+                {% csrf_token %}
+
+                <div class="input-group" style="margin-bottom: 20px;">
+                    <label for="title" style="display: block; color: #ccc; margin-bottom: 8px;">Nome do Projeto *</label>
+                    <input type="text" id="title" name="title" placeholder="Ex: Sincrow Core" required maxlength="100"
+                           style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff;">
+                </div>
+
+                <div class="input-group" style="margin-bottom: 24px;">
+                    <label for="description" style="display: block; color: #ccc; margin-bottom: 8px;">Descrição (Opcional)</label>
+                    <textarea id="description" name="description" placeholder="Descreva os objetivos deste projeto..."
+                              style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff; min-height: 100px;"></textarea>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                    <a href="{% url 'accounts:dashboard' %}" class="btn-secondary-action" style="padding: 10px 20px; text-decoration: none;">Cancelar</a>
+                    <button type="submit" class="btn-primary" style="padding: 10px 20px;">Criar Projeto</button>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}
