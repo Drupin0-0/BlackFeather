@@ -3,7 +3,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-
+import random
 
 def validate_future_date(value):
     """Garante que a data informada não seja anterior ao dia atual."""
@@ -32,6 +32,7 @@ class Project(models.Model):
 
     def __str__(self):
         return self.title
+    
 
 
 class Task(models.Model):

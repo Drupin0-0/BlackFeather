@@ -1,8 +1,68 @@
 {% extends 'base.html' %}
-{% block title %}Painel - BlackFeather{% endblock %}
+{% load static %}
+
+{% block title %}Painel - Sincrow{% endblock %}
+
 {% block content %}
-<div class="login-container">
-    <h2>Bem-vindo, {{ user.username }}</h2>
-    <p style="text-align:center; margin-top: 10px;">O painel de tarefas ainda está sendo construído.</p>
+<div class="dashboard-wrapper">
+    
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-logo">SC</div>
+            <span>Sincrow</span>
+        </div>
+
+        <nav class="sidebar-menu">
+            <a href="#" class="menu-item active">Painel</a>
+            <a href="#" class="menu-item">Projetos</a>
+            <a href="#" class="menu-item">Minhas Tarefas</a>
+            <a href="#" class="menu-item">Configurações</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="#" class="logout-btn">Sair</a>
+        </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL LIMPO -->
+    <main class="dashboard-main">
+        
+        <!-- CABEÇALHO -->
+        <header class="main-header">
+            <h1>Visão Geral</h1>
+            <div class="user-profile">
+                Bem-vindo, <strong>{{ user.username }}</strong>
+            </div>
+        </header>
+
+        <!-- MENSAGEM LIMPA DE PROJETO INEXISTENTE -->
+        <div class="empty-project-box">
+            <h2>Não tem um projeto?</h2>
+            <p>Você ainda não possui nenhum projeto cadastrado ou associado à sua conta. Crie um novo workspace para começar ou entre em uma equipe existente.</p>
+            
+            <div class="actions-group">
+                <a href="#" class="btn-primary">+ Criar Projeto</a>
+                <a href="#" class="btn-secondary-action">Entrar com Código</a>
+            </div>
+        </div>
+
+        <!-- RESUMO NO RODAPÉ DA PÁGINA -->
+        <div class="quick-summary">
+            <div class="summary-item">
+                <label>Status da Conta</label>
+                <span>Ativa (Membro)</span>
+            </div>
+            <div class="summary-item">
+                <label>Projetos Vinculados</label>
+                <span>0 projetos</span>
+            </div>
+            <div class="summary-item">
+                <label>Tarefas Pendentes</label>
+                <span>Nenhuma tarefa</span>
+            </div>
+        </div>
+
+    </main>
 </div>
 {% endblock %}
