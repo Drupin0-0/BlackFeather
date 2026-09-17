@@ -1,3 +1,10 @@
+import json
+import os
+import re
+from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
+
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
@@ -8,6 +15,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from .models import Project
 
+User = get_user_model()
 class ProjectViewSet(viewsets.ModelViewSet):
 
     serializer_class = ProjectSerializer
@@ -37,18 +45,115 @@ def create_project_view(request):
     if request.method == 'POST':
         title = request.POST.get('title')
         description = request.POST.get('description')
-        
+
         if title:
-            # Cria o projeto definindo o dono e adicionando aos membros
             project = Project.objects.create(
                 title=title,
                 description=description,
                 owner=request.user
             )
             project.members.add(request.user)
-            return redirect('accounts:dashboard')  # Redireciona de volta para o painel
-            
+
+            selected_members = request.POST.getlist('members')
+            if selected_members:
+                selected_user_ids = [member_id for member_id in selected_members if member_id]
+                members = User.objects.filter(pk__in=selected_user_ids).exclude(pk=request.user.pk)
+                project.members.add(*members)
+
+            return redirect('accounts:dashboard')
+
     return render(request, 'Project_add.html')
+
+
+@login_required
+def suggest_project_ai_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
+    title = (request.POST.get('title') or '').strip()
+    description = request.POST.get('description') or ''
+    selected_members = request.POST.getlist('members')
+
+    if not title:
+        return JsonResponse({'error': 'O título do projeto é obrigatório.'}, status=400)
+
+    users = User.objects.filter(pk__in=selected_members).distinct() if selected_members else User.objects.none()
+
+    payload = {
+        'project': {
+            'title': title,
+            'description': description,
+            'owner': {
+                'id': request.user.pk,
+                'username': request.user.username,
+                'email': request.user.email,
+                'first_name': request.user.first_name,
+                'last_name': request.user.last_name,
+            }
+        },
+        'available_members': [
+            {
+                'id': user.pk,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'skills': list((getattr(user, 'profile', None).skills.values_list('name', flat=True)) if getattr(user, 'profile', None) else []),
+                'technologies': list((getattr(user, 'profile', None).skills.values_list('name', flat=True)) if getattr(user, 'profile', None) else []),
+            }
+            for user in users
+        ],
+        'context': {
+            'request_type': 'member_assignment',
+            'project_stage': 'planning'
+        }
+    }
+
+    n8n_url = os.getenv('N8N_WEBHOOK_URL')
+    if n8n_url:
+        try:
+            req = Request(
+                n8n_url,
+                data=json.dumps(payload).encode('utf-8'),
+                headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
+                method='POST'
+            )
+            with urlopen(req, timeout=30) as response:
+                n8n_response = json.loads(response.read().decode('utf-8'))
+                if isinstance(n8n_response, dict):
+                    return JsonResponse(n8n_response)
+        except (URLError, HTTPError, ValueError, TimeoutError):
+            pass
+
+    project_text = f"{title} {description}".lower()
+    search_terms = set(re.findall(r"[a-zA-ZÀ-ÖØ-öø-ÿ]+", project_text))
+
+    suggestions = []
+    for user in users:
+        profile = getattr(user, 'profile', None)
+        skill_names = list(profile.skills.values_list('name', flat=True)) if profile else []
+        matched = []
+        for skill in skill_names:
+            skill_lower = skill.lower()
+            if any(skill_lower in term.lower() or term.lower() in skill_lower for term in search_terms):
+                matched.append(skill)
+
+        score = len(matched) + (1 if profile and profile.bio else 0)
+        suggestions.append({
+            'user_id': user.pk,
+            'full_name': user.get_full_name() or user.username,
+            'email': user.email,
+            'score': score,
+            'matched_skills': matched,
+            'skills': skill_names,
+        })
+
+    suggestions = sorted(suggestions, key=lambda item: item['score'], reverse=True)
+    return JsonResponse({
+        'status': 'success',
+        'suggestions': suggestions,
+        'payload_ready_for_n8n': payload,
+    })
 
 
 @login_required

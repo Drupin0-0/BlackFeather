@@ -9,7 +9,8 @@ from .views import (
     verificar_codigo_view,
     delete_account_view,
     delete_account_page,
-    view_profile_view, # <--- Importe a view aqui
+    view_profile_view,
+    search_users,
 )
 
 app_name = "accounts"
@@ -19,6 +20,7 @@ urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('dashboard/', dashboard_view, name='dashboard'),
+    path('buscar-usuarios/', search_users, name='search_users'),
     path('perfil/configurar/', setup_profile_view, name='setup_profile'),
     
     # Fluxo de recuperação de senha

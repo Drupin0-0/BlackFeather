@@ -14,6 +14,7 @@ from .models import UserProfile
 from django.contrib.auth import login
 from django.db.models import Q
 from django.utils import timezone
+from django.http import JsonResponse
 User = get_user_model()
 from .models import UserProfile, Technology  
 from Tasks.models import Project, Task
@@ -196,6 +197,41 @@ def setup_profile_view(request):
     return render(request, 'profile/setup.html', {
         'profile': profile,
     })
+
+@login_required
+def search_users(request):
+    query = (request.GET.get('q') or '').strip()
+
+    users = User.objects.exclude(pk=request.user.pk)
+
+    if query:
+        users = users.filter(
+            Q(username__icontains=query) |
+            Q(email__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        ).distinct()[:10]
+    else:
+        users = users[:10]
+
+    results = []
+    for user in users:
+        profile = getattr(user, 'profile', None)
+        skills = list(profile.skills.values_list('name', flat=True)) if profile else []
+        results.append({
+            'id': user.pk,
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'full_name': user.get_full_name() or user.username,
+            'skills': skills,
+            'location': profile.location if profile else '',
+            'bio': profile.bio if profile else '',
+        })
+
+    return JsonResponse({'results': results})
+
 
 @login_required
 def view_profile_view(request):

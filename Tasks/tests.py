@@ -55,3 +55,75 @@ class CreateTaskViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         task.refresh_from_db()
         self.assertEqual(task.status, 'in_progress')
+
+    def test_create_project_accepts_selected_members(self):
+        User = get_user_model()
+        member = User.objects.create_user(
+            username='membro1',
+            email='membro1@empresa.com',
+            first_name='Maria',
+            last_name='Silva',
+            password='Senha123!'
+        )
+
+        response = self.client.post(reverse('project_create'), {
+            'title': 'Projeto com membros',
+            'description': 'Projeto para validar adição de membros',
+            'members': [str(member.pk)],
+        })
+
+        self.assertEqual(response.status_code, 302)
+        project = Project.objects.get(title='Projeto com membros')
+        self.assertIn(self.user, project.members.all())
+        self.assertIn(member, project.members.all())
+
+    def test_search_users_by_name_or_email(self):
+        User = get_user_model()
+        User.objects.create_user(
+            username='joao.silva',
+            email='joao.silva@empresa.com',
+            first_name='João',
+            last_name='Silva',
+            password='Senha123!'
+        )
+
+        response = self.client.get(reverse('accounts:search_users'), {'q': 'joao'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['results'])
+        self.assertEqual(response.json()['results'][0]['email'], 'joao.silva@empresa.com')
+
+    def test_create_project_accepts_selected_members(self):
+        User = get_user_model()
+        member = User.objects.create_user(
+            username='membro1',
+            email='membro1@empresa.com',
+            password='Senha123!'
+        )
+
+        response = self.client.post(reverse('project_create'), {
+            'title': 'Projeto com membros',
+            'description': 'Projeto para validar adição de membros',
+            'members': [str(member.pk)],
+        })
+
+        self.assertEqual(response.status_code, 302)
+        project = Project.objects.get(title='Projeto com membros')
+        self.assertIn(self.user, project.members.all())
+        self.assertIn(member, project.members.all())
+
+    def test_search_users_by_name_or_email(self):
+        User = get_user_model()
+        User.objects.create_user(
+            username='joao.silva',
+            email='joao.silva@empresa.com',
+            first_name='João',
+            last_name='Silva',
+            password='Senha123!'
+        )
+
+        response = self.client.get(reverse('search_users'), {'q': 'joao'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['results'])
+        self.assertEqual(response.json()['results'][0]['email'], 'joao.silva@empresa.com')
