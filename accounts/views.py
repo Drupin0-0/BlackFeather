@@ -17,6 +17,7 @@ from django.utils import timezone
 User = get_user_model()
 from .models import UserProfile, Technology  
 from Tasks.models import Project, Task
+from django.core.cache import cache
 
 class RegisterView(View):
 
@@ -85,6 +86,21 @@ def dashboard_view(request):
 def solicitar_codigo_view(request):
     if request.method == 'POST':
         email = request.POST.get('email')
+        # rate limit
+        rate_key = f'reset_request_rate_{email}'
+        solicitations = cache.get(rate_key, 0)
+
+        if solicitations >= 5:
+            messages.error(
+                request,
+                'Muitas solicitações, tente novamente mais tarde'
+            )
+            return redirect('accounts:solicitar_codigo')
+        cache.set(
+            rate_key,
+            solicitations + 1,
+            timeout=600
+        )
 
         if User.objects.filter(email=email).exists():
             codigo = f"{secrets.randbelow(900000) + 100000}"
