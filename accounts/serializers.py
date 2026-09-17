@@ -1,28 +1,41 @@
-from .models import User, UserProfile
 from rest_framework import serializers
-from django.contrib.auth.hashers import make_password
+from .models import User, UserProfile, Technology
 
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
+class TechnologySerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'password']
-    
+        model = Technology
+        fields = ['id', 'name', 'category']
 
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    skills = TechnologySerializer(many=True, read_only=True)
+    
+    skills_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Technology.objects.all(),
+        many=True,
+        write_only=True,
+        source='skills',
+        required=False
+    )
+
+    class Meta:
+        model = UserProfile
+        fields = ['id', 'bio', 'location', 'birth_date', 'skills', 'skills_ids']
+
+
+class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
         required=True,
         style={'input_type': 'password', 'placeholder': 'Password'}
     )
-    def create(self, validated_data):
-        password = validated_data.pop('password')
+    # Exibe o perfil aninhado na resposta da API
+    profile = UserProfileSerializer(read_only=True)
 
-        user = User(**validated_data)
-        user.set_password(password)
-        user.save()
-
-        return user
-class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
-        model = UserProfile
-        fields = ['bio', 'birth_date']
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'password', 'profile']
+
+    def create(self, validated_data):
+        return User.objects.create_user(**validated_data)
