@@ -1,23 +1,26 @@
-from datetime import timedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-import random
 import secrets
 import string
+
 
 def validate_future_date(value):
     """Garante que a data informada não seja anterior ao dia atual."""
     if value and value < timezone.localdate():
         raise ValidationError("A data limite não pode ser anterior à data atual.")
 
+
 def code_generator():
+    """Gera um código único de 6 caracteres alfanuméricos."""
     characters = string.ascii_uppercase + string.digits
     while True:
         code = ''.join(secrets.choice(characters) for _ in range(6))
+        # Verifica se o código já existe no banco antes de retornar
         if not Project.objects.filter(code=code).exists():
             return code
+
 
 class Project(models.Model):
     title = models.CharField(max_length=100)
@@ -39,22 +42,15 @@ class Project(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     code = models.CharField(
-    max_length=6,
-    unique=True,
-    default='empty'
-)
-
-    def save(self, *args, **kwargs):
-        if not self.code:
-            self.code = code_generator()
-        super().save(*args, **kwargs)
-
+        max_length=6,
+        unique=True,
+        default=code_generator  # <-- O Django executa a função automaticamente ao criar o objeto
+    )
 
     def __str__(self):
         return self.title
-    
 
-
+#a
 class Task(models.Model):
     project = models.ForeignKey(
         Project,
@@ -103,4 +99,4 @@ class Task(models.Model):
     )
 
     def __str__(self):
-        return self.title   
+        return self.title
