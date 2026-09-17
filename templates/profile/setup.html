@@ -4,11 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configure seu Perfil | BlackFeather</title>
+    
+    <!-- CDN dos Ícones (Devicon) -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/devicon.min.css" />
+
     <style>
-        /* Estilização Geral do Fundo */
         body {
-            background-color: #0b0b0c; /* Fundo quase preto */
-            color: #ffffff; /* Texto branco */
+            background-color: #0b0b0c;
+            color: #ffffff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             justify-content: center;
@@ -19,22 +22,20 @@
             box-sizing: border-box;
         }
 
-        /* Card Central do Formulário */
         .register-card {
-            background-color: #121214; /* Fundo do card ligeiramente mais claro */
+            background-color: #121214;
             border: 1px solid #202024;
             border-radius: 8px;
-            padding: 50px;
+            padding: 40px;
             width: 100%;
-            max-width: 600px;
+            max-width: 650px;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            gap: 28px;
+            gap: 24px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
         }
 
-        /* Cabeçalhos e Textos */
         .title-group {
             text-align: center;
         }
@@ -44,12 +45,11 @@
             margin: 0 0 10px 0;
         }
         .title-group p {
-            color: #a8a8b3; /* Texto secundário cinza */
+            color: #a8a8b3;
             font-size: 15px;
             margin: 0;
         }
 
-        /* Grupos de Input (divs que envolvem cada campo) */
         .input-group {
             display: flex;
             flex-direction: column;
@@ -57,18 +57,14 @@
             margin-bottom: 20px;
         }
 
-        /* Labels (Nomes dos campos) */
         .input-group label {
             color: #e1e1e6;
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: bold;
-            text-align: left;
         }
 
-        /* Campos de Entrada (Inputs e Textarea) */
-        .input-group input[type="text"],
         .input-group input[type="date"],
         .input-group textarea {
             background-color: #09090a;
@@ -78,24 +74,89 @@
             padding: 14px;
             font-size: 14px;
             outline: none;
-            transition: border-color 0.2s;
             width: 100%;
             box-sizing: border-box;
         }
 
-        /* Altura fixa para a caixa de texto grande */
         .input-group textarea {
-            height: 100px;
+            height: 80px;
             resize: vertical;
         }
 
-        /* Efeito de foco nos inputs */
-        .input-group input:focus, 
-        .input-group textarea:focus {
-            border-color: #ffffff; /* Borda branca ao clicar */
+        /* Container com rolagem para as tecnologias */
+        .skills-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 8px;
         }
 
-        /* Botão de Enviar */
+        .skills-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .skills-container::-webkit-scrollbar-thumb {
+            background: #202024;
+            border-radius: 4px;
+        }
+
+        /* Grupos e Títulos das Categorias */
+        .category-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .category-title {
+            color: #0070f3;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+        /* Grid dos Cards */
+        .skills-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+            gap: 10px;
+        }
+
+        .skill-card {
+            background-color: #09090a;
+            border: 1px solid #29292e;
+            border-radius: 6px;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .skill-card:hover {
+            border-color: #ffffff;
+        }
+
+        .skill-card input[type="checkbox"] {
+            accent-color: #ffffff;
+            cursor: pointer;
+            width: 15px;
+            height: 15px;
+        }
+
+        .skill-card i {
+            font-size: 18px;
+        }
+
+        .skill-card span {
+            font-size: 13px;
+            color: #e1e1e6;
+        }
+
         .btn-submit {
             background-color: #ffffff;
             color: #000000;
@@ -107,7 +168,7 @@
             cursor: pointer;
             transition: background-color 0.2s;
             width: 100%;
-            margin-top: 10px;
+            margin-top: 15px;
         }
 
         .btn-submit:hover {
@@ -128,16 +189,136 @@
             {% csrf_token %}
             
             <div class="input-group">
-                <label for="biografia">Conte um pouco sobre você</label>
-                <textarea name="biografia" id="biografia" placeholder="Sua biografia..."></textarea>
+                <label for="bio">Conte um pouco sobre você</label>
+                <textarea name="bio" id="bio" placeholder="Sua biografia...">{{ profile.bio|default:'' }}</textarea>
             </div>
 
             <div class="input-group">
-                <label for="data_nascimento">Data de Nascimento</label>
-                <input type="date" name="data_nascimento" id="data_nascimento">
+                <label for="birth_date">Data de Nascimento</label>
+                <input type="date" name="birth_date" id="birth_date" value="{{ profile.birth_date|date:'Y-m-d' }}">
             </div>
 
-            <input type="submit" class="btn-submit" value="Continuar">
+            <div class="input-group" style="margin-bottom: 8px;">
+                <label>Tecnologias & Ferramentas</label>
+            </div>
+
+            <!-- TECLADO / OPÇÕES FIXAS POR CATEGORIA -->
+            <div class="skills-container">
+
+                <!-- 1. Linguagens de Programação -->
+                <div class="category-group">
+                    <h4 class="category-title">Linguagens de Programação</h4>
+                    <div class="skills-grid">
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="JavaScript">
+                            <i class="devicon-javascript-plain colored"></i>
+                            <span>JavaScript</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="TypeScript">
+                            <i class="devicon-typescript-plain colored"></i>
+                            <span>TypeScript</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="Python">
+                            <i class="devicon-python-plain colored"></i>
+                            <span>Python</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="Java">
+                            <i class="devicon-java-plain colored"></i>
+                            <span>Java</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="C++">
+                            <i class="devicon-cplusplus-plain colored"></i>
+                            <span>C++</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="C#">
+                            <i class="devicon-csharp-plain colored"></i>
+                            <span>C#</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="PHP">
+                            <i class="devicon-php-plain colored"></i>
+                            <span>PHP</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 2. Frontend -->
+                <div class="category-group">
+                    <h4 class="category-title">Frontend</h4>
+                    <div class="skills-grid">
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="HTML5">
+                            <i class="devicon-html5-plain colored"></i>
+                            <span>HTML5</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="CSS3">
+                            <i class="devicon-css3-plain colored"></i>
+                            <span>CSS3</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="React">
+                            <i class="devicon-react-original colored"></i>
+                            <span>React</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="Vue.js">
+                            <i class="devicon-vuejs-plain colored"></i>
+                            <span>Vue.js</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="Angular">
+                            <i class="devicon-angularjs-plain colored"></i>
+                            <span>Angular</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="Tailwind CSS">
+                            <i class="devicon-tailwindcss-gt-v3-plain colored"></i>
+                            <span>Tailwind</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3. Backend -->
+                <div class="category-group">
+                    <h4 class="category-title">Backend</h4>
+                    <div class="skills-grid">
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="Node.js">
+                            <i class="devicon-nodejs-plain colored"></i>
+                            <span>Node.js</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="Express.js">
+                            <i class="devicon-express-original colored"></i>
+                            <span>Express.js</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="Django">
+                            <i class="devicon-django-plain colored"></i>
+                            <span>Django</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="Flask">
+                            <i class="devicon-flask-original colored"></i>
+                            <span>Flask</span>
+                        </label>
+                        <label class="skill-card">
+                            <input type="checkbox" name="skills" value="Spring Boot">
+                            <i class="devicon-spring-plain colored"></i>
+                            <span>Spring Boot</span>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+
+            <button type="submit" class="btn-submit">Continuar</button>
         </form>
 
     </div>

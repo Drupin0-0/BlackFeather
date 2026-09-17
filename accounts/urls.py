@@ -2,8 +2,8 @@ from django.urls import path
 from django.contrib.auth.views import LogoutView
 from .views import (
     CustomLoginView,
-    dashboard_view,
     RegisterView,
+    dashboard_view,
     setup_profile_view,
     solicitar_codigo_view,
     verificar_codigo_view,
@@ -15,14 +15,16 @@ app_name = "accounts"
 
 urlpatterns = [
     path('', CustomLoginView.as_view(), name='login'),
-    path('dashboard/', dashboard_view, name='dashboard'),
     path('register/', RegisterView.as_view(), name='register'),
     path('logout/', LogoutView.as_view(), name='logout'),
+    path('dashboard/', dashboard_view, name='dashboard'),
+    path('perfil/configurar/', setup_profile_view, name='setup_profile'),
+    
+    # Fluxo de recuperação de senha
     path('esqueci-senha/', solicitar_codigo_view, name='solicitar_codigo'),
     path('verificar-codigo/', verificar_codigo_view, name='verificar_codigo'),
+    
+    # Exclusão de conta
     path('deletar-conta/', delete_account_page, name='delete_account_page'),
     path('deletar-conta/confirmar/', delete_account_view, name='delete_account'),
-    path('perfil/configurar/',setup_profile_view, name='setup_profile'
-),
 ]
-
