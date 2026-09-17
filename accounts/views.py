@@ -13,8 +13,9 @@ from .services import enviar_email_codigo
 from .models import UserProfile
 from django.contrib.auth import login
 from django.db.models import Q
+from django.utils import timezone
 User = get_user_model()
-from Tasks.models import Project
+from Tasks.models import Project, Task
 
 class RegisterView(View):
 
@@ -52,9 +53,29 @@ def dashboard_view(request):
         Q(owner=request.user) | Q(members=request.user)
     ).distinct().order_by('-created_at')
 
+    tasks = Task.objects.filter(
+        Q(project__owner=request.user) | Q(project__members=request.user)
+    ).distinct().order_by('-created_at')
+
+    today = timezone.localdate()
+    yesterday = today - timezone.timedelta(days=1)
+
+    statuses = [
+        {'key': 'pending', 'label': 'Pendente', 'tasks': tasks.filter(status='pending').select_related('project', 'task_responsible').order_by('-created_at')},
+        {'key': 'in_progress', 'label': 'Em andamento', 'tasks': tasks.filter(status='in_progress').select_related('project', 'task_responsible').order_by('-created_at')},
+        {'key': 'completed', 'label': 'Concluída', 'tasks': tasks.filter(status='completed').select_related('project', 'task_responsible').order_by('-created_at')},
+    ]
+
     context = {
         'projects': projects,
-        'projects_count': projects.count()
+        'projects_count': projects.count(),
+        'tasks_count': tasks.count(),
+        'tasks_pending': tasks.filter(status='pending').count(),
+        'tasks_in_progress': tasks.filter(status='in_progress').count(),
+        'tasks_completed': tasks.filter(status='completed').count(),
+        'tasks_today': tasks.filter(created_at__date=today).count(),
+        'tasks_yesterday': tasks.filter(created_at__date=yesterday).count(),
+        'kanban_columns': statuses,
     }
     return render(request, 'dashboard.html', context)
 

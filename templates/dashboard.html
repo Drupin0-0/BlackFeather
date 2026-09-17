@@ -38,28 +38,113 @@
 
         <!-- VERIFICAÇÃO DE PROJETO NO BANCO DE DADOS -->
         {% if projects %}
-            
-            <!-- CABEÇALHO DA SEÇÃO DE PROJETO -->
-            <div class="projects-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-                <h2 style="color: #ffffff; font-size: 18px; font-weight: 600;">Seus Workspaces</h2>
-                <a href="{% url 'project_create' %}" class="btn-primary" style="text-decoration: none; padding: 8px 16px; font-size: 13px;">+ Criar Projeto</a>
+
+            <section class="stats-grid" aria-label="Estatísticas de produtividade">
+                <div class="stat-card">
+                    <span class="stat-label">Criadas hoje</span>
+                    <strong>{{ tasks_today|default:0 }}</strong>
+                    <small>{{ tasks_yesterday|default:0 }} criadas ontem</small>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Em andamento</span>
+                    <strong>{{ tasks_in_progress|default:0 }}</strong>
+                    <small>{{ tasks_pending|default:0 }} pendentes</small>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Concluídas</span>
+                    <strong>{{ tasks_completed|default:0 }}</strong>
+                    <small>{{ tasks_count|default:0 }} no total</small>
+                </div>
+            </section>
+
+            <div class="workspace-toolbar">
+                <div>
+                    <p class="section-kicker">Operações</p>
+                    <h2>Quadro de tarefas</h2>
+                </div>
+                <div class="toolbar-actions">
+                    <button type="button" class="btn-primary btn-small" id="openTaskModal">+ Nova tarefa</button>
+                    <a href="{% url 'project_create' %}" class="btn-primary btn-small">+ Criar Projeto</a>
+                </div>
             </div>
 
-            <!-- GRID DE CARDS DOS PROJETOS -->
-            <div class="projects-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px;">
+            <section class="kanban-board" aria-label="Quadro de tarefas por status">
+                {% for column in kanban_columns %}
+                    <div class="kanban-column" data-status="{{ column.key }}">
+                        <div class="kanban-column-header">
+                            <h3>{{ column.label }}</h3>
+                            <span>{{ column.tasks|length }}</span>
+                        </div>
+
+                        {% if column.tasks %}
+                            {% for task in column.tasks %}
+                                <article class="kanban-task" data-task-id="{{ task.pk }}" data-status="{{ task.status }}" draggable="true">
+                                    <div class="task-head">
+                                        <span class="task-project">{{ task.project.title }}</span>
+                                        <span class="task-priority priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                                    </div>
+                                    <h4>{{ task.title }}</h4>
+                                    <p>{{ task.description|default:"Sem descrição." }}</p>
+                                    <div class="task-meta">
+                                        {% if task.task_responsible %}
+                                            <span>
+                                                {% if task.task_responsible.get_full_name %}
+                                                    {{ task.task_responsible.get_full_name }}
+                                                {% else %}
+                                                    {{ task.task_responsible.username }}
+                                                {% endif %}
+                                            </span>
+                                        {% else %}
+                                            <span>Sem responsável</span>
+                                        {% endif %}
+                                        {% if task.deadline %}
+                                            <span>{{ task.deadline|date:"d/m/Y" }}</span>
+                                        {% else %}
+                                            <span>Sem data</span>
+                                        {% endif %}
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-column">Sem tarefas</div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </section>
+            
+            <div class="projects-section-header">
+                <div>
+                    <p class="section-kicker">Workspace</p>
+                    <h2>Seus Workspaces</h2>
+                </div>
+            </div>
+
+            <div class="projects-grid">
                 {% for project in projects %}
-                    <div class="project-card" style="background-color: #080808; border: 1px solid #222222; border-radius: 8px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; transition: border-color 0.2s ease;">
-                        <div>
-                            <h3 style="color: #ffffff; font-size: 16px; font-weight: 600; margin-bottom: 8px;">{{ project.title }}</h3>
-                            <p style="color: #888888; font-size: 13px; line-height: 1.4; margin-bottom: 20px;">
+                    <article class="project-card">
+                        <div class="project-card-header">
+                            <span class="project-label">Workspace</span>
+                            <span class="project-status">Operacional</span>
+                        </div>
+
+                        <div class="project-card-body">
+                            <h3>{{ project.title }}</h3>
+                            <p>
                                 {{ project.description|default:"Nenhuma descrição cadastrada."|truncatewords:20 }}
                             </p>
                         </div>
-                        <div style="font-size: 11px; color: #555555; border-top: 1px solid #1a1a1a; pt: 12px; padding-top: 12px; display: flex; justify-content: space-between;">
-                            <span>Criado em: {{ project.created_at|date:"d/m/Y" }}</span>
-                            <span>Dono: {{ project.owner.username }}</span>
+
+                        <div class="project-card-footer">
+                            <div class="project-meta">
+                                <span>Criado em</span>
+                                <strong>{{ project.created_at|date:"d/m/Y" }}</strong>
+                            </div>
+                            <div class="project-meta align-right">
+                                <span>Dono</span>
+                                <strong>{{ project.owner.username }}</strong>
+                            </div>
                         </div>
-                    </div>
+                    </article>
                 {% endfor %}
             </div>
 
@@ -90,10 +175,232 @@
             </div>
             <div class="summary-item">
                 <label>Tarefas Pendentes</label>
-                <span>Nenhuma tarefa</span>
+                <span>{{ tasks_pending|default:0 }} tarefa(s)</span>
             </div>
         </div>
 
     </main>
 </div>
+
+<div id="taskModal" class="task-modal" aria-hidden="true">
+    <div class="task-modal-backdrop" data-close-task-modal></div>
+    <div class="task-modal-panel">
+        <div class="task-modal-header">
+            <h3>Nova tarefa</h3>
+            <button type="button" class="task-modal-close" aria-label="Fechar" data-close-task-modal>×</button>
+        </div>
+
+        <form method="POST" action="{% url 'task_create' %}" class="task-form">
+            {% csrf_token %}
+
+            <div class="task-form-grid">
+                <div class="task-field">
+                    <label for="task_project">Projeto</label>
+                    <select id="task_project" name="project" required>
+                        <option value="">Selecione</option>
+                        {% for project in projects %}
+                            <option value="{{ project.pk }}">{{ project.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="task-field">
+                    <label for="task_title">Título</label>
+                    <input id="task_title" type="text" name="title" placeholder="Ex: Revisar briefing" required>
+                </div>
+
+                <div class="task-field full">
+                    <label for="task_description">Descrição</label>
+                    <textarea id="task_description" name="description" rows="4" placeholder="Descreva a tarefa..."></textarea>
+                </div>
+
+                <div class="task-field">
+                    <label for="task_status">Status</label>
+                    <select id="task_status" name="status">
+                        <option value="pending">Pendente</option>
+                        <option value="in_progress">Em andamento</option>
+                        <option value="completed">Concluída</option>
+                    </select>
+                </div>
+
+                <div class="task-field">
+                    <label for="task_priority">Prioridade</label>
+                    <select id="task_priority" name="priority">
+                        <option value="low">Baixa</option>
+                        <option value="medium" selected>Média</option>
+                        <option value="high">Alta</option>
+                    </select>
+                </div>
+
+                <div class="task-field">
+                    <label for="task_deadline">Prazo</label>
+                    <input id="task_deadline" type="date" name="deadline">
+                </div>
+
+                <div class="task-field full">
+                    <label for="task_responsible">Quem vai ficar com essa tarefa?</label>
+                    <select id="task_responsible" name="task_responsible">
+                        <option value="">Selecione um membro do projeto</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="task-form-actions">
+                <button type="button" class="btn-secondary-action" data-close-task-modal>Cancelar</button>
+                <button type="submit" class="btn-primary">Salvar tarefa</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        const modal = document.getElementById('taskModal');
+        const openBtn = document.getElementById('openTaskModal');
+        const closeEls = document.querySelectorAll('[data-close-task-modal]');
+        const projectSelect = document.getElementById('task_project');
+        const responsibleSelect = document.getElementById('task_responsible');
+        const taskCards = document.querySelectorAll('.kanban-task');
+        const columns = document.querySelectorAll('.kanban-column');
+
+        function moveTask(taskId, newStatus) {
+            if (!taskId || !newStatus) return;
+
+            fetch(`/tarefas/${taskId}/status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: new URLSearchParams({ status: newStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error(data.error || 'Erro ao mover tarefa');
+                    return;
+                }
+
+                const taskElement = document.querySelector(`.kanban-task[data-task-id="${taskId}"]`);
+                if (taskElement) {
+                    taskElement.dataset.status = newStatus;
+                }
+
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Erro ao mover tarefa:', error);
+            });
+        }
+
+        taskCards.forEach(function (taskCard) {
+            taskCard.addEventListener('dragstart', function () {
+                taskCard.classList.add('dragging');
+                taskCard.setAttribute('data-dragging', 'true');
+            });
+
+            taskCard.addEventListener('dragend', function () {
+                taskCard.classList.remove('dragging');
+                taskCard.removeAttribute('data-dragging');
+            });
+        });
+
+        columns.forEach(function (column) {
+            column.addEventListener('dragover', function (event) {
+                event.preventDefault();
+                column.classList.add('drag-over');
+            });
+
+            column.addEventListener('dragleave', function () {
+                column.classList.remove('drag-over');
+            });
+
+            column.addEventListener('drop', function (event) {
+                event.preventDefault();
+                column.classList.remove('drag-over');
+
+                const draggedTask = document.querySelector('.kanban-task[data-dragging="true"]');
+                if (!draggedTask) return;
+
+                const taskId = draggedTask.dataset.taskId;
+                const newStatus = column.dataset.status || column.getAttribute('data-status');
+
+                if (!taskId || !newStatus) return;
+
+                const targetContainer = column.querySelector('.drop-zone-placeholder');
+                if (targetContainer) {
+                    column.insertBefore(draggedTask, targetContainer);
+                } else {
+                    column.appendChild(draggedTask);
+                }
+
+                moveTask(taskId, newStatus);
+            });
+        });
+
+        const projectMembers = {
+            {% for project in projects %}
+                "{{ project.pk }}": [
+                    {% for member in project.members.all %}
+                        { value: "{{ member.pk }}", label: "{{ member.get_full_name|default:member.username }}" }
+                        {% if not forloop.last %},{% endif %}
+                    {% endfor %}
+                ]{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        };
+
+        function populateResponsibleOptions(projectId) {
+            responsibleSelect.innerHTML = '<option value="">Selecione um membro do projeto</option>';
+
+            const members = projectMembers[projectId] || [];
+            if (!members.length) {
+                const ownerOption = document.createElement('option');
+                ownerOption.value = '{{ user.pk }}';
+                ownerOption.textContent = '{{ user.get_full_name|default:user.username }}';
+                responsibleSelect.appendChild(ownerOption);
+                return;
+            }
+
+            members.forEach(function (member) {
+                const option = document.createElement('option');
+                option.value = member.value;
+                option.textContent = member.label;
+                responsibleSelect.appendChild(option);
+            });
+        }
+
+        if (projectSelect && responsibleSelect) {
+            projectSelect.addEventListener('change', function () {
+                populateResponsibleOptions(this.value);
+            });
+
+            if (projectSelect.value) {
+                populateResponsibleOptions(projectSelect.value);
+            }
+        }
+
+        if (modal && openBtn) {
+            openBtn.addEventListener('click', function () {
+                modal.classList.add('open');
+                modal.setAttribute('aria-hidden', 'false');
+            });
+
+            closeEls.forEach(function (el) {
+                el.addEventListener('click', function () {
+                    modal.classList.remove('open');
+                    modal.setAttribute('aria-hidden', 'true');
+                });
+            });
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape' && modal.classList.contains('open')) {
+                    modal.classList.remove('open');
+                    modal.setAttribute('aria-hidden', 'true');
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}

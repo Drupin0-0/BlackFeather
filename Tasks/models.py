@@ -38,9 +38,14 @@ class Project(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    code = models.CharField(max_length=6, unique=True, blank=True)
+    code = models.CharField(
+    max_length=6,
+    unique=True,
+    null=True,
+    blank=True
+)
 
-    def Save(self, *args, **kwargs):
+    def save(self, *args, **kwargs):
         if not self.code:
             self.code = code_genereator()
         super().save(*args, **kwargs)
