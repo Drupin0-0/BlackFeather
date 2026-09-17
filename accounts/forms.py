@@ -13,7 +13,7 @@ class CustomUserCreationForm(UserCreationForm):
         super().__init__(*args, **kwargs)
 
         self.fields['email'].widget.attrs.update({
-            'placeholder': 'Seu melhor e-mail'
+            'placeholder': 'Seu e-mail'
         })
 
         if 'password1' in self.fields:

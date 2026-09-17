@@ -1,54 +1,146 @@
 <!DOCTYPE html>
-
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configure seu perfil - Sincrow</title>
+    <title>Configure seu Perfil | BlackFeather</title>
+    <style>
+        /* Estilização Geral do Fundo */
+        body {
+            background-color: #0b0b0c; /* Fundo quase preto */
+            color: #ffffff; /* Texto branco */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Card Central do Formulário */
+        .register-card {
+            background-color: #121214; /* Fundo do card ligeiramente mais claro */
+            border: 1px solid #202024;
+            border-radius: 8px;
+            padding: 50px;
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Cabeçalhos e Textos */
+        .title-group {
+            text-align: center;
+        }
+        .title-group h1 {
+            font-size: 26px;
+            font-weight: 600;
+            margin: 0 0 10px 0;
+        }
+        .title-group p {
+            color: #a8a8b3; /* Texto secundário cinza */
+            font-size: 15px;
+            margin: 0;
+        }
+
+        /* Grupos de Input (divs que envolvem cada campo) */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        /* Labels (Nomes dos campos) */
+        .input-group label {
+            color: #e1e1e6;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        /* Campos de Entrada (Inputs e Textarea) */
+        .input-group input[type="text"],
+        .input-group input[type="date"],
+        .input-group textarea {
+            background-color: #09090a;
+            border: 1px solid #29292e;
+            border-radius: 5px;
+            color: #ffffff;
+            padding: 14px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Altura fixa para a caixa de texto grande */
+        .input-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        /* Efeito de foco nos inputs */
+        .input-group input:focus, 
+        .input-group textarea:focus {
+            border-color: #ffffff; /* Borda branca ao clicar */
+        }
+
+        /* Botão de Enviar */
+        .btn-submit {
+            background-color: #ffffff;
+            color: #000000;
+            border: none;
+            border-radius: 5px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background-color: #e1e1e6;
+        }
+    </style>
 </head>
 <body>
 
-```
-<h1>Configure seu perfil</h1>
+    <div class="register-card">
 
-<p>Antes de começar, precisamos de algumas informações sobre você.</p>
+        <div class="title-group">
+            <h1>Configure seu perfil</h1>
+            <p>Antes de começar, precisamos de algumas informações sobre você.</p>
+        </div>
 
-<form method="POST">
-    {% csrf_token %}
+        <form action="" method="POST">
+            {% csrf_token %}
+            
+            <div class="input-group">
+                <label for="biografia">Conte um pouco sobre você</label>
+                <textarea name="biografia" id="biografia" placeholder="Sua biografia..."></textarea>
+            </div>
 
-    <div>
-        <label for="bio">Bio</label>
-        <textarea
-            id="bio"
-            name="bio"
-            placeholder="Conte um pouco sobre você"
-        >{{ profile.bio }}</textarea>
+            <div class="input-group">
+                <label for="data_nascimento">Data de Nascimento</label>
+                <input type="date" name="data_nascimento" id="data_nascimento">
+            </div>
+
+            <input type="submit" class="btn-submit" value="Continuar">
+        </form>
+
     </div>
-
-    <div>
-        <label for="location">Localização</label>
-        <input
-            type="text"
-            id="location"
-            name="location"
-            value="{{ profile.location }}"
-            placeholder="Ex: São Paulo, SP"
-        >
-    </div>
-
-    <div>
-        <label for="birth_date">Data de Nascimento</label>
-        <input
-            type="date"
-            id="birth_date"
-            name="birth_date"
-            value="{{ profile.birth_date|date:'Y-m-d' }}"
-        >
-    </div>
-
-    <button type="submit">Continuar</button>
-</form>
-```
 
 </body>
 </html>
