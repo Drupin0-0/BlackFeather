@@ -15,6 +15,7 @@ from django.contrib.auth import login
 from django.db.models import Q
 from django.utils import timezone
 User = get_user_model()
+from .models import UserProfile, Technology  
 from Tasks.models import Project, Task
 from django.core.cache import cache
 
@@ -170,21 +171,28 @@ def delete_account_view(request):
 def delete_account_page(request):
     return render(request, 'delete_account.html')
 
-
 @login_required
 def setup_profile_view(request):
-    profile, created = UserProfile.objects.get_or_create(
-        user=request.user
-    )
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
         profile.bio = request.POST.get("bio", "")
-        profile.location = request.POST.get("location", "")
         profile.birth_date = request.POST.get("birth_date") or None
         profile.save()
 
-        return redirect('accounts:dashboard')
+        # Recebe a lista de nomes enviados pelo HTML (ex: ['TypeScript', 'Python'])
+        skills_selected = request.POST.getlist("skills")
+
+        # Busca ou cria cada tecnologia pelo nome e associa ao perfil
+        skill_objects = []
+        for tech_name in skills_selected:
+            tech, _ = Technology.objects.get_or_create(name=tech_name)
+            skill_objects.append(tech)
+
+        profile.skills.set(skill_objects)
+
+        return redirect('accounts:dashboard') # Altere para sua rota final
 
     return render(request, 'profile/setup.html', {
-        'profile': profile
+        'profile': profile,
     })
