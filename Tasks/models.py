@@ -12,7 +12,7 @@ def validate_future_date(value):
     if value and value < timezone.localdate():
         raise ValidationError("A data limite não pode ser anterior à data atual.")
 
-def code_genereator():
+def code_generator():
     characters = string.ascii_uppercase + string.digits
     while True:
         code = ''.join(secrets.choice(characters) for _ in range(6))
@@ -41,13 +41,12 @@ class Project(models.Model):
     code = models.CharField(
     max_length=6,
     unique=True,
-    null=True,
-    blank=True
+    default='empty'
 )
 
     def save(self, *args, **kwargs):
         if not self.code:
-            self.code = code_genereator()
+            self.code = code_generator()
         super().save(*args, **kwargs)
 
 
