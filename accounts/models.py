@@ -19,7 +19,6 @@ class UserProfile(models.Model):
         related_name="profile"
     )
     bio = models.TextField(blank=True)
-    location = models.CharField(max_length=100, blank=True)
     birth_date = models.DateField(null=True, blank=True)
         
 

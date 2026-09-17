@@ -163,7 +163,6 @@ def setup_profile_view(request):
 
     if request.method == "POST":
         profile.bio = request.POST.get("bio", "")
-        profile.location = request.POST.get("location", "")
         profile.birth_date = request.POST.get("birth_date") or None
         profile.save()
 
