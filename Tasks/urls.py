@@ -12,4 +12,5 @@ urlpatterns = [
     path('tarefas/novo/', create_task_view, name='task_create'),
     path('tarefas/<int:task_id>/status/', update_task_status_view, name='task_update_status'),
     path('', include(router.urls)),
+    
 ]

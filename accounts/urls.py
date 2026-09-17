@@ -9,6 +9,7 @@ from .views import (
     verificar_codigo_view,
     delete_account_view,
     delete_account_page,
+    view_profile_view, # <--- Importe a view aqui
 )
 
 app_name = "accounts"
@@ -27,4 +28,6 @@ urlpatterns = [
     # Exclusão de conta
     path('deletar-conta/', delete_account_page, name='delete_account_page'),
     path('deletar-conta/confirmar/', delete_account_view, name='delete_account'),
+    path('perfil/', view_profile_view, name='view_profile'),
+    path('perfil/configurar/', setup_profile_view, name='setup_profile'),
 ]

@@ -180,3 +180,7 @@ def setup_profile_view(request):
     return render(request, 'profile/setup.html', {
         'profile': profile,
     })
+
+@login_required
+def view_profile_view(request):
+    return render(request, 'profile/view_profile.html')

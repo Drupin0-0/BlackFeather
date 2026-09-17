@@ -112,3 +112,7 @@ def update_task_status_view(request, task_id):
         'task_id': task.pk,
         'status': task.status,
     })
+@login_required
+def setup_profile_view(request):
+    # Lógica da sua página de perfil/configuração
+    return render(request, 'accounts/setup_profile.html') # ou o caminho do seu template
