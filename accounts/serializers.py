@@ -10,7 +10,7 @@ class TechnologySerializer(serializers.ModelSerializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     skills = TechnologySerializer(many=True, read_only=True)
-    
+
     skills_ids = serializers.PrimaryKeyRelatedField(
         queryset=Technology.objects.all(),
         many=True,
@@ -21,21 +21,35 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ['id', 'bio', 'location', 'birth_date', 'skills', 'skills_ids']
+        fields = [
+            'id',
+            'name',
+            'bio',
+            'birth_date',
+            'skills',
+            'skills_ids'
+        ]
 
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(
         write_only=True,
         required=True,
-        style={'input_type': 'password', 'placeholder': 'Password'}
+        style={
+            'input_type': 'password',
+            'placeholder': 'Password'
+        }
     )
-    # Exibe o perfil aninhado na resposta da API
+
     profile = UserProfileSerializer(read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'password', 'profile']
-
+        fields = [
+            'id',
+            'email',
+            'password',
+            'profile'
+        ]
     def create(self, validated_data):
         return User.objects.create_user(**validated_data)

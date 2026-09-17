@@ -6,7 +6,7 @@
 {% block content %}
 <div class="dashboard-wrapper">
     <main class="dashboard-main" style="max-width: 760px; margin: 40px auto;">
-        <div class="card-box" style="background-color: #080808; border: 1px solid #222222; padding: 30px; border-radius: 8px;">
+        <div class="card-box" style="background-color: #080808; border: 1px solid #222; padding: 30px; border-radius: 8px;">
             <h2 style="color: #fff; margin-bottom: 8px;">Criar Novo Projeto</h2>
             <p style="color: #888; margin-bottom: 24px; font-size: 14px;">Preencha os detalhes e selecione os membros que farão parte do workspace.</p>
 
@@ -15,20 +15,17 @@
 
                 <div class="input-group" style="margin-bottom: 20px;">
                     <label for="title" style="display: block; color: #ccc; margin-bottom: 8px;">Nome do Projeto *</label>
-                    <input type="text" id="title" name="title" placeholder="Ex: Sincrow Core" required maxlength="100"
-                           style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff;">
+                    <input type="text" id="title" name="title" placeholder="Ex: Sincrow Core" required maxlength="100" style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff;">
                 </div>
 
                 <div class="input-group" style="margin-bottom: 20px;">
                     <label for="description" style="display: block; color: #ccc; margin-bottom: 8px;">Descrição (Opcional)</label>
-                    <textarea id="description" name="description" placeholder="Descreva os objetivos deste projeto..."
-                              style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff; min-height: 100px;"></textarea>
+                    <textarea id="description" name="description" placeholder="Descreva os objetivos deste projeto..." style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff; min-height: 100px;"></textarea>
                 </div>
 
                 <div class="input-group" style="margin-bottom: 20px;">
                     <label for="memberSearch" style="display: block; color: #ccc; margin-bottom: 8px;">Adicionar membros</label>
-                    <input type="text" id="memberSearch" placeholder="Busca por nome, email ou username"
-                           style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff;">
+                    <input type="text" id="memberSearch" placeholder="Buscar por nome ou email" autocomplete="off" style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff;">
                     <div id="memberSearchResults" style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
 
@@ -39,10 +36,15 @@
                     </div>
                 </div>
 
+                <div style="margin-bottom: 20px;">
+                    <button type="button" id="suggestMembersBtn" class="btn-primary" style="padding: 10px 16px;">
+                        Sugerir membros com IA
+                    </button>
+                </div>
+
                 <div id="suggestionBox" style="display: none; margin-bottom: 20px; background: #0d0d0d; border: 1px solid #222; border-radius: 8px; padding: 16px; color: #ddd;">
                     <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
                         <strong style="color: #fff;">Sugestão de alocação por IA</strong>
-                        <button type="button" id="suggestMembersBtn" class="btn-primary" style="padding: 8px 14px;">Sugerir com IA</button>
                     </div>
                     <div id="suggestionResults" style="display: flex; flex-direction: column; gap: 10px;"></div>
                 </div>
@@ -64,14 +66,12 @@
     const suggestionBox = document.getElementById('suggestionBox');
     const suggestionResults = document.getElementById('suggestionResults');
     const suggestMembersBtn = document.getElementById('suggestMembersBtn');
-
     const selectedMembers = new Map();
 
     function addHiddenMemberInputs() {
-        const existingInputs = projectForm.querySelectorAll('input[name="members"]');
-        existingInputs.forEach((input) => input.remove());
+        projectForm.querySelectorAll('input[name="members"]').forEach(input => input.remove());
 
-        selectedMembers.forEach((member) => {
+        selectedMembers.forEach(member => {
             const input = document.createElement('input');
             input.type = 'hidden';
             input.name = 'members';
@@ -89,7 +89,7 @@
             return;
         }
 
-        selectedMembers.forEach((member) => {
+        selectedMembers.forEach(member => {
             const chip = document.createElement('div');
             chip.style.display = 'inline-flex';
             chip.style.alignItems = 'center';
@@ -101,15 +101,18 @@
             chip.style.color = '#fff';
             chip.style.fontSize = '13px';
 
-            const label = document.createTextNode(member.full_name || member.email);
+            const label = document.createTextNode(member.name || 'Nome não informado');
             const removeBtn = document.createElement('button');
+
             removeBtn.type = 'button';
             removeBtn.textContent = '×';
             removeBtn.style.border = 'none';
             removeBtn.style.background = 'transparent';
             removeBtn.style.color = '#ff8a8a';
             removeBtn.style.cursor = 'pointer';
-            removeBtn.addEventListener('click', function () {
+            removeBtn.style.fontSize = '18px';
+
+            removeBtn.addEventListener('click', function() {
                 selectedMembers.delete(member.id);
                 renderSelectedMembers();
             });
@@ -130,7 +133,7 @@
             return;
         }
 
-        users.forEach((user) => {
+        users.forEach(user => {
             const card = document.createElement('div');
             card.style.display = 'flex';
             card.style.justifyContent = 'space-between';
@@ -142,23 +145,41 @@
             card.style.background = '#121212';
 
             const info = document.createElement('div');
-            info.innerHTML = `
-                <div style="color: #fff; font-weight: 600;">${user.full_name || user.username}</div>
-                <div style="color: #b0b0b0; font-size: 12px;">${user.email}</div>
-                <div style="color: #888; font-size: 12px;">${(user.skills || []).slice(0, 3).join(', ') || 'Sem skills cadastradas'}</div>
-            `;
+            info.style.minWidth = '0';
+
+            const name = document.createElement('div');
+            name.textContent = user.name || 'Nome não informado';
+            name.style.color = '#fff';
+            name.style.fontWeight = '600';
+
+            const email = document.createElement('div');
+            email.textContent = user.email;
+            email.style.color = '#b0b0b0';
+            email.style.fontSize = '12px';
+
+            const skills = document.createElement('div');
+            skills.textContent = (user.skills || []).slice(0, 3).join(', ') || 'Sem skills cadastradas';
+            skills.style.color = '#888';
+            skills.style.fontSize = '12px';
+
+            info.appendChild(name);
+            info.appendChild(email);
+            info.appendChild(skills);
 
             const addBtn = document.createElement('button');
+            const alreadySelected = selectedMembers.has(user.id);
+
             addBtn.type = 'button';
-            addBtn.textContent = selectedMembers.has(user.id) ? 'Adicionado' : 'Adicionar';
-            addBtn.disabled = selectedMembers.has(user.id);
+            addBtn.textContent = alreadySelected ? 'Adicionado' : 'Adicionar';
+            addBtn.disabled = alreadySelected;
             addBtn.style.padding = '8px 12px';
             addBtn.style.borderRadius = '6px';
             addBtn.style.border = 'none';
-            addBtn.style.background = selectedMembers.has(user.id) ? '#333' : '#fff';
-            addBtn.style.color = selectedMembers.has(user.id) ? '#ddd' : '#111';
-            addBtn.style.cursor = selectedMembers.has(user.id) ? 'default' : 'pointer';
-            addBtn.addEventListener('click', function () {
+            addBtn.style.background = alreadySelected ? '#333' : '#fff';
+            addBtn.style.color = alreadySelected ? '#ddd' : '#111';
+            addBtn.style.cursor = alreadySelected ? 'default' : 'pointer';
+
+            addBtn.addEventListener('click', function() {
                 if (!selectedMembers.has(user.id)) {
                     selectedMembers.set(user.id, user);
                     renderSelectedMembers();
@@ -172,69 +193,84 @@
         });
     }
 
-    memberSearch.addEventListener('input', function () {
+    memberSearch.addEventListener('input', function() {
         const query = memberSearch.value.trim();
+
         if (!query) {
             memberSearchResults.innerHTML = '';
             return;
         }
 
         fetch(`/accounts/buscar-usuarios/?q=${encodeURIComponent(query)}`)
-            .then((response) => response.json())
-            .then((data) => {
-                renderUserResults(data.results || []);
+            .then(response => {
+                if (!response.ok) throw new Error();
+                return response.json();
             })
+            .then(data => renderUserResults(data.results || []))
             .catch(() => {
                 memberSearchResults.innerHTML = '<div style="color: #ff9999;">Erro ao buscar usuários.</div>';
             });
     });
 
-    suggestMembersBtn.addEventListener('click', function () {
+    suggestMembersBtn.addEventListener('click', function() {
         const title = document.getElementById('title').value.trim();
         const description = document.getElementById('description').value.trim();
         const members = Array.from(selectedMembers.keys());
 
+        suggestionBox.style.display = 'block';
+        suggestionResults.innerHTML = '<div style="color: #aaa;">Analisando membros e projeto...</div>';
+        suggestMembersBtn.disabled = true;
+        suggestMembersBtn.textContent = 'Analisando...';
+
         if (!title) {
             suggestionResults.innerHTML = '<div style="color: #ff9999;">Preencha o nome do projeto antes de sugerir.</div>';
-            suggestionBox.style.display = 'block';
+            suggestMembersBtn.disabled = false;
+            suggestMembersBtn.textContent = '✨ Sugerir membros com IA';
             return;
         }
 
         if (!members.length) {
             suggestionResults.innerHTML = '<div style="color: #ff9999;">Selecione pelo menos um membro para a sugestão.</div>';
-            suggestionBox.style.display = 'block';
+            suggestMembersBtn.disabled = false;
+            suggestMembersBtn.textContent = '✨ Sugerir membros com IA';
             return;
         }
 
         const formData = new FormData();
         formData.append('title', title);
         formData.append('description', description);
-        members.forEach((memberId) => formData.append('members', memberId));
+        members.forEach(memberId => formData.append('members', memberId));
 
         fetch('{% url "project_suggest_ai" %}', {
             method: 'POST',
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
             },
             body: formData
         })
-        .then((response) => response.json())
-        .then((data) => {
-            suggestionBox.style.display = 'block';
+        .then(response => {
+            if (!response.ok) throw new Error();
+            return response.json();
+        })
+        .then(data => {
             if (!data.suggestions || !data.suggestions.length) {
                 suggestionResults.innerHTML = '<div style="color: #ff9999;">Não foi possível gerar sugestão com os dados atuais.</div>';
                 return;
             }
 
-            suggestionResults.innerHTML = data.suggestions.map((item) => {
+            suggestionResults.innerHTML = data.suggestions.map(item => {
                 const skills = (item.skills || []).slice(0, 4).join(', ') || 'Sem skills cadastradas';
-                const matches = (item.matched_skills || []).length ? `Corresponde a: ${item.matched_skills.join(', ')}` : 'Sem correspondência direta';
+                const matches = (item.matched_skills || []).length
+                    ? `Corresponde a: ${item.matched_skills.join(', ')}`
+                    : 'Sem correspondência direta';
+
                 return `
-                    <div style="padding: 10px 12px; border: 1px solid #222; border-radius: 8px; background: #111;">
+                    <div style="padding: 12px; border: 1px solid #222; border-radius: 8px; background: #111;">
                         <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px;">
-                            <strong style="color: #fff;">${item.full_name || item.email}</strong>
-                            <span style="color: #8be3a1; font-size: 12px;">score ${item.score || 0}</span>
+                            <strong style="color: #fff;">${item.name || 'Nome não informado'}</strong>
+                            <span style="color: #8be3a1; font-size: 12px;">Score ${item.score || 0}</span>
                         </div>
+                        <div style="color: #aaa; font-size: 12px; margin-bottom: 4px;">${item.email}</div>
                         <div style="color: #c9c9c9; font-size: 12px;">${skills}</div>
                         <div style="color: #89d0ff; font-size: 12px; margin-top: 6px;">${matches}</div>
                     </div>
@@ -242,12 +278,14 @@
             }).join('');
         })
         .catch(() => {
-            suggestionBox.style.display = 'block';
             suggestionResults.innerHTML = '<div style="color: #ff9999;">Erro ao gerar sugestão com a IA.</div>';
+        })
+        .finally(() => {
+            suggestMembersBtn.disabled = false;
+            suggestMembersBtn.textContent = '✨ Sugerir membros com IA';
         });
     });
 
     renderSelectedMembers();
-    suggestionBox.style.display = 'block';
 </script>
 {% endblock %}

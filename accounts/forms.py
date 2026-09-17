@@ -16,23 +16,10 @@ class CustomUserCreationForm(UserCreationForm):
             'placeholder': 'Seu e-mail'
         })
 
-        if 'password1' in self.fields:
-            self.fields['password1'].widget.attrs.update({
-                'placeholder': 'Crie uma senha forte'
-            })
+        self.fields['password1'].widget.attrs.update({
+            'placeholder': 'Crie uma senha forte'
+        })
 
-        if 'password2' in self.fields:
-            self.fields['password2'].widget.attrs.update({
-                'placeholder': 'Digite a senha novamente'
-            })
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-
-        # O e-mail será usado como username
-        user.username = self.cleaned_data['email']
-
-        if commit:
-            user.save()
-
-        return user
+        self.fields['password2'].widget.attrs.update({
+            'placeholder': 'Digite a senha novamente'
+        })

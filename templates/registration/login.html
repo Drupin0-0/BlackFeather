@@ -1,12 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load socialaccount %}
 
 {% block title %}Entrar | BlackFeather{% endblock %}
 
 {% block content %}
 
-<!-- Estilo isolado para travar a tela e tirar a rolagem -->
 <style>
     body {
         height: 100vh !important;
@@ -43,36 +41,31 @@
 </style>
 
 <div class="login-wrapper">
-
     <div class="auth-card">
-
-        <!-- LOGO / CORVO SVG -->
         <div class="crow-logo">
             <img src="{% static 'images/favicon.svg' %}" alt="BlackFeather">
         </div>
 
-        <!-- TÍTULO -->
         <h2>Entrar no BlackFeather</h2>
+
         <p class="subtitle">
             Gerencie suas tarefas e aumente seu foco.
         </p>
 
-        <!-- MENSAGEM DE ERRO -->
         {% if form.errors %}
             <div class="error-msg">
                 E-mail ou senha incorretos.
             </div>
         {% endif %}
 
-        <!-- FORMULÁRIO -->
         <form method="post">
             {% csrf_token %}
 
-            <!-- Usuário -->
             <div class="form-group">
                 <label for="id_username">
-                    Usuário ou e-mail
+                    E-mail
                 </label>
+
                 <input
                     type="email"
                     id="id_username"
@@ -80,59 +73,53 @@
                     placeholder="seu@email.com"
                     required
                     autocomplete="email"
+                    value="{{ form.username.value|default:'' }}"
                 >
             </div>
 
-            <!-- Senha -->
- <div class="form-group">
-    <div class="label-row">
-        <label for="id_password">
-            Senha
-        </label>
-        <a href="{% url 'accounts:solicitar_codigo' %}" class="forgot-link">
-            Esqueceu a senha?
-        </a>
-    </div>
-    <input
-        type="password"
-        id="id_password"
-        name="password"
-        placeholder="••••••••"
-        required
-        autocomplete="current-password"
-    >
-</div>
+            <div class="form-group">
+                <div class="label-row">
+                    <label for="id_password">
+                        Senha
+                    </label>
 
+                    <a href="{% url 'accounts:solicitar_codigo' %}" class="forgot-link">
+                        Esqueceu a senha?
+                    </a>
+                </div>
 
-            <!-- Botão Entrar -->
+                <input
+                    type="password"
+                    id="id_password"
+                    name="password"
+                    placeholder="••••••••"
+                    required
+                    autocomplete="current-password"
+                >
+            </div>
+
             <button type="submit" class="btn-primary">
                 Entrar
             </button>
 
-            <!-- Divisória -->
             <div class="divider">
                 ou
             </div>
 
-            <!-- Criar conta -->
             <div class="card-footer">
                 Novo no BlackFeather?
                 <a href="{% url 'accounts:register' %}" style="font-weight: 500;">
                     Criar conta
                 </a>
             </div>
-
         </form>
-
     </div>
 
-    <!-- RODAPÉ EXTERNO -->
     <div class="external-footer">
         <a href="#">Termos</a>
         <a href="#">Privacidade</a>
         <a href="#">Ajuda</a>
     </div>
-
 </div>
 
 {% endblock %}

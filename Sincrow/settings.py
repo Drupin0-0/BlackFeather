@@ -181,15 +181,13 @@ REST_FRAMEWORK = {
 
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'accounts:dashboard'
+
 SOCIALACCOUNT_LOGIN_ON_GET = True
-# Tenta pular o formulário de cadastro se o provedor já enviar os dados necessários
-SOCIALACCOUNT_AUTO_SIGNUP = True  
-
-# Se o e-mail do Google já existir no seu banco de dados, vincula a conta automaticamente
-# em vez de travar no formulário de cadastro.
+SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_AUTO_CONNECT = True
-
-# Garante que o Allauth vai pedir e exigir o e-mail do provedor social
 SOCIALACCOUNT_QUERY_EMAIL = True
+
 ACCOUNT_UNIQUE_EMAIL = True
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']

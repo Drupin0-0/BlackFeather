@@ -5,7 +5,6 @@
 
 {% block extra_css %}
 <style>
-    /* CORREÇÃO DO LAYOUT: Anula totalmente o flex-center do base.html */
     body {
         display: block !important;
         background-color: #000000 !important;
@@ -14,12 +13,11 @@
         overflow-x: hidden;
     }
 
-    /* Container Principal Isolado para Não Quebrar */
     .sincrow-profile-wrapper {
         max-width: 700px;
         margin: 60px auto;
         padding: 0 24px;
-        text-align: left; /* Garante que os textos alinhem à esquerda */
+        text-align: left;
     }
 
     .profile-page-header {
@@ -30,7 +28,6 @@
         color: #ffffff;
     }
 
-    /* O Card Centralizado usando o padrão .auth-card do seu projeto */
     .profile-content-card {
         background-color: #0a0a0a;
         border: 1px solid #262626;
@@ -52,7 +49,6 @@
         margin-bottom: 30px;
     }
 
-    /* COMPONENTE DE AVATAR AJUSTADO E BONITO */
     .avatar-management-box {
         display: flex;
         align-items: center;
@@ -87,7 +83,6 @@
         gap: 12px;
     }
 
-    /* Inputs e Formulários seguindo a risca o seu estilo base.html */
     .form-group-profile {
         margin-bottom: 20px;
         display: flex;
@@ -103,14 +98,12 @@
         letter-spacing: 0.5px;
     }
 
-    /* Linhas divididas por igual (Nome e Username / Curso e Portfólio) */
     .form-row-double {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 20px;
     }
 
-    /* Extensão para a Bio ocupar o espaço estilizado corretamente */
     textarea.profile-textarea-extend {
         width: 100%;
         padding: 12px 14px;
@@ -130,19 +123,18 @@
         border-color: #ffffff;
     }
 
-    /* Alinhamento dos botões de ação finais */
     .form-actions-bar {
         display: flex;
         justify-content: flex-end;
         margin-top: 24px;
     }
 
-    /* Correções responsivas */
     @media (max-width: 600px) {
         .form-row-double {
             grid-template-columns: 1fr;
             gap: 0;
         }
+
         .avatar-management-box {
             flex-direction: column;
             align-items: flex-start;
@@ -163,41 +155,39 @@
         <form method="POST" enctype="multipart/form-data">
             {% csrf_token %}
 
-            <!-- Área Dinâmica de Upload da Foto -->
+            <input type="hidden" name="remove_avatar" id="removeAvatarField" value="0">
+
             <div class="avatar-management-box">
                 <div class="avatar-display-frame">
                     {% if profile.avatar %}
-                        <img src="{{ profile.avatar.url }}" alt="Avatar do Usuário" id="avatarPreviewContainer">
+                        <img src="{{ profile.avatar.url }}" alt="Avatar do usuário" id="avatarPreviewContainer">
                     {% else %}
-                        <!-- Avatar Genérico Minimalista do Usuário usando Dicebear -->
-                        <img src="https://dicebear.com{{ request.user.username }}&backgroundColor=262626&textColor=ffffff" alt="Avatar Padrão" id="avatarPreviewContainer">
+                        <img src="https://api.dicebear.com/9.x/initials/svg?seed={{ profile.name|default:request.user.email|urlencode }}&backgroundColor=262626&fontColor=ffffff" alt="Avatar padrão" id="avatarPreviewContainer">
                     {% endif %}
                 </div>
+
                 <div class="avatar-control-actions">
-                    <!-- Botão que abre a seleção de arquivos do computador/celular -->
                     <label class="btn-secondary" style="cursor: pointer; display: inline-block; width: auto; padding: 10px 16px;">
                         Alterar foto
                         <input type="file" name="avatar" id="avatarFileInputField" accept="image/png, image/jpeg, image/webp" style="display: none;">
                     </label>
-                    <button type="button" class="btn-secondary" id="deleteAvatarButton" style="color: #f87171; border-color: rgba(248, 113, 113, 0.2); width: auto; padding: 10px 16px;">Remover</button>
+
+                    <button type="button" class="btn-secondary" id="deleteAvatarButton" style="color: #f87171; border-color: rgba(248, 113, 113, 0.2); width: auto; padding: 10px 16px;">
+                        Remover
+                    </button>
                 </div>
             </div>
 
-            <!-- Dados Pessoais com Inputs Herdando Layout do seu projeto -->
             <div class="form-row-double">
                 <div class="form-group-profile">
                     <label for="id_name">Nome Completo</label>
-                    <input type="text" id="id_name" name="name" value="{{ request.user.get_full_name }}" placeholder="Seu nome completo">
+                    <input type="text" id="id_name" name="name" value="{{ profile.name }}" placeholder="Seu nome completo" required>
                 </div>
-                <div class="form-group-profile">
-                    <label for="id_username">Nome de Usuário</label>
-                    <input type="text" id="id_username" name="username" value="{{ request.user.username }}" placeholder="@username">
-                </div>
-            </div>
 
-            <div class="form-group-profile">
-                <label for="id_email">Endereço de E-mail</label>
-                <input type="email" id="id_email" value="{{ request.user.email }}" disabled style="color: #525252; background-color: #050505; cursor: not-allowed;">
+                <div class="form-group-profile">
+                    <label for="id_email">Endereço de E-mail</label>
+                    <input type="email" id="id_email" value="{{ request.user.email }}" disabled style="color: #525252; background-color: #050505; cursor: not-allowed;">
+                </div>
             </div>
 
             <div class="form-group-profile">
@@ -205,39 +195,51 @@
                 <textarea id="id_bio" name="bio" class="profile-textarea-extend" placeholder="Conte um pouco sobre suas experiências profissionais ou acadêmicas...">{{ profile.bio }}</textarea>
             </div>
 
+            <div class="form-group-profile">
+                <label for="id_birth_date">Data de Nascimento</label>
+                <input type="date" id="id_birth_date" name="birth_date" value="{{ profile.birth_date|date:'Y-m-d' }}">
+            </div>
+
             <div class="form-row-double">
                 <div class="form-group-profile">
                     <label for="id_curso">Área do Curso / Formação</label>
                     <input type="text" id="id_curso" name="course_area" value="{{ profile.course_area }}" placeholder="Ex: Ciência da Computação">
                 </div>
+
                 <div class="form-group-profile">
                     <label for="id_portfolio">Website / Portfólio</label>
-                    <input type="text" id="id_portfolio" name="website" value="{{ profile.website }}" placeholder="https://seuportfolio.dev">
+                    <input type="url" id="id_portfolio" name="website" value="{{ profile.website }}" placeholder="https://seuportfolio.dev">
                 </div>
             </div>
 
-            <!-- Barra de Ações com Botão Salvar Padrão -->
             <div class="form-actions-bar">
-                <button type="submit" class="btn-primary" style="width: auto; padding: 12px 36px; margin-top: 0;">Salvar Alterações</button>
+                <button type="submit" class="btn-primary" style="width: auto; padding: 12px 36px; margin-top: 0;">
+                    Salvar Alterações
+                </button>
             </div>
         </form>
     </div>
 </div>
 
 <script>
-    // Script JS para processar a prévia da imagem selecionada pelo usuário
-    document.getElementById('avatarFileInputField').addEventListener('change', function(e) {
+    const avatarInput = document.getElementById('avatarFileInputField');
+    const avatarPreview = document.getElementById('avatarPreviewContainer');
+    const deleteAvatarButton = document.getElementById('deleteAvatarButton');
+    const removeAvatarField = document.getElementById('removeAvatarField');
+
+    avatarInput.addEventListener('change', function(e) {
         const [file] = e.target.files;
+
         if (file) {
-            // Gera uma URL temporária do arquivo local para exibir o preview na tela na hora
-            document.getElementById('avatarPreviewContainer').src = URL.createObjectURL(file);
+            avatarPreview.src = URL.createObjectURL(file);
+            removeAvatarField.value = '0';
         }
     });
 
-    // Ação do botão "Remover" para limpar o campo e resetar a foto
-    document.getElementById('deleteAvatarButton').addEventListener('click', function() {
-        document.getElementById('avatarFileInputField').value = "";
-        document.getElementById('avatarPreviewContainer').src = "https://dicebear.com{{ request.user.username }}&backgroundColor=262626&textColor=ffffff";
+    deleteAvatarButton.addEventListener('click', function() {
+        avatarInput.value = '';
+        removeAvatarField.value = '1';
+        avatarPreview.src = 'https://api.dicebear.com/9.x/initials/svg?seed={{ profile.name|default:request.user.email|urlencode }}&backgroundColor=262626&fontColor=ffffff';
     });
 </script>
 {% endblock %}

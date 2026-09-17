@@ -6,39 +6,42 @@ from urllib.error import URLError, HTTPError
 
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-from rest_framework import viewsets
-from rest_framework.exceptions import PermissionDenied
 from django.http import JsonResponse
-from .models import Project, Task
-from .serializers import ProjectSerializer, TaskSerializer
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from .models import Project
+from rest_framework import viewsets
+from rest_framework.exceptions import PermissionDenied
+
+from .models import Project, Task
+from .serializers import ProjectSerializer, TaskSerializer
+from accounts.models import UserProfile, Technology
 
 User = get_user_model()
-class ProjectViewSet(viewsets.ModelViewSet):
 
+
+class ProjectViewSet(viewsets.ModelViewSet):
     serializer_class = ProjectSerializer
 
     def get_queryset(self):
-        return Project.objects.filter(
-            Q(owner=self.request.user) | Q(members=self.request.user)
-        )
+        return Project.objects.filter(Q(owner=self.request.user) | Q(members=self.request.user))
 
     def perform_create(self, serializer):
         project = serializer.save(owner=self.request.user)
         project.members.add(self.request.user)
+
+
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
+
     def get_queryset(self):
-        return Task.objects.filter(
-            Q(project__owner=self.request.user) | Q(project__members=self.request.user)
-        )   
+        return Task.objects.filter(Q(project__owner=self.request.user) | Q(project__members=self.request.user))
+
     def perform_create(self, serializer):
         project = serializer.validated_data['project']
         if not (project.owner == self.request.user or self.request.user in project.members.all()):
             raise PermissionDenied("Você não tem acesso a esse projeto.")
         serializer.save()
+
 
 @login_required
 def create_project_view(request):
@@ -47,11 +50,7 @@ def create_project_view(request):
         description = request.POST.get('description')
 
         if title:
-            project = Project.objects.create(
-                title=title,
-                description=description,
-                owner=request.user
-            )
+            project = Project.objects.create(title=title, description=description, owner=request.user)
             project.members.add(request.user)
 
             selected_members = request.POST.getlist('members')
@@ -77,7 +76,8 @@ def suggest_project_ai_view(request):
     if not title:
         return JsonResponse({'error': 'O título do projeto é obrigatório.'}, status=400)
 
-    users = User.objects.filter(pk__in=selected_members).distinct() if selected_members else User.objects.none()
+    users = User.objects.filter(pk__in=selected_members).select_related('profile').distinct() if selected_members else User.objects.none()
+    owner_profile = getattr(request.user, 'profile', None)
 
     payload = {
         'project': {
@@ -85,21 +85,16 @@ def suggest_project_ai_view(request):
             'description': description,
             'owner': {
                 'id': request.user.pk,
-                'username': request.user.username,
+                'name': owner_profile.name if owner_profile else '',
                 'email': request.user.email,
-                'first_name': request.user.first_name,
-                'last_name': request.user.last_name,
             }
         },
         'available_members': [
             {
                 'id': user.pk,
-                'username': user.username,
+                'name': user.profile.name if getattr(user, 'profile', None) else '',
                 'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'skills': list((getattr(user, 'profile', None).skills.values_list('name', flat=True)) if getattr(user, 'profile', None) else []),
-                'technologies': list((getattr(user, 'profile', None).skills.values_list('name', flat=True)) if getattr(user, 'profile', None) else []),
+                'skills': list(user.profile.skills.values_list('name', flat=True)) if getattr(user, 'profile', None) else [],
             }
             for user in users
         ],
@@ -110,14 +105,10 @@ def suggest_project_ai_view(request):
     }
 
     n8n_url = os.getenv('N8N_WEBHOOK_URL')
+
     if n8n_url:
         try:
-            req = Request(
-                n8n_url,
-                data=json.dumps(payload).encode('utf-8'),
-                headers={'Content-Type': 'application/json', 'Accept': 'application/json'},
-                method='POST'
-            )
+            req = Request(n8n_url, data=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, method='POST')
             with urlopen(req, timeout=30) as response:
                 n8n_response = json.loads(response.read().decode('utf-8'))
                 if isinstance(n8n_response, dict):
@@ -129,19 +120,22 @@ def suggest_project_ai_view(request):
     search_terms = set(re.findall(r"[a-zA-ZÀ-ÖØ-öø-ÿ]+", project_text))
 
     suggestions = []
+
     for user in users:
         profile = getattr(user, 'profile', None)
         skill_names = list(profile.skills.values_list('name', flat=True)) if profile else []
         matched = []
+
         for skill in skill_names:
             skill_lower = skill.lower()
             if any(skill_lower in term.lower() or term.lower() in skill_lower for term in search_terms):
                 matched.append(skill)
 
         score = len(matched) + (1 if profile and profile.bio else 0)
+
         suggestions.append({
             'user_id': user.pk,
-            'full_name': user.get_full_name() or user.username,
+            'name': profile.name if profile else '',
             'email': user.email,
             'score': score,
             'matched_skills': matched,
@@ -149,6 +143,7 @@ def suggest_project_ai_view(request):
         })
 
     suggestions = sorted(suggestions, key=lambda item: item['score'], reverse=True)
+
     return JsonResponse({
         'status': 'success',
         'suggestions': suggestions,
@@ -158,9 +153,7 @@ def suggest_project_ai_view(request):
 
 @login_required
 def create_task_view(request):
-    user_projects = Project.objects.filter(
-        Q(owner=request.user) | Q(members=request.user)
-    ).distinct().order_by('title')
+    user_projects = Project.objects.filter(Q(owner=request.user) | Q(members=request.user)).distinct().order_by('title')
 
     if request.method == 'POST':
         project_id = request.POST.get('project')
@@ -175,10 +168,11 @@ def create_task_view(request):
             return redirect('accounts:dashboard')
 
         project = get_object_or_404(Project, pk=project_id)
+
         if project.owner != request.user and request.user not in project.members.all():
             return redirect('accounts:dashboard')
 
-        task = Task.objects.create(
+        Task.objects.create(
             project=project,
             title=title,
             description=description or '',
@@ -212,12 +206,37 @@ def update_task_status_view(request, task_id):
     task.status = status
     task.save(update_fields=['status', 'updated_at'])
 
-    return JsonResponse({
-        'success': True,
-        'task_id': task.pk,
-        'status': task.status,
-    })
+    return JsonResponse({'success': True, 'task_id': task.pk, 'status': task.status})
+
+
 @login_required
 def setup_profile_view(request):
-    # Lógica da sua página de perfil/configuração
-    return render(request, 'accounts/setup_profile.html') # ou o caminho do seu template
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        name = (request.POST.get('name') or '').strip()
+
+        if not name:
+            return render(request, 'accounts/setup.html', {'profile': profile, 'error': 'O nome é obrigatório.'})
+
+        profile.name = name
+        profile.bio = (request.POST.get('bio') or '').strip()
+        profile.birth_date = request.POST.get('birth_date') or None
+        profile.save()
+
+        skills_selected = request.POST.getlist('skills')
+        skill_objects = []
+
+        for tech_name in skills_selected:
+            tech_name = tech_name.strip()
+            if not tech_name:
+                continue
+
+            tech, _ = Technology.objects.get_or_create(name=tech_name)
+            skill_objects.append(tech)
+
+        profile.skills.set(skill_objects)
+
+        return redirect('accounts:dashboard')
+
+    return render(request, 'accounts/setup.html', {'profile': profile})

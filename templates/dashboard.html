@@ -19,7 +19,6 @@
             <a href="#" class="menu-item">Minhas Tarefas</a>
             <a href="#" class="menu-item">Configurações</a>
             <a href="{% url 'accounts:view_profile' %}" class="menu-item">Meu Perfil</a>
-            
         </nav>
 
         <div class="sidebar-footer">
@@ -34,13 +33,12 @@
         <header class="main-header">
             <h1>Visão Geral</h1>
             <div class="user-profile">
-                Bem-vindo, <strong>{{ user.username }}</strong>
+                Bem-vindo, <strong>{{ user.profile.name|default:user.email }}</strong>
             </div>
         </header>
 
         <!-- VERIFICAÇÃO DE PROJETO NO BANCO DE DADOS -->
         {% if projects %}
-
             <section class="stats-grid" aria-label="Estatísticas de produtividade">
                 <div class="stat-card">
                     <span class="stat-label">Criadas hoje</span>
@@ -89,13 +87,7 @@
                                     <p>{{ task.description|default:"Sem descrição." }}</p>
                                     <div class="task-meta">
                                         {% if task.task_responsible %}
-                                            <span>
-                                                {% if task.task_responsible.get_full_name %}
-                                                    {{ task.task_responsible.get_full_name }}
-                                                {% else %}
-                                                    {{ task.task_responsible.username }}
-                                                {% endif %}
-                                            </span>
+                                            <span>{{ task.task_responsible.profile.name|default:task.task_responsible.email }}</span>
                                         {% else %}
                                             <span>Sem responsável</span>
                                         {% endif %}
@@ -131,9 +123,7 @@
 
                         <div class="project-card-body">
                             <h3>{{ project.title }}</h3>
-                            <p>
-                                {{ project.description|default:"Nenhuma descrição cadastrada."|truncatewords:20 }}
-                            </p>
+                            <p>{{ project.description|default:"Nenhuma descrição cadastrada."|truncatewords:20 }}</p>
                         </div>
 
                         <div class="project-card-footer">
@@ -143,7 +133,7 @@
                             </div>
                             <div class="project-meta align-right">
                                 <span>Dono</span>
-                                <strong>{{ project.owner.username }}</strong>
+                                <strong>{{ project.owner.profile.name|default:project.owner.email }}</strong>
                             </div>
                         </div>
                     </article>
@@ -151,7 +141,6 @@
             </div>
 
         {% else %}
-
             <!-- CAIXA DE PROJETO INEXISTENTE (QUANDO NÃO HOUVER PROJETOS) -->
             <div class="empty-project-box">
                 <h2>Não tem um projeto?</h2>
@@ -162,7 +151,6 @@
                     <button class="btn-secondary-action">Entrar com Código</button>
                 </div>
             </div>
-
         {% endif %}
 
         <!-- RESUMO NO RODAPÉ DA PÁGINA -->
@@ -180,7 +168,6 @@
                 <span>{{ tasks_pending|default:0 }} tarefa(s)</span>
             </div>
         </div>
-
     </main>
 </div>
 
@@ -256,153 +243,162 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
-        const modal = document.getElementById('taskModal');
-        const openBtn = document.getElementById('openTaskModal');
-        const closeEls = document.querySelectorAll('[data-close-task-modal]');
-        const projectSelect = document.getElementById('task_project');
-        const responsibleSelect = document.getElementById('task_responsible');
-        const taskCards = document.querySelectorAll('.kanban-task');
-        const columns = document.querySelectorAll('.kanban-column');
+document.addEventListener('DOMContentLoaded', function () {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    const modal = document.getElementById('taskModal');
+    const openBtn = document.getElementById('openTaskModal');
+    const closeEls = document.querySelectorAll('[data-close-task-modal]');
+    const projectSelect = document.getElementById('task_project');
+    const responsibleSelect = document.getElementById('task_responsible');
+    const taskCards = document.querySelectorAll('.kanban-task');
+    const columns = document.querySelectorAll('.kanban-column');
 
-        function moveTask(taskId, newStatus) {
-            if (!taskId || !newStatus) return;
+    function moveTask(taskId, newStatus) {
+        if (!taskId || !newStatus) return;
 
-            fetch(`/tarefas/${taskId}/status/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    'X-CSRFToken': csrfToken,
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-                body: new URLSearchParams({ status: newStatus })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (!data.success) {
-                    console.error(data.error || 'Erro ao mover tarefa');
-                    return;
-                }
-
-                const taskElement = document.querySelector(`.kanban-task[data-task-id="${taskId}"]`);
-                if (taskElement) {
-                    taskElement.dataset.status = newStatus;
-                }
-
-                location.reload();
-            })
-            .catch(error => {
-                console.error('Erro ao mover tarefa:', error);
-            });
-        }
-
-        taskCards.forEach(function (taskCard) {
-            taskCard.addEventListener('dragstart', function () {
-                taskCard.classList.add('dragging');
-                taskCard.setAttribute('data-dragging', 'true');
-            });
-
-            taskCard.addEventListener('dragend', function () {
-                taskCard.classList.remove('dragging');
-                taskCard.removeAttribute('data-dragging');
-            });
-        });
-
-        columns.forEach(function (column) {
-            column.addEventListener('dragover', function (event) {
-                event.preventDefault();
-                column.classList.add('drag-over');
-            });
-
-            column.addEventListener('dragleave', function () {
-                column.classList.remove('drag-over');
-            });
-
-            column.addEventListener('drop', function (event) {
-                event.preventDefault();
-                column.classList.remove('drag-over');
-
-                const draggedTask = document.querySelector('.kanban-task[data-dragging="true"]');
-                if (!draggedTask) return;
-
-                const taskId = draggedTask.dataset.taskId;
-                const newStatus = column.dataset.status || column.getAttribute('data-status');
-
-                if (!taskId || !newStatus) return;
-
-                const targetContainer = column.querySelector('.drop-zone-placeholder');
-                if (targetContainer) {
-                    column.insertBefore(draggedTask, targetContainer);
-                } else {
-                    column.appendChild(draggedTask);
-                }
-
-                moveTask(taskId, newStatus);
-            });
-        });
-
-        const projectMembers = {
-            {% for project in projects %}
-                "{{ project.pk }}": [
-                    {% for member in project.members.all %}
-                        { value: "{{ member.pk }}", label: "{{ member.get_full_name|default:member.username }}" }
-                        {% if not forloop.last %},{% endif %}
-                    {% endfor %}
-                ]{% if not forloop.last %},{% endif %}
-            {% endfor %}
-        };
-
-        function populateResponsibleOptions(projectId) {
-            responsibleSelect.innerHTML = '<option value="">Selecione um membro do projeto</option>';
-
-            const members = projectMembers[projectId] || [];
-            if (!members.length) {
-                const ownerOption = document.createElement('option');
-                ownerOption.value = '{{ user.pk }}';
-                ownerOption.textContent = '{{ user.get_full_name|default:user.username }}';
-                responsibleSelect.appendChild(ownerOption);
+        fetch(`/tarefas/${taskId}/status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: new URLSearchParams({ status: newStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                console.error(data.error || 'Erro ao mover tarefa');
                 return;
             }
 
-            members.forEach(function (member) {
-                const option = document.createElement('option');
-                option.value = member.value;
-                option.textContent = member.label;
-                responsibleSelect.appendChild(option);
-            });
-        }
-
-        if (projectSelect && responsibleSelect) {
-            projectSelect.addEventListener('change', function () {
-                populateResponsibleOptions(this.value);
-            });
-
-            if (projectSelect.value) {
-                populateResponsibleOptions(projectSelect.value);
+            const taskElement = document.querySelector(`.kanban-task[data-task-id="${taskId}"]`);
+            if (taskElement) {
+                taskElement.dataset.status = newStatus;
             }
-        }
 
-        if (modal && openBtn) {
-            openBtn.addEventListener('click', function () {
-                modal.classList.add('open');
-                modal.setAttribute('aria-hidden', 'false');
-            });
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Erro ao mover tarefa:', error);
+        });
+    }
 
-            closeEls.forEach(function (el) {
-                el.addEventListener('click', function () {
-                    modal.classList.remove('open');
-                    modal.setAttribute('aria-hidden', 'true');
-                });
-            });
+    taskCards.forEach(function (taskCard) {
+        taskCard.addEventListener('dragstart', function () {
+            taskCard.classList.add('dragging');
+            taskCard.setAttribute('data-dragging', 'true');
+        });
 
-            document.addEventListener('keydown', function (event) {
-                if (event.key === 'Escape' && modal.classList.contains('open')) {
-                    modal.classList.remove('open');
-                    modal.setAttribute('aria-hidden', 'true');
-                }
-            });
-        }
+        taskCard.addEventListener('dragend', function () {
+            taskCard.classList.remove('dragging');
+            taskCard.removeAttribute('data-dragging');
+        });
     });
+
+    columns.forEach(function (column) {
+        column.addEventListener('dragover', function (event) {
+            event.preventDefault();
+            column.classList.add('drag-over');
+        });
+
+        column.addEventListener('dragleave', function () {
+            column.classList.remove('drag-over');
+        });
+
+        column.addEventListener('drop', function (event) {
+            event.preventDefault();
+            column.classList.remove('drag-over');
+
+            const draggedTask = document.querySelector('.kanban-task[data-dragging="true"]');
+            if (!draggedTask) return;
+
+            const taskId = draggedTask.dataset.taskId;
+            const newStatus = column.dataset.status || column.getAttribute('data-status');
+
+            if (!taskId || !newStatus) return;
+
+            const targetContainer = column.querySelector('.drop-zone-placeholder');
+            if (targetContainer) {
+                column.insertBefore(draggedTask, targetContainer);
+            } else {
+                column.appendChild(draggedTask);
+            }
+
+            moveTask(taskId, newStatus);
+        });
+    });
+
+    const projectMembers = {
+        {% for project in projects %}
+            "{{ project.pk }}": [
+                {% for member in project.members.all %}
+                    {
+                        value: "{{ member.pk }}",
+                        label: "{% if member.profile %}{{ member.profile.name|escapejs }}{% else %}{{ member.email|escapejs }}{% endif %}"
+                    }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ]{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    };
+
+    function populateResponsibleOptions(projectId) {
+        responsibleSelect.innerHTML = '<option value="">Selecione um membro do projeto</option>';
+
+        const members = projectMembers[projectId] || [];
+
+        if (!members.length) {
+            const ownerOption = document.createElement('option');
+            ownerOption.value = '{{ user.pk }}';
+
+            {% if user.profile %}
+                ownerOption.textContent = '{{ user.profile.name|escapejs }}';
+            {% else %}
+                ownerOption.textContent = '{{ user.email|escapejs }}';
+            {% endif %}
+
+            responsibleSelect.appendChild(ownerOption);
+            return;
+        }
+
+        members.forEach(function (member) {
+            const option = document.createElement('option');
+            option.value = member.value;
+            option.textContent = member.label;
+            responsibleSelect.appendChild(option);
+        });
+    }
+
+    if (projectSelect && responsibleSelect) {
+        projectSelect.addEventListener('change', function () {
+            populateResponsibleOptions(this.value);
+        });
+
+        if (projectSelect.value) {
+            populateResponsibleOptions(projectSelect.value);
+        }
+    }
+
+    if (modal && openBtn) {
+        openBtn.addEventListener('click', function () {
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+        });
+
+        closeEls.forEach(function (el) {
+            el.addEventListener('click', function () {
+                modal.classList.remove('open');
+                modal.setAttribute('aria-hidden', 'true');
+            });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && modal.classList.contains('open')) {
+                modal.classList.remove('open');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        });
+    }
+});
 </script>
 {% endblock %}
