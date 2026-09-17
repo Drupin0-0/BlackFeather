@@ -150,6 +150,170 @@ def suggest_project_ai_view(request):
         'payload_ready_for_n8n': payload,
     })
 
+@login_required
+def suggest_task_distribution_view(request, project_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
+    project = get_object_or_404(Project, pk=project_id)
+
+    if project.owner != request.user and request.user not in project.members.all():
+        return JsonResponse({'error': 'Você não tem acesso a este projeto.'}, status=403)
+
+    descricoes = request.POST.getlist('task_description')
+    tasks_payload = [
+        {'temp_id': i, 'description': desc.strip()}
+        for i, desc in enumerate(descricoes) if desc.strip()
+    ]
+
+    if not tasks_payload:
+        return JsonResponse({'error': 'Informe ao menos uma tarefa.'}, status=400)
+
+    membros = project.members.all().select_related('profile')
+    membros_validos_ids = set(membros.values_list('pk', flat=True))
+
+    payload = {
+        'project': {
+            'id': project.pk,
+            'title': project.title,
+            'description': project.description or '',
+        },
+        'tasks': tasks_payload,
+        'available_members': [
+            {
+                'id': user.pk,
+                'name': user.profile.name if getattr(user, 'profile', None) else '',
+                'skills': list(user.profile.skills.values_list('name', flat=True)) if getattr(user, 'profile', None) else [],
+            }
+            for user in membros
+        ],
+    }
+
+    n8n_url = os.getenv('N8N_WEBHOOK_URL')
+    n8n_secret = os.getenv('N8N_WEBHOOK_SECRET')
+    assignments = None
+
+    if n8n_url:
+        try:
+            req = Request(
+                n8n_url,
+                data=json.dumps(payload).encode('utf-8'),
+                headers={
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Webhook-Secret': n8n_secret or '',
+                },
+                method='POST'
+            )
+            with urlopen(req, timeout=45) as response:
+                n8n_response = json.loads(response.read().decode('utf-8'))
+                assignments = _validar_resposta_ia(n8n_response, tasks_payload, membros_validos_ids)
+        except (URLError, HTTPError, ValueError, TimeoutError):
+            assignments = None
+
+    # Fallback local: matching simples por palavra-chave nas skills
+    if assignments is None:
+        assignments = []
+        membros_lista = list(membros)
+
+        for task in tasks_payload:
+            desc_lower = task['description'].lower()
+            melhor_membro = None
+            melhor_score = -1
+
+            for user in membros_lista:
+                profile = getattr(user, 'profile', None)
+                skills = list(profile.skills.values_list('name', flat=True)) if profile else []
+                score = sum(1 for skill in skills if skill.lower() in desc_lower)
+
+                if score > melhor_score:
+                    melhor_score = score
+                    melhor_membro = user
+
+            if melhor_membro:
+                assignments.append({
+                    'temp_id': task['temp_id'],
+                    'assigned_user_id': melhor_membro.pk,
+                    'priority': 'medium',
+                })
+
+    request.session[f'ai_task_suggestion_{project.pk}'] = {
+        'tasks': tasks_payload,
+        'assignments': assignments,
+    }
+
+    return JsonResponse({
+        'status': 'success',
+        'tasks': tasks_payload,
+        'assignments': assignments,
+    })
+
+
+@login_required
+def confirm_task_distribution_view(request, project_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
+    project = get_object_or_404(Project, pk=project_id)
+
+    if project.owner != request.user and request.user not in project.members.all():
+        return JsonResponse({'error': 'Você não tem acesso a este projeto.'}, status=403)
+
+    session_key = f'ai_task_suggestion_{project.pk}'
+    dados = request.session.get(session_key)
+
+    if not dados:
+        return JsonResponse({'error': 'Sugestão expirada ou não encontrada. Gere novamente.'}, status=400)
+
+    tasks_por_id = {t['temp_id']: t for t in dados['tasks']}
+    membros_validos_ids = set(project.members.values_list('pk', flat=True))
+    criadas = []
+
+    for item in dados['assignments']:
+        task_info = tasks_por_id.get(item['temp_id'])
+        if not task_info:
+            continue
+
+        responsavel_id = item.get('assigned_user_id')
+        if responsavel_id not in membros_validos_ids:
+            responsavel_id = None
+
+        task = Task.objects.create(
+            project=project,
+            title=task_info['description'][:100],
+            description=task_info['description'],
+            priority=item.get('priority', 'medium'),
+            task_responsible_id=responsavel_id,
+        )
+        criadas.append(task.pk)
+
+    del request.session[session_key]
+
+    return JsonResponse({'status': 'success', 'created_task_ids': criadas})
+
+def _validar_resposta_ia(data, tasks_enviadas, membros_validos_ids):
+    """Valida a resposta da IA (N8N) antes de confiar nela."""
+    if not isinstance(data, dict) or 'assignments' not in data:
+        return None
+
+    temp_ids_enviados = {t['temp_id'] for t in tasks_enviadas}
+    resultado = []
+
+    for item in data.get('assignments', []):
+        if not isinstance(item, dict):
+            continue
+        if item.get('temp_id') not in temp_ids_enviados:
+            continue
+        if item.get('assigned_user_id') not in membros_validos_ids:
+            continue
+
+        resultado.append({
+            'temp_id': item['temp_id'],
+            'assigned_user_id': item['assigned_user_id'],
+            'priority': item.get('priority') if item.get('priority') in ('low', 'medium', 'high') else 'medium',
+        })
+
+    return resultado if resultado else None
 
 @login_required
 def create_task_view(request):

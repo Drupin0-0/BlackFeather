@@ -136,6 +136,13 @@
                                 <strong>{{ project.owner.profile.name|default:project.owner.email }}</strong>
                             </div>
                         </div>
+
+                        <button type="button" class="btn-secondary-action open-td-modal"
+                                data-project-id="{{ project.pk }}"
+                                data-project-title="{{ project.title|escapejs }}"
+                                style="width: 100%; margin-top: 12px;">
+                                Sugerir tarefas com IA
+                        </button>
                     </article>
                 {% endfor %}
             </div>
@@ -242,6 +249,38 @@
     </div>
 </div>
 
+<div id="taskDistributionModal" class="task-modal" aria-hidden="true">
+    <div class="task-modal-backdrop" data-close-td-modal></div>
+    <div class="task-modal-panel">
+        <div class="task-modal-header">
+            <h3 id="tdModalTitle">Sugerir tarefas</h3>
+            <button type="button" class="task-modal-close" aria-label="Fechar" data-close-td-modal>×</button>
+        </div>
+
+        <div style="padding: 20px;">
+            <p style="color: #888; font-size: 13px; margin-bottom: 12px;">
+                Digite uma tarefa por linha. A IA vai sugerir o responsável ideal com base nas habilidades de cada membro.
+            </p>
+
+            <textarea id="tdTasksInput" rows="5" placeholder="Ex:&#10;Fazer a capa e slides&#10;Escrever o texto do trabalho&#10;Preparar apresentação oral"
+                      style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff;"></textarea>
+
+            <button type="button" id="tdGenerateBtn" class="btn-primary" style="margin-top: 12px;">
+                Gerar sugestão
+            </button>
+
+            <div id="tdSuggestionResults" style="margin-top: 16px; display: flex; flex-direction: column; gap: 10px;"></div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 16px;">
+                <button type="button" class="btn-secondary-action" data-close-td-modal>Cancelar</button>
+                <button type="button" id="tdConfirmBtn" class="btn-primary" style="display: none;">
+                    Confirmar e criar tarefas
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
@@ -252,6 +291,109 @@ document.addEventListener('DOMContentLoaded', function () {
     const responsibleSelect = document.getElementById('task_responsible');
     const taskCards = document.querySelectorAll('.kanban-task');
     const columns = document.querySelectorAll('.kanban-column');
+
+    const tdModal = document.getElementById('taskDistributionModal');
+    const tdOpenBtns = document.querySelectorAll('.open-td-modal');
+    const tdCloseEls = document.querySelectorAll('[data-close-td-modal]');
+    const tdTasksInput = document.getElementById('tdTasksInput');
+    const tdGenerateBtn = document.getElementById('tdGenerateBtn');
+    const tdConfirmBtn = document.getElementById('tdConfirmBtn');
+    const tdSuggestionResults = document.getElementById('tdSuggestionResults');
+    let tdCurrentProjectId = null;
+
+    tdOpenBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            tdCurrentProjectId = btn.dataset.projectId;
+            document.getElementById('tdModalTitle').textContent = `Sugerir tarefas — ${btn.dataset.projectTitle}`;
+            tdTasksInput.value = '';
+            tdSuggestionResults.innerHTML = '';
+            tdConfirmBtn.style.display = 'none';
+            tdModal.classList.add('open');
+            tdModal.setAttribute('aria-hidden', 'false');
+        });
+    });
+
+    tdCloseEls.forEach(function (el) {
+        el.addEventListener('click', function () {
+            tdModal.classList.remove('open');
+            tdModal.setAttribute('aria-hidden', 'true');
+        });
+    });
+
+    tdGenerateBtn.addEventListener('click', function () {
+        const linhas = tdTasksInput.value.split('\n').map(l => l.trim()).filter(Boolean);
+
+        if (!linhas.length) {
+            tdSuggestionResults.innerHTML = '<div style="color: #ff9999;">Digite ao menos uma tarefa.</div>';
+            return;
+        }
+
+        tdGenerateBtn.disabled = true;
+        tdGenerateBtn.textContent = 'Analisando...';
+        tdSuggestionResults.innerHTML = '<div style="color: #aaa;">Buscando membros e gerando sugestão...</div>';
+
+        const formData = new FormData();
+        linhas.forEach(desc => formData.append('task_description', desc));
+
+        fetch(`/tarefas/${tdCurrentProjectId}/sugerir-distribuicao/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.tasks || !data.tasks.length) {
+                tdSuggestionResults.innerHTML = `<div style="color: #ff9999;">${data.error || 'Não foi possível gerar sugestão.'}</div>`;
+                return;
+            }
+
+            const assignPorId = {};
+            (data.assignments || []).forEach(a => assignPorId[a.temp_id] = a);
+
+            tdSuggestionResults.innerHTML = data.tasks.map(task => {
+                const assign = assignPorId[task.temp_id];
+                return `
+                    <div style="padding: 12px; border: 1px solid #222; border-radius: 8px; background: #111;">
+                        <div style="color: #fff; font-weight: 600; margin-bottom: 6px;">${task.description}</div>
+                        <div style="color: ${assign ? '#8be3a1' : '#ff9999'}; font-size: 13px;">
+                            ${assign ? '→ Responsável sugerido (ID ' + assign.assigned_user_id + ')' : 'Sem sugestão — atribuir manualmente depois'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            tdConfirmBtn.style.display = 'inline-block';
+        })
+        .catch(() => {
+            tdSuggestionResults.innerHTML = '<div style="color: #ff9999;">Erro ao gerar sugestão.</div>';
+        })
+        .finally(() => {
+            tdGenerateBtn.disabled = false;
+            tdGenerateBtn.textContent = 'Gerar sugestão';
+        });
+    });
+
+    tdConfirmBtn.addEventListener('click', function () {
+        tdConfirmBtn.disabled = true;
+        tdConfirmBtn.textContent = 'Criando...';
+
+        fetch(`/tarefas/${tdCurrentProjectId}/confirmar-distribuicao/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Erro: ' + (data.error || 'não foi possível criar as tarefas.'));
+            }
+        })
+        .finally(() => {
+            tdConfirmBtn.disabled = false;
+            tdConfirmBtn.textContent = 'Confirmar e criar tarefas';
+        });
+    });
 
     function moveTask(taskId, newStatus) {
         if (!taskId || !newStatus) return;
