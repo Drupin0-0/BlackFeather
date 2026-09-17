@@ -25,4 +25,4 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
-        fields = ['bio', 'location', 'birth_date']
+        fields = ['bio', 'birth_date']
