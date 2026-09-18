@@ -9,7 +9,6 @@ class CreateTaskViewTests(TestCase):
     def setUp(self):
         User = get_user_model()
         self.user = User.objects.create_user(
-            username='testeuser',
             email='teste@example.com',
             password='Senha123!'
         )
@@ -59,7 +58,6 @@ class CreateTaskViewTests(TestCase):
     def test_create_project_accepts_selected_members(self):
         User = get_user_model()
         member = User.objects.create_user(
-            username='membro1',
             email='membro1@empresa.com',
             first_name='Maria',
             last_name='Silva',
@@ -80,50 +78,27 @@ class CreateTaskViewTests(TestCase):
     def test_search_users_by_name_or_email(self):
         User = get_user_model()
         User.objects.create_user(
-            username='joao.silva',
             email='joao.silva@empresa.com',
             first_name='João',
             last_name='Silva',
             password='Senha123!'
         )
-
         response = self.client.get(reverse('accounts:search_users'), {'q': 'joao'})
 
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['results'])
         self.assertEqual(response.json()['results'][0]['email'], 'joao.silva@empresa.com')
 
-    def test_create_project_accepts_selected_members(self):
-        User = get_user_model()
-        member = User.objects.create_user(
-            username='membro1',
-            email='membro1@empresa.com',
+    def test_suggest_distribution_denies_non_member(self):
+        outro_usuario = get_user_model().objects.create_user(
+            email='fora@teste.com',
             password='Senha123!'
         )
+        self.client.force_login(outro_usuario)
 
-        response = self.client.post(reverse('project_create'), {
-            'title': 'Projeto com membros',
-            'description': 'Projeto para validar adição de membros',
-            'members': [str(member.pk)],
-        })
-
-        self.assertEqual(response.status_code, 302)
-        project = Project.objects.get(title='Projeto com membros')
-        self.assertIn(self.user, project.members.all())
-        self.assertIn(member, project.members.all())
-
-    def test_search_users_by_name_or_email(self):
-        User = get_user_model()
-        User.objects.create_user(
-            username='joao.silva',
-            email='joao.silva@empresa.com',
-            first_name='João',
-            last_name='Silva',
-            password='Senha123!'
+        response = self.client.post(
+            reverse('task_suggest_distribution', args=[self.project.pk]),
+            {'task_description': ['Tarefa teste']}
         )
 
-        response = self.client.get(reverse('search_users'), {'q': 'joao'})
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json()['results'])
-        self.assertEqual(response.json()['results'][0]['email'], 'joao.silva@empresa.com')
+        self.assertEqual(response.status_code, 403)
