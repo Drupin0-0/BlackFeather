@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 
 # C extensions
+avatars/
 *.so
 staticfiles/
 # Distribution / packaging
