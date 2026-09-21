@@ -8,8 +8,8 @@ from .views import (
     create_task_view,
     update_task_status_view,
     suggest_project_ai_view,
-    suggest_task_distribution_view,      # NOVO
-    confirm_task_distribution_view,      # NOVO
+    suggest_task_distribution_view,      
+    confirm_task_distribution_view,      
 )
 
 router = DefaultRouter()

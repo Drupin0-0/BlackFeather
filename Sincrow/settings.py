@@ -32,6 +32,8 @@ ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,8 +49,15 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
     "Tasks",
+    "channels",
+    'chat',
 ]
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
 SITE_ID = 1
 
 SOCIALACCOUNT_PROVIDERS = {
@@ -97,6 +106,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Sincrow.wsgi.application'
+ASGI_APPLICATION = "Sincrow.asgi.application"
 
 
 # Database
