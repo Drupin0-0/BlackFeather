@@ -5,7 +5,7 @@ from .consumers import ChatConsumer
 
 websocket_urlpatterns = [
     re_path(
-        r"ws/projetos/(?P<project_id>\d+)/chat/$",
+        r"ws/projetos/(?P<project_code>[A-Z0-9]{6})/chat/$",
         ChatConsumer.as_asgi(),
     ),
 ]

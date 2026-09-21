@@ -44,7 +44,7 @@ class Project(models.Model):
     code = models.CharField(
         max_length=6,
         unique=True,
-        default=code_generator  # <-- O Django executa a função automaticamente ao criar o objeto
+        default=code_generator  # 
     )
 
     def __str__(self):

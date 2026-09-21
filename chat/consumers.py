@@ -10,9 +10,15 @@ from .models import Message
 class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
-        self.project_id = self.scope["url_route"]["kwargs"]["project_id"]
+        self.project_code = self.scope["url_route"]["kwargs"]["project_code"]
 
         if not self.scope["user"].is_authenticated:
+            await self.close()
+            return
+
+        self.project = await self.get_project()
+
+        if self.project is None:
             await self.close()
             return
 
@@ -20,7 +26,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
-        self.room_group_name = f"project_{self.project_id}"
+        self.room_group_name = f"project_{self.project_code}"
 
         await self.channel_layer.group_add(
             self.room_group_name,
@@ -78,20 +84,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     @database_sync_to_async
-    def user_can_access_project(self):
+    def get_project(self):
         from Tasks.models import Project
 
         return Project.objects.filter(
-            id=self.project_id
-        ).filter(
-            models.Q(owner=self.scope["user"]) |
-            models.Q(members=self.scope["user"])
-        ).exists()
+            code=self.project_code
+        ).first()
+
+    @database_sync_to_async
+    def user_can_access_project(self):
+        return self.project.members.filter(
+            id=self.scope["user"].id
+        ).exists() or self.project.owner_id == self.scope["user"].id
 
     @database_sync_to_async
     def save_message(self, content):
         return Message.objects.create(
-            project_id=self.project_id,
+            project=self.project,
             user=self.scope["user"],
             content=content,
         )
@@ -108,7 +117,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_message_history(self):
         messages = Message.objects.filter(
-            project_id=self.project_id
+            project=self.project
         ).select_related(
             "user",
             "user__profile",

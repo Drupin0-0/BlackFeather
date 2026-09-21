@@ -312,7 +312,7 @@
 <script>
 
   
-    const projectId = {{ project_id }};
+    const projectCode = "{{ project_code }}";
 
 
     const chat = document.getElementById("chat");
@@ -334,7 +334,7 @@
 
 
     const socket = new WebSocket(
-        `${protocol}//${window.location.host}/ws/projetos/${projectId}/chat/`
+        `${protocol}//${window.location.host}/ws/projetos/${projectCode}/chat/`
     );
 
 
