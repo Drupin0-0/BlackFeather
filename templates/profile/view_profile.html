@@ -4,18 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil do UsuÃ¡rio - BlackFeather</title>
+    <title>Perfil do Usuário - BlackFeather</title>
 
-    <!-- Fontes e Ãcones Extermos -->
+    <!-- Fontes e Ícones Externos -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome para Ãcones e DevIcon para Linguagens -->
+    <!-- FontAwesome para Ícones e DevIcon para Linguagens -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.15.1/devicon.min.css">
     <link rel="stylesheet" href="{% static 'css/profile.css' %}">
 
-    
 </head>
 <body>
 
@@ -48,11 +47,11 @@
 
             <div class="form-group">
                 <label class="form-label" for="id_course">Curso</label>
-                <input type="text" id="id_course" name="course" class="form-input" value="{{ profile.course|default:'' }}" placeholder="Engenharia de Software, CiÃªncia da ComputaÃ§Ã£o...">
+                <input type="text" id="id_course" name="course" class="form-input" value="{{ profile.course|default:'' }}" placeholder="Engenharia de Software, Ciência da Computação...">
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="id_website">Website / PortfÃ³lio</label>
+                <label class="form-label" for="id_website">Website / Portfólio</label>
                 <input type="url" id="id_website" name="website" class="form-input" value="{{ profile.website|default:'' }}" placeholder="https://seu-portfolio.com">
             </div>
 
@@ -63,12 +62,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="id_username">Nome de UsuÃ¡rio</label>
+                    <label class="form-label" for="id_username">Nome de Usuário</label>
                     <input type="text" id="id_username" name="username" class="form-input" value="{{ user.username|default:'' }}" placeholder="@usuario">
                 </div>
             </div>
 
-            <!-- 3. SEÃ‡ÃƒO SKILLS -->
+            <!-- 3. SEÇÃO SKILLS -->
             <div class="skills-section">
                 <div class="skills-header-container">
                     <span class="skills-header">Skills</span>
@@ -85,7 +84,7 @@
                             <span>{{ skill.name }}</span>
                         </div>
                     {% empty %}
-                        <!-- Visual Exemplo Inicial caso nÃ£o existam skills vindas do Django -->
+                        <!-- Visual Exemplo Inicial caso não existam skills vindas do Django -->
                         <div class="skill-chip" data-skill-name="JavaScript" data-skill-icon="devicon-javascript-plain colored">
                             <i class="devicon-javascript-plain colored"></i>
                             <span>JavaScript</span>
@@ -106,8 +105,8 @@
                 </button>
             </div>
 
-            <!-- BOTÃƒO SALVAR ALTERAÃ‡Ã•ES -->
-            <button type="submit" class="btn-save-main">Salvar alteraÃ§Ãµes</button>
+            <!-- BOTÃO SALVAR ALTERAÇÕES -->
+            <button type="submit" class="btn-save-main">Salvar alterações</button>
         </form>
     </div>
 
@@ -135,7 +134,7 @@
             <h3 class="modal-title">Adicionar Skill</h3>
             <p class="modal-description">Escolha uma tecnologia da lista para adicionar ao seu perfil.</p>
             <div class="skill-select-list" id="availableSkillsList">
-                <!-- OpÃ§Ãµes de Tecnologias -->
+                <!-- Opções de Tecnologias -->
                 <div class="skill-option" onclick="selectSkillOption(this, 'Python', 'devicon-python-plain colored')">
                     <div class="skill-info-left"><i class="devicon-python-plain colored"></i><span>Python</span></div>
                 </div>
@@ -193,11 +192,11 @@
         </div>
     </div>
 
-    <!-- MODAL 4: CONFIRMAR REMOÃ‡ÃƒO -->
+    <!-- MODAL 4: CONFIRMAR REMOÇÃO -->
     <div class="modal-overlay" id="confirmRemoveModal">
         <div class="modal-card">
-            <h3 class="modal-title">Confirmar RemoÃ§Ã£o</h3>
-            <p class="modal-description">Remover esta Skill? Essa aÃ§Ã£o nÃ£o poderÃ¡ ser desfeita.</p>
+            <h3 class="modal-title">Confirmar Remoção</h3>
+            <p class="modal-description">Remover esta Skill? Essa ação não poderá ser desfeita.</p>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeModal('confirmRemoveModal')">Cancelar</button>
                 <button type="button" class="btn-danger" onclick="confirmRemoveSkill()">Remover</button>

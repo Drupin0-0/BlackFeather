@@ -19,11 +19,10 @@
         <h1>Chat do Projeto</h1>
 
         <span>
-            ComunicaÃ§Ã£o da equipe
+            Comunicação da equipe
         </span>
 
     </div>
-
 
     <div id="chat" class="chat-box">
 
@@ -32,7 +31,6 @@
         </div>
 
     </div>
-
 
     <form id="messageForm" class="chat-form">
 
@@ -55,7 +53,6 @@
 
     </form>
 
-
     <div
         id="chatStatus"
         class="chat-status"
@@ -65,7 +62,9 @@
 
 </div>
 
-
+<script>
+    const projectCode = "{{ project_code|escapejs }}";
+</script>
 <script src="{% static 'js/test.js' %}"></script>
 
 </body>

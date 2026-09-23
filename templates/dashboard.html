@@ -33,7 +33,7 @@
             </a>
 
             <a href="#" class="menu-item">
-                ConfiguraÃ§Ãµes
+                Configurações
             </a>
 
             <a href="{% url 'accounts:view_profile' %}" class="menu-item">
@@ -52,14 +52,13 @@
 
     </aside>
 
-
-    <!-- CONTEÃšDO PRINCIPAL -->
+    <!-- CONTEÚDO PRINCIPAL -->
     <main class="dashboard-main">
 
-        <!-- CABEÃ‡ALHO -->
+        <!-- CABEÇALHO -->
         <header class="main-header">
 
-            <h1>VisÃ£o Geral</h1>
+            <h1>Visão Geral</h1>
 
             <div class="user-profile">
                 Bem-vindo,
@@ -70,14 +69,13 @@
 
         </header>
 
-
-        <!-- VERIFICAÃ‡ÃƒO DE PROJETO NO BANCO DE DADOS -->
+        <!-- VERIFICAÇÃO DE PROJETO NO BANCO DE DADOS -->
 
         {% if projects %}
 
             <section
                 class="stats-grid"
-                aria-label="EstatÃ­sticas de produtividade"
+                aria-label="Estatísticas de produtividade"
             >
 
                 <div class="stat-card">
@@ -96,7 +94,6 @@
 
                 </div>
 
-
                 <div class="stat-card">
 
                     <span class="stat-label">
@@ -113,11 +110,10 @@
 
                 </div>
 
-
                 <div class="stat-card">
 
                     <span class="stat-label">
-                        ConcluÃ­das
+                        Concluídas
                     </span>
 
                     <strong>
@@ -132,13 +128,12 @@
 
             </section>
 
-
             <div class="workspace-toolbar">
 
                 <div>
 
                     <p class="section-kicker">
-                        OperaÃ§Ãµes
+                        Operações
                     </p>
 
                     <h2>
@@ -146,7 +141,6 @@
                     </h2>
 
                 </div>
-
 
                 <div class="toolbar-actions">
 
@@ -158,7 +152,6 @@
                         + Nova tarefa
                     </button>
 
-
                     <a
                         href="{% url 'project_create' %}"
                         class="btn-primary btn-small"
@@ -169,7 +162,6 @@
                 </div>
 
             </div>
-
 
             <section
                 class="kanban-board"
@@ -195,7 +187,6 @@
 
                         </div>
 
-
                         {% if column.tasks %}
 
                             {% for task in column.tasks %}
@@ -219,16 +210,13 @@
 
                                     </div>
 
-
                                     <h4>
                                         {{ task.title }}
                                     </h4>
 
-
                                     <p>
-                                        {{ task.description|default:"Sem descriÃ§Ã£o." }}
+                                        {{ task.description|default:"Sem descrição." }}
                                     </p>
-
 
                                     <div class="task-meta">
 
@@ -241,11 +229,10 @@
                                         {% else %}
 
                                             <span>
-                                                Sem responsÃ¡vel
+                                                Sem responsável
                                             </span>
 
                                         {% endif %}
-
 
                                         {% if task.deadline %}
 
@@ -281,7 +268,6 @@
 
             </section>
 
-
             <div class="projects-section-header">
 
                 <div>
@@ -297,7 +283,6 @@
                 </div>
 
             </div>
-
 
             <div class="projects-grid">
 
@@ -317,7 +302,6 @@
 
                         </div>
 
-
                         <div class="project-card-body">
 
                             <h3>
@@ -325,11 +309,10 @@
                             </h3>
 
                             <p>
-                                {{ project.description|default:"Nenhuma descriÃ§Ã£o cadastrada."|truncatewords:20 }}
+                                {{ project.description|default:"Nenhuma descrição cadastrada."|truncatewords:20 }}
                             </p>
 
                         </div>
-
 
                         <div class="project-card-footer">
 
@@ -345,7 +328,6 @@
 
                             </div>
 
-
                             <div class="project-meta align-right">
 
                                 <span>
@@ -360,7 +342,6 @@
 
                         </div>
 
-
                         <!-- SUGERIR TAREFAS COM IA -->
 
                         <button
@@ -368,18 +349,17 @@
                             class="btn-secondary-action open-td-modal"
                             data-project-id="{{ project.pk }}"
                             data-project-title="{{ project.title|escapejs }}"
-                           
+
                         >
                             Sugerir tarefas com IA
                         </button>
-
 
                         <!-- CHAT DO PROJETO -->
 
                         <a
                             href="{% url 'project_chat' project.code %}"
                             class="btn-secondary-action"
-                           
+
                         >
                             Abrir chat
                         </a>
@@ -390,38 +370,34 @@
 
             </div>
 
-
         {% else %}
-
 
             <!-- CAIXA DE PROJETO INEXISTENTE -->
 
             <div class="empty-project-box">
 
                 <h2>
-                    NÃ£o tem um projeto?
+                    Não tem um projeto?
                 </h2>
 
                 <p>
-                    VocÃª ainda nÃ£o possui nenhum projeto cadastrado
-                    ou associado Ã  sua conta. Crie um novo workspace
-                    para comeÃ§ar ou entre em uma equipe existente.
+                    Você ainda não possui nenhum projeto cadastrado
+                    ou associado à sua conta. Crie um novo workspace
+                    para começar ou entre em uma equipe existente.
                 </p>
-
 
                 <div class="actions-group">
 
                     <a
                         href="{% url 'project_create' %}"
                         class="btn-primary"
-                       
+
                     >
                         + Criar Projeto
                     </a>
 
-
                     <button class="btn-secondary-action">
-                        Entrar com CÃ³digo
+                        Entrar com Código
                     </button>
 
                 </div>
@@ -430,8 +406,7 @@
 
         {% endif %}
 
-
-        <!-- RESUMO NO RODAPÃ‰ -->
+        <!-- RESUMO NO RODAPÉ -->
 
         <div class="quick-summary">
 
@@ -447,7 +422,6 @@
 
             </div>
 
-
             <div class="summary-item">
 
                 <label>
@@ -459,7 +433,6 @@
                 </span>
 
             </div>
-
 
             <div class="summary-item">
 
@@ -479,7 +452,6 @@
 
 </div>
 
-
 <!-- MODAL NOVA TAREFA -->
 
 <div
@@ -492,7 +464,6 @@
         class="task-modal-backdrop"
         data-close-task-modal
     ></div>
-
 
     <div class="task-modal-panel">
 
@@ -508,11 +479,10 @@
                 aria-label="Fechar"
                 data-close-task-modal
             >
-                Ã—
+                ×
             </button>
 
         </div>
-
 
         <form
             method="POST"
@@ -521,7 +491,6 @@
         >
 
             {% csrf_token %}
-
 
             <div class="task-form-grid">
 
@@ -553,11 +522,10 @@
 
                 </div>
 
-
                 <div class="task-field">
 
                     <label for="task_title">
-                        TÃ­tulo
+                        Título
                     </label>
 
                     <input
@@ -570,11 +538,10 @@
 
                 </div>
 
-
                 <div class="task-field full">
 
                     <label for="task_description">
-                        DescriÃ§Ã£o
+                        Descrição
                     </label>
 
                     <textarea
@@ -585,7 +552,6 @@
                     ></textarea>
 
                 </div>
-
 
                 <div class="task-field">
 
@@ -607,13 +573,12 @@
                         </option>
 
                         <option value="completed">
-                            ConcluÃ­da
+                            Concluída
                         </option>
 
                     </select>
 
                 </div>
-
 
                 <div class="task-field">
 
@@ -634,7 +599,7 @@
                             value="medium"
                             selected
                         >
-                            MÃ©dia
+                            Média
                         </option>
 
                         <option value="high">
@@ -644,7 +609,6 @@
                     </select>
 
                 </div>
-
 
                 <div class="task-field">
 
@@ -659,7 +623,6 @@
                     >
 
                 </div>
-
 
                 <div class="task-field full">
 
@@ -682,7 +645,6 @@
 
             </div>
 
-
             <div class="task-form-actions">
 
                 <button
@@ -692,7 +654,6 @@
                 >
                     Cancelar
                 </button>
-
 
                 <button
                     type="submit"
@@ -709,8 +670,7 @@
 
 </div>
 
-
-<!-- MODAL DISTRIBUIÃ‡ÃƒO DE TAREFAS -->
+<!-- MODAL DISTRIBUIÇÃO DE TAREFAS -->
 
 <div
     id="taskDistributionModal"
@@ -722,7 +682,6 @@
         class="task-modal-backdrop"
         data-close-td-modal
     ></div>
-
 
     <div class="task-modal-panel">
 
@@ -738,22 +697,17 @@
                 aria-label="Fechar"
                 data-close-td-modal
             >
-                Ã—
+                ×
             </button>
 
         </div>
 
-
         <div>
-
-            <p
-               
-            >
+            <p>
                 Digite uma tarefa por linha. A IA vai sugerir
-                o responsÃ¡vel ideal com base nas habilidades
+                o responsável ideal com base nas habilidades
                 de cada membro.
             </p>
-
 
             <textarea
                 id="tdTasksInput"
@@ -761,30 +715,20 @@
                 placeholder="Ex:
 Fazer a capa e slides
 Escrever o texto do trabalho
-Preparar apresentaÃ§Ã£o oral"
-               
+Preparar apresentação oral"
             ></textarea>
-
 
             <button
                 type="button"
                 id="tdGenerateBtn"
                 class="btn-primary"
-               
             >
-                Gerar sugestÃ£o
+                Gerar sugestão
             </button>
 
+            <div id="tdSuggestionResults"></div>
 
-            <div
-                id="tdSuggestionResults"
-               
-            ></div>
-
-
-            <div
-               
-            >
+            <div>
 
                 <button
                     type="button"
@@ -794,12 +738,10 @@ Preparar apresentaÃ§Ã£o oral"
                     Cancelar
                 </button>
 
-
-                    <button
+                <button
                     type="button"
                     id="tdConfirmBtn"
-                        class="btn-primary td-confirm-hidden"
-                   
+                    class="btn-primary td-confirm-hidden"
                 >
                     Confirmar e criar tarefas
                 </button>
@@ -812,17 +754,16 @@ Preparar apresentaÃ§Ã£o oral"
 
 </div>
 
-
 <script id="dashboardData" type="application/json">{"id":"{{ user.pk }}","name":"{% if user.profile %}{{ user.profile.name|escapejs }}{% else %}{{ user.email|escapejs }}{% endif %}"}</script>
 <script id="projectMembersData" type="application/json">
 {
-{% for project in projects %}
-"{{ project.pk }}": [
-{% for member in project.members.all %}
-{"value":"{{ member.pk }}","label":"{% if member.profile %}{{ member.profile.name|escapejs }}{% else %}{{ member.email|escapejs }}{% endif %}"}{% if not forloop.last %},{% endif %}
-{% endfor %}
-]{% if not forloop.last %},{% endif %}
-{% endfor %}
+    {% for project in projects %}
+        "{{ project.pk }}": [
+            {% for member in project.members.all %}
+                {"value":"{{ member.pk }}","label":"{% if member.profile %}{{ member.profile.name|escapejs }}{% else %}{{ member.email|escapejs }}{% endif %}"}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ]{% if not forloop.last %},{% endif %}
+    {% endfor %}
 }
 </script>
 <script src="{% static 'js/dashboard.js' %}"></script>

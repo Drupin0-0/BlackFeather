@@ -1,12 +1,8 @@
-﻿const projectCode = "{{ project_code }}";
-
-
-    const chat = document.getElementById("chat");
+﻿    const chat = document.getElementById("chat");
     const messageForm = document.getElementById("messageForm");
     const messageInput = document.getElementById("messageInput");
     const sendButton = document.getElementById("sendButton");
     const chatStatus = document.getElementById("chatStatus");
-
 
     /*
      * Escolhe ws:// ou wss:// automaticamente.
@@ -18,11 +14,9 @@
         ? "wss:"
         : "ws:";
 
-
     const socket = new WebSocket(
         `${protocol}//${window.location.host}/ws/projetos/${projectCode}/chat/`
     );
-
 
     /*
      * Quando o WebSocket conectar
@@ -40,7 +34,6 @@
         messageInput.focus();
     };
 
-
     /*
      * Mensagens recebidas do servidor
      */
@@ -49,15 +42,13 @@
 
         const data = JSON.parse(event.data);
 
-
         /*
-         * HistÃ³rico enviado quando o chat abre
+         * Histórico enviado quando o chat abre
          */
 
         if (data.type === "history") {
 
             chat.innerHTML = "";
-
 
             data.messages.forEach(function (message) {
 
@@ -65,12 +56,10 @@
 
             });
 
-
             scrollToBottom();
 
             return;
         }
-
 
         /*
          * Nova mensagem recebida
@@ -85,7 +74,6 @@
         }
 
     };
-
 
     /*
      * WebSocket fechado
@@ -103,7 +91,6 @@
 
     };
 
-
     /*
      * Erro no WebSocket
      */
@@ -112,12 +99,11 @@
 
         console.log("Erro no WebSocket:", error);
 
-        chatStatus.textContent = "Erro na conexÃ£o";
+        chatStatus.textContent = "Erro na conexão";
 
         sendButton.disabled = true;
 
     };
-
 
     /*
      * Envio da mensagem
@@ -127,32 +113,28 @@
 
         event.preventDefault();
 
-
         const content = messageInput.value.trim();
 
-
         /*
-         * NÃ£o envia mensagem vazia
+         * Não envia mensagem vazia
          */
 
         if (!content) {
             return;
         }
 
-
         /*
-         * Verifica se o WebSocket estÃ¡ conectado
+         * Verifica se o WebSocket está conectado
          */
 
         if (socket.readyState !== WebSocket.OPEN) {
 
             console.log(
-                "WebSocket nÃ£o estÃ¡ conectado."
+                "WebSocket não está conectado."
             );
 
             return;
         }
-
 
         /*
          * Envia para o Django Channels
@@ -164,7 +146,6 @@
             })
         );
 
-
         /*
          * Limpa o input
          */
@@ -174,7 +155,6 @@
         messageInput.focus();
 
     });
-
 
     /*
      * Adiciona uma mensagem ao chat
@@ -189,11 +169,9 @@
         const emptyMessage =
             chat.querySelector(".chat-empty");
 
-
         if (emptyMessage) {
             emptyMessage.remove();
         }
-
 
         /*
          * Container da mensagem
@@ -206,9 +184,8 @@
             "chat-message"
         );
 
-
         /*
-         * CabeÃ§alho
+         * Cabeçalho
          */
 
         const headerElement =
@@ -218,9 +195,8 @@
             "chat-message-header"
         );
 
-
         /*
-         * Nome do usuÃ¡rio
+         * Nome do usuário
          */
 
         const usernameElement =
@@ -233,9 +209,8 @@
         usernameElement.textContent =
             message.username;
 
-
         /*
-         * HorÃ¡rio
+         * Horário
          */
 
         const timeElement =
@@ -245,17 +220,14 @@
             "chat-time"
         );
 
-
         const date =
             new Date(message.created_at);
-
 
         timeElement.textContent =
             date.toLocaleString("pt-BR");
 
-
         /*
-         * ConteÃºdo
+         * Conteúdo
          */
 
         const contentElement =
@@ -265,11 +237,10 @@
             "chat-content"
         );
 
-
         /*
          * IMPORTANTE:
          *
-         * textContent Ã© usado em vez de innerHTML
+         * textContent é usado em vez de innerHTML
          * para impedir que uma mensagem contendo
          * HTML/JavaScript seja executada.
          */
@@ -277,9 +248,8 @@
         contentElement.textContent =
             message.message;
 
-
         /*
-         * Monta o cabeÃ§alho
+         * Monta o cabeçalho
          */
 
         headerElement.appendChild(
@@ -289,7 +259,6 @@
         headerElement.appendChild(
             timeElement
         );
-
 
         /*
          * Monta a mensagem
@@ -303,7 +272,6 @@
             contentElement
         );
 
-
         /*
          * Adiciona ao chat
          */
@@ -314,9 +282,8 @@
 
     }
 
-
     /*
-     * Scroll automÃ¡tico para a Ãºltima mensagem
+     * Scroll automático para a última mensagem
      */
 
     function scrollToBottom() {

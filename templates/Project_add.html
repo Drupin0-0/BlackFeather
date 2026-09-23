@@ -8,7 +8,7 @@
     <main class="dashboard-main project-create-main">
         <div class="card-box project-create-card">
             <h2>Criar Novo Projeto</h2>
-            <p>Preencha os detalhes e selecione os membros que farÃ£o parte do workspace.</p>
+            <p>Preencha os detalhes e selecione os membros que farão parte do workspace.</p>
 
             <form method="POST" action="{% url 'project_create' %}" id="projectForm" class="project-create-form" data-suggest-url="{% url 'project_suggest_ai' %}">
                 {% csrf_token %}
@@ -19,7 +19,7 @@
                 </div>
 
                 <div class="input-group">
-                    <label for="description">DescriÃ§Ã£o (Opcional)</label>
+                    <label for="description">Descrição (Opcional)</label>
                     <textarea id="description" name="description" placeholder="Descreva os objetivos deste projeto..."></textarea>
                 </div>
 
@@ -44,7 +44,7 @@
 
                 <div id="suggestionBox">
                     <div>
-                        <strong>SugestÃ£o de alocaÃ§Ã£o por IA</strong>
+                        <strong>Sugestão de alocação por IA</strong>
                     </div>
                     <div id="suggestionResults"></div>
                 </div>

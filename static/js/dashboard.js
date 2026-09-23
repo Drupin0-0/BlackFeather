@@ -5,87 +5,71 @@
             '[name=csrfmiddlewaretoken]'
         )?.value;
 
-
     const modal =
         document.getElementById('taskModal');
 
-
     const openBtn =
         document.getElementById('openTaskModal');
-
 
     const closeEls =
         document.querySelectorAll(
             '[data-close-task-modal]'
         );
 
-
     const projectSelect =
         document.getElementById('task_project');
-
 
     const responsibleSelect =
         document.getElementById(
             'task_responsible'
         );
 
-
     const taskCards =
         document.querySelectorAll(
             '.kanban-task'
         );
-
 
     const columns =
         document.querySelectorAll(
             '.kanban-column'
         );
 
-
     const tdModal =
         document.getElementById(
             'taskDistributionModal'
         );
-
 
     const tdOpenBtns =
         document.querySelectorAll(
             '.open-td-modal'
         );
 
-
     const tdCloseEls =
         document.querySelectorAll(
             '[data-close-td-modal]'
         );
-
 
     const tdTasksInput =
         document.getElementById(
             'tdTasksInput'
         );
 
-
     const tdGenerateBtn =
         document.getElementById(
             'tdGenerateBtn'
         );
-
 
     const tdConfirmBtn =
         document.getElementById(
             'tdConfirmBtn'
         );
 
-
     const tdSuggestionResults =
         document.getElementById(
             'tdSuggestionResults'
         );
 
-
     let tdCurrentProjectId = null;
-
 
     tdOpenBtns.forEach(function (btn) {
 
@@ -96,12 +80,10 @@
                 tdCurrentProjectId =
                     btn.dataset.projectId;
 
-
                 document.getElementById(
                     'tdModalTitle'
                 ).textContent =
-                    `Sugerir tarefas â€” ${btn.dataset.projectTitle}`;
-
+                    `Sugerir tarefas — ${btn.dataset.projectTitle}`;
 
                 tdTasksInput.value = '';
 
@@ -109,7 +91,6 @@
 
                 tdConfirmBtn.classList.add('td-confirm-hidden');
                 tdConfirmBtn.classList.remove('td-confirm-visible');
-
 
                 tdModal.classList.add('open');
 
@@ -122,7 +103,6 @@
         );
 
     });
-
 
     tdCloseEls.forEach(function (el) {
 
@@ -142,7 +122,6 @@
 
     });
 
-
     tdGenerateBtn.addEventListener(
         'click',
         function () {
@@ -153,7 +132,6 @@
                     .map(l => l.trim())
                     .filter(Boolean);
 
-
             if (!linhas.length) {
 
                 tdSuggestionResults.innerHTML =
@@ -163,20 +141,16 @@
 
             }
 
-
             tdGenerateBtn.disabled = true;
 
             tdGenerateBtn.textContent =
                 'Analisando...';
 
-
             tdSuggestionResults.innerHTML =
                     '<div class="td-feedback-muted">Buscando membros e gerando sugestão...</div>';
 
-
             const formData =
                 new FormData();
-
 
             linhas.forEach(
                 desc =>
@@ -185,7 +159,6 @@
                         desc
                     )
             );
-
 
             fetch(
                 `/tarefas/${tdCurrentProjectId}/sugerir-distribuicao/`,
@@ -215,9 +188,7 @@
 
                 }
 
-
                 const assignPorId = {};
-
 
                 (data.assignments || [])
                     .forEach(
@@ -227,7 +198,6 @@
                             ] = a
                     );
 
-
                 tdSuggestionResults.innerHTML =
                     data.tasks
                         .map(task => {
@@ -236,7 +206,6 @@
                                 assignPorId[
                                     task.temp_id
                                 ];
-
 
                             return `
 
@@ -261,7 +230,6 @@
                         })
                         .join('');
 
-
                 tdConfirmBtn.classList.remove('td-confirm-hidden');
                 tdConfirmBtn.classList.add('td-confirm-visible');
 
@@ -277,13 +245,12 @@
                 tdGenerateBtn.disabled = false;
 
                 tdGenerateBtn.textContent =
-                    'Gerar sugestÃ£o';
+                    'Gerar sugestão';
 
             });
 
         }
     );
-
 
     tdConfirmBtn.addEventListener(
         'click',
@@ -293,7 +260,6 @@
 
             tdConfirmBtn.textContent =
                 'Criando...';
-
 
             fetch(
                 `/tarefas/${tdCurrentProjectId}/confirmar-distribuicao/`,
@@ -319,7 +285,7 @@
                         'Erro: ' +
                         (
                             data.error ||
-                            'nÃ£o foi possÃ­vel criar as tarefas.'
+                            'não foi possível criar as tarefas.'
                         )
                     );
 
@@ -338,7 +304,6 @@
         }
     );
 
-
     function moveTask(
         taskId,
         newStatus
@@ -347,7 +312,6 @@
         if (!taskId || !newStatus) {
             return;
         }
-
 
         fetch(
             `/tarefas/${taskId}/status/`,
@@ -386,12 +350,10 @@
 
             }
 
-
             const taskElement =
                 document.querySelector(
                     `.kanban-task[data-task-id="${taskId}"]`
                 );
-
 
             if (taskElement) {
 
@@ -399,7 +361,6 @@
                     newStatus;
 
             }
-
 
             location.reload();
 
@@ -414,7 +375,6 @@
         });
 
     }
-
 
     taskCards.forEach(
         function (taskCard) {
@@ -435,7 +395,6 @@
                 }
             );
 
-
             taskCard.addEventListener(
                 'dragend',
                 function () {
@@ -454,7 +413,6 @@
         }
     );
 
-
     columns.forEach(
         function (column) {
 
@@ -471,7 +429,6 @@
                 }
             );
 
-
             column.addEventListener(
                 'dragleave',
                 function () {
@@ -483,7 +440,6 @@
                 }
             );
 
-
             column.addEventListener(
                 'drop',
                 function (event) {
@@ -494,28 +450,23 @@
                         'drag-over'
                     );
 
-
                     const draggedTask =
                         document.querySelector(
                             '.kanban-task[data-dragging="true"]'
                         );
 
-
                     if (!draggedTask) {
                         return;
                     }
 
-
                     const taskId =
                         draggedTask.dataset.taskId;
-
 
                     const newStatus =
                         column.dataset.status ||
                         column.getAttribute(
                             'data-status'
                         );
-
 
                     if (
                         !taskId ||
@@ -524,12 +475,10 @@
                         return;
                     }
 
-
                     const targetContainer =
                         column.querySelector(
                             '.drop-zone-placeholder'
                         );
-
 
                     if (targetContainer) {
 
@@ -546,7 +495,6 @@
 
                     }
 
-
                     moveTask(
                         taskId,
                         newStatus
@@ -558,9 +506,7 @@
         }
     );
 
-
     const projectMembers = JSON.parse(document.getElementById('projectMembersData').textContent);
-
 
     function populateResponsibleOptions(
         projectId
@@ -569,10 +515,8 @@
         responsibleSelect.innerHTML =
             '<option value="">Selecione um membro do projeto</option>';
 
-
         const members =
             projectMembers[projectId] || [];
-
 
         if (!members.length) {
 
@@ -585,7 +529,6 @@
 
         }
 
-
         members.forEach(
             function (member) {
 
@@ -594,14 +537,11 @@
                         'option'
                     );
 
-
                 option.value =
                     member.value;
 
-
                 option.textContent =
                     member.label;
-
 
                 responsibleSelect.appendChild(
                     option
@@ -611,7 +551,6 @@
         );
 
     }
-
 
     if (
         projectSelect &&
@@ -629,7 +568,6 @@
             }
         );
 
-
         if (projectSelect.value) {
 
             populateResponsibleOptions(
@@ -639,7 +577,6 @@
         }
 
     }
-
 
     if (
         modal &&
@@ -662,7 +599,6 @@
             }
         );
 
-
         closeEls.forEach(
             function (el) {
 
@@ -684,7 +620,6 @@
 
             }
         );
-
 
         document.addEventListener(
             'keydown',
