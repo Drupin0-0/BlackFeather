@@ -11,6 +11,7 @@ from .views import (
     delete_account_page,
     view_profile_view,
     search_users,
+    bio_update
 )
 
 app_name = "accounts"
@@ -22,7 +23,7 @@ urlpatterns = [
     path('dashboard/', dashboard_view, name='dashboard'),
     path('buscar-usuarios/', search_users, name='search_users'),
     path('perfil/configurar/', setup_profile_view, name='setup_profile'),
-    
+    path('perfil/bio/', bio_update, name='update_biography'),    
     # Fluxo de recuperação de senha
     path('esqueci-senha/', solicitar_codigo_view, name='solicitar_codigo'),
     path('verificar-codigo/', verificar_codigo_view, name='verificar_codigo'),

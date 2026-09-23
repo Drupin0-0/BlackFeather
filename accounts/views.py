@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.views import View
 from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib import messages
 from django.urls import reverse_lazy
@@ -190,6 +191,17 @@ def setup_profile_view(request):
         return redirect('accounts:dashboard')
 
     return render(request, 'profile/setup.html', {'profile': profile})
+
+@login_required
+@require_POST
+def bio_update(request):
+    profile = request.user.profile
+    bio = request.POST.get('bio', '').strip()
+    if len > 500:
+        return redirect('perfil')
+    profile.bio = bio
+    profile.save(update_fields=['bio'])
+    return redirect['perfil']
 
 
 @login_required
