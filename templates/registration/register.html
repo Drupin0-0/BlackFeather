@@ -5,32 +5,9 @@
 
 {% block content %}
 
-<!-- BLOCO ADICIONADO PARA REMOVER A ROLAGEM EXCLUSIVAMENTE NESTA TELA -->
-<style>
-    body {
-        height: 100vh !important;
-        overflow: hidden !important;
-        padding: 0 !important;
-    }
+<link rel="stylesheet" href="{% static 'css/base-auth.css' %}">
 
-    /* Estilo para a imagem do corvo ficar perfeita no topo */
-    .crow-logo {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        margin-bottom: 16px;
-    }
-
-    .crow-logo img {
-         width: 128px;  
-        height: 128px; 
-        display: block;
-        object-fit: contain;
-    }
-</style>
-
-<div class="auth-card">
+<div class="auth-card register-page auth-page-compact">
     
     <!-- ================================================= -->
     <!-- LOGO / CORVO ADICIONADO NO TOPO                  -->
@@ -45,7 +22,7 @@
     {% if form.non_field_errors %}
         <div class="error-msg">
             {% for error in form.non_field_errors %}
-                <p style="margin: 0;">{{ error }}</p>
+                <p class="register-error">{{ error }}</p>
             {% endfor %}
         </div>
     {% endif %}
@@ -60,17 +37,17 @@
                 {{ field }}
                 
                 {% if field.errors %}
-                    <span style="color: #f87171; font-size: 12px; text-align: left; display: block; margin-top: 2px;">
+                    <span class="field-error">
                         {{ field.errors|striptags }}
                     </span>
                 {% endif %}
             </p>
         {% endfor %}
 
-        <button type="submit" class="btn-primary" style="margin-top: 8px;">Criar conta</button>
+        <button type="submit" class="btn-primary register-submit">Criar conta</button>
 
         <div class="card-footer">
-            Já tem uma conta? <a href="{% url 'accounts:login' %}" style="font-weight: 500;">Faça login</a>
+            Já tem uma conta? <a href="{% url 'accounts:login' %}" class="auth-link-emphasis">Faça login</a>
         </div>
     </form>
 </div>

@@ -1,446 +1,21 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
+{% load static %}
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil do Usuário - BlackFeather</title>
+    <title>Perfil do UsuÃ¡rio - BlackFeather</title>
 
-    <!-- Fontes e Ícones Extermos -->
+    <!-- Fontes e Ãcones Extermos -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- FontAwesome para Ícones e DevIcon para Linguagens -->
+    <!-- FontAwesome para Ãcones e DevIcon para Linguagens -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/devicons/devicon@v2.15.1/devicon.min.css">
+    <link rel="stylesheet" href="{% static 'css/profile.css' %}">
 
-    <style>
-        /* RESET & BASE STYLES */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        body {
-            background-color: #000000;
-            color: #f5f5f5;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden; /* Evita rolagem da página em resoluções padrão */
-            padding: 20px;
-        }
-
-        /* CONTAINER PRINCIPAL DO PERFIL */
-        .profile-card {
-            background-color: #0a0a0a;
-            border: 1px solid #262626;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 520px;
-            padding: 28px 32px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            max-height: 95vh;
-            overflow-y: auto;
-        }
-
-        /* Ocultar barra de rolagem do card mantendo a usabilidade se necessário */
-        .profile-card::-webkit-scrollbar {
-            display: none;
-        }
-        .profile-card {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-
-        /* FOTO DE PERFIL CENTRALIZADA */
-        .avatar-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            position: relative;
-        }
-
-        .avatar-wrapper {
-            position: relative;
-            width: 105px;
-            height: 105px;
-            border-radius: 50%;
-            border: 2px solid #262626;
-            overflow: hidden;
-            background-color: #121212;
-            cursor: pointer;
-            transition: border-color 0.2s ease;
-        }
-
-        .avatar-wrapper:hover {
-            border-color: #525252;
-        }
-
-        .avatar-img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .avatar-overlay {
-            position: absolute;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.6);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            color: #ffffff;
-            font-size: 12px;
-            gap: 4px;
-        }
-
-        .avatar-wrapper:hover .avatar-overlay {
-            opacity: 1;
-        }
-
-        #photoInput {
-            display: none;
-        }
-
-        /* FORMULÁRIO E CAMPOS */
-        .profile-form {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .form-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: #737373;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .form-input {
-            background-color: #121212;
-            border: 1px solid #262626;
-            border-radius: 8px;
-            padding: 10px 14px;
-            color: #ffffff;
-            font-size: 13px;
-            outline: none;
-            transition: all 0.2s ease;
-        }
-
-        .form-input:focus {
-            border-color: #525252;
-            background-color: #171717;
-        }
-
-        .form-input::placeholder {
-            color: #525252;
-        }
-
-        /* SEÇÃO SKILLS COM CHIPS / TAGS */
-        .skills-section {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 4px;
-        }
-
-        .skills-header-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .skills-header {
-            font-size: 11px;
-            font-weight: 600;
-            color: #737373;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .btn-manage-skills {
-            background: transparent;
-            border: none;
-            color: #a3a3a3;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 8px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-
-        .btn-manage-skills:hover {
-            color: #ffffff;
-            background-color: #171717;
-        }
-
-        .skills-chips-wrapper {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            min-height: 42px;
-            align-items: center;
-        }
-
-        .skill-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background-color: #121212;
-            border: 1px solid #262626;
-            border-radius: 20px;
-            padding: 8px 14px;
-            font-size: 13px;
-            color: #ffffff;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-
-        .skill-chip:hover {
-            border-color: #404040;
-            background-color: #171717;
-        }
-
-        .skill-chip i {
-            font-size: 15px;
-        }
-
-        .btn-add-skill {
-            width: 100%;
-            background-color: transparent;
-            border: 1px dashed #262626;
-            border-radius: 8px;
-            padding: 10px;
-            color: #a3a3a3;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s ease;
-            margin-top: 4px;
-        }
-
-        .btn-add-skill:hover {
-            border-color: #525252;
-            color: #ffffff;
-            background-color: rgba(255, 255, 255, 0.02);
-        }
-
-        /* BOTÃO PRINCIPAL DE SALVAR */
-        .btn-save-main {
-            width: 100%;
-            background-color: #ffffff;
-            color: #000000;
-            border: none;
-            border-radius: 8px;
-            padding: 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s ease;
-            margin-top: 6px;
-        }
-
-        .btn-save-main:hover {
-            opacity: 0.9;
-        }
-
-        /* MODAIS */
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background-color: rgba(0, 0, 0, 0.75);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.2s ease;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .modal-card {
-            background-color: #0a0a0a;
-            border: 1px solid #262626;
-            border-radius: 14px;
-            width: 100%;
-            max-width: 420px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            box-shadow: 0 20px 30px rgba(0,0,0,0.9);
-        }
-
-        .modal-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #ffffff;
-        }
-
-        .modal-description {
-            font-size: 13px;
-            color: #a3a3a3;
-            line-height: 1.4;
-        }
-
-        /* LISTAS DE SELEÇÃO NOS MODAIS */
-        .skill-select-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            max-height: 240px;
-            overflow-y: auto;
-            padding-right: 4px;
-        }
-
-        .skill-option, .manage-skill-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background-color: #121212;
-            border: 1px solid #262626;
-            border-radius: 8px;
-            padding: 10px 14px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            color: #ffffff;
-            font-size: 13px;
-        }
-
-        .skill-option:hover, .manage-skill-item:hover {
-            border-color: #525252;
-            background-color: #171717;
-        }
-
-        .skill-option.selected {
-            border-color: #ffffff;
-            background-color: #1e1e1e;
-        }
-
-        .skill-info-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .skill-info-left i {
-            font-size: 18px;
-        }
-
-        .modal-actions {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 8px;
-        }
-
-        .btn-cancel {
-            background-color: transparent;
-            border: 1px solid #262626;
-            color: #a3a3a3;
-            padding: 9px 16px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .btn-cancel:hover {
-            color: #ffffff;
-            border-color: #525252;
-        }
-
-        .btn-confirm {
-            background-color: #ffffff;
-            color: #000000;
-            border: none;
-            padding: 9px 16px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s ease;
-        }
-
-        .btn-confirm:hover {
-            opacity: 0.9;
-        }
-
-        .btn-danger {
-            background-color: #dc2626;
-            color: #ffffff;
-            border: none;
-            padding: 9px 16px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s ease;
-        }
-
-        .btn-danger:hover {
-            opacity: 0.9;
-        }
-
-        .btn-edit-skill {
-            background: transparent;
-            border: 1px solid #262626;
-            color: #a3a3a3;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            transition: all 0.2s ease;
-        }
-
-        .btn-edit-skill:hover {
-            color: #ffffff;
-            border-color: #525252;
-            background-color: #262626;
-        }
-    </style>
+    
 </head>
 <body>
 
@@ -473,11 +48,11 @@
 
             <div class="form-group">
                 <label class="form-label" for="id_course">Curso</label>
-                <input type="text" id="id_course" name="course" class="form-input" value="{{ profile.course|default:'' }}" placeholder="Engenharia de Software, Ciência da Computação...">
+                <input type="text" id="id_course" name="course" class="form-input" value="{{ profile.course|default:'' }}" placeholder="Engenharia de Software, CiÃªncia da ComputaÃ§Ã£o...">
             </div>
 
             <div class="form-group">
-                <label class="form-label" for="id_website">Website / Portfólio</label>
+                <label class="form-label" for="id_website">Website / PortfÃ³lio</label>
                 <input type="url" id="id_website" name="website" class="form-input" value="{{ profile.website|default:'' }}" placeholder="https://seu-portfolio.com">
             </div>
 
@@ -488,12 +63,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="id_username">Nome de Usuário</label>
+                    <label class="form-label" for="id_username">Nome de UsuÃ¡rio</label>
                     <input type="text" id="id_username" name="username" class="form-input" value="{{ user.username|default:'' }}" placeholder="@usuario">
                 </div>
             </div>
 
-            <!-- 3. SEÇÃO SKILLS -->
+            <!-- 3. SEÃ‡ÃƒO SKILLS -->
             <div class="skills-section">
                 <div class="skills-header-container">
                     <span class="skills-header">Skills</span>
@@ -510,7 +85,7 @@
                             <span>{{ skill.name }}</span>
                         </div>
                     {% empty %}
-                        <!-- Visual Exemplo Inicial caso não existam skills vindas do Django -->
+                        <!-- Visual Exemplo Inicial caso nÃ£o existam skills vindas do Django -->
                         <div class="skill-chip" data-skill-name="JavaScript" data-skill-icon="devicon-javascript-plain colored">
                             <i class="devicon-javascript-plain colored"></i>
                             <span>JavaScript</span>
@@ -531,8 +106,8 @@
                 </button>
             </div>
 
-            <!-- BOTÃO SALVAR ALTERAÇÕES -->
-            <button type="submit" class="btn-save-main">Salvar alterações</button>
+            <!-- BOTÃƒO SALVAR ALTERAÃ‡Ã•ES -->
+            <button type="submit" class="btn-save-main">Salvar alteraÃ§Ãµes</button>
         </form>
     </div>
 
@@ -560,7 +135,7 @@
             <h3 class="modal-title">Adicionar Skill</h3>
             <p class="modal-description">Escolha uma tecnologia da lista para adicionar ao seu perfil.</p>
             <div class="skill-select-list" id="availableSkillsList">
-                <!-- Opções de Tecnologias -->
+                <!-- OpÃ§Ãµes de Tecnologias -->
                 <div class="skill-option" onclick="selectSkillOption(this, 'Python', 'devicon-python-plain colored')">
                     <div class="skill-info-left"><i class="devicon-python-plain colored"></i><span>Python</span></div>
                 </div>
@@ -603,13 +178,13 @@
     <div class="modal-overlay" id="editSkillModal">
         <div class="modal-card">
             <h3 class="modal-title">Editar Skill</h3>
-            <div class="skill-option" style="cursor: default; border-color: #333;">
+            <div class="skill-option edit-skill-option">
                 <div class="skill-info-left">
                     <i id="editSkillIcon" class="devicon-code-plain"></i>
                     <span id="editSkillName">Nome da Skill</span>
                 </div>
             </div>
-            <div class="modal-actions" style="justify-content: space-between;">
+            <div class="modal-actions modal-actions-between">
                 <button type="button" class="btn-danger" onclick="openConfirmRemoveModal()">
                     <i class="fa-solid fa-trash"></i> Remover Skill
                 </button>
@@ -618,11 +193,11 @@
         </div>
     </div>
 
-    <!-- MODAL 4: CONFIRMAR REMOÇÃO -->
+    <!-- MODAL 4: CONFIRMAR REMOÃ‡ÃƒO -->
     <div class="modal-overlay" id="confirmRemoveModal">
         <div class="modal-card">
-            <h3 class="modal-title">Confirmar Remoção</h3>
-            <p class="modal-description">Remover esta Skill? Essa ação não poderá ser desfeita.</p>
+            <h3 class="modal-title">Confirmar RemoÃ§Ã£o</h3>
+            <p class="modal-description">Remover esta Skill? Essa aÃ§Ã£o nÃ£o poderÃ¡ ser desfeita.</p>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" onclick="closeModal('confirmRemoveModal')">Cancelar</button>
                 <button type="button" class="btn-danger" onclick="confirmRemoveSkill()">Remover</button>
@@ -630,144 +205,6 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT DE INTERAÇÕES -->
-    <script>
-        // Variáveis de Estado
-        let selectedSkillOption = null;
-        let currentEditingSkillName = null;
-        let currentEditingSkillIcon = null;
-
-        // Preview da Foto de Perfil
-        function triggerPhotoUpload() {
-            document.getElementById('photoInput').click();
-        }
-
-        function previewImage(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('avatarPreview').src = e.target.result;
-                }
-                reader.readAsDataURL(file);
-            }
-        }
-
-        // Funções para Controle de Modais
-        function openModal(modalId) {
-            document.getElementById(modalId).classList.add('active');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        // Modal: Gerenciar Skills
-        function openManageSkillsModal() {
-            const manageList = document.getElementById('manageSkillsList');
-            manageList.innerHTML = '';
-
-            const skills = document.querySelectorAll('#userSkillsList .skill-chip');
-            
-            if (skills.length === 0) {
-                manageList.innerHTML = '<p style="font-size: 13px; color: #737373; text-align: center; padding: 12px;">Nenhuma skill adicionada.</p>';
-            } else {
-                skills.forEach(skill => {
-                    const name = skill.getAttribute('data-skill-name');
-                    const icon = skill.getAttribute('data-skill-icon');
-                    
-                    const item = document.createElement('div');
-                    item.className = 'manage-skill-item';
-                    item.innerHTML = `
-                        <div class="skill-info-left">
-                            <i class="${icon}"></i>
-                            <span>${name}</span>
-                        </div>
-                        <button type="button" class="btn-edit-skill" onclick="openEditSkillModal('${name}', '${icon}')">
-                            <i class="fa-solid fa-pen"></i> Editar
-                        </button>
-                    `;
-                    manageList.appendChild(item);
-                });
-            }
-
-            openModal('manageSkillsModal');
-        }
-
-        // Modal: Adicionar Skill
-        function openAddSkillModal() {
-            selectedSkillOption = null;
-            document.querySelectorAll('#availableSkillsList .skill-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            openModal('addSkillModal');
-        }
-
-        function selectSkillOption(element, name, icon) {
-            document.querySelectorAll('#availableSkillsList .skill-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            element.classList.add('selected');
-            selectedSkillOption = { name, icon };
-        }
-
-        function confirmAddSkill() {
-            if (!selectedSkillOption) return;
-
-            // Verificar se já foi adicionada
-            const existingSkills = Array.from(document.querySelectorAll('#userSkillsList .skill-chip'))
-                .map(chip => chip.getAttribute('data-skill-name'));
-
-            if (existingSkills.includes(selectedSkillOption.name)) {
-                closeModal('addSkillModal');
-                return;
-            }
-
-            const skillsContainer = document.getElementById('userSkillsList');
-            const newChip = document.createElement('div');
-            newChip.className = 'skill-chip';
-            newChip.setAttribute('data-skill-name', selectedSkillOption.name);
-            newChip.setAttribute('data-skill-icon', selectedSkillOption.icon);
-
-            newChip.innerHTML = `
-                <i class="${selectedSkillOption.icon}"></i>
-                <span>${selectedSkillOption.name}</span>
-            `;
-
-            skillsContainer.appendChild(newChip);
-            closeModal('addSkillModal');
-        }
-
-        // Modal: Editar Skill Específica
-        function openEditSkillModal(name, icon) {
-            currentEditingSkillName = name;
-            currentEditingSkillIcon = icon;
-
-            document.getElementById('editSkillName').innerText = name;
-            document.getElementById('editSkillIcon').className = icon;
-
-            closeModal('manageSkillsModal');
-            openModal('editSkillModal');
-        }
-
-        // Modal: Confirmar Remoção
-        function openConfirmRemoveModal() {
-            closeModal('editSkillModal');
-            openModal('confirmRemoveModal');
-        }
-
-        function confirmRemoveSkill() {
-            const skills = document.querySelectorAll('#userSkillsList .skill-chip');
-            skills.forEach(skill => {
-                if (skill.getAttribute('data-skill-name') === currentEditingSkillName) {
-                    skill.remove();
-                }
-            });
-
-            closeModal('confirmRemoveModal');
-            currentEditingSkillName = null;
-            currentEditingSkillIcon = null;
-        }
-    </script>
+    <script src="{% static 'js/profile.js' %}"></script>
 </body>
 </html>

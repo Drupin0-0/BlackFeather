@@ -5,42 +5,9 @@
 
 {% block content %}
 
-<style>
-    body {
-        height: 100vh !important;
-        overflow: hidden !important;
-        padding: 0 !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: center !important;
-    }
+<link rel="stylesheet" href="{% static 'css/base-auth.css' %}">
 
-    .login-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        max-width: 400px;
-    }
-
-    .crow-logo {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        margin-bottom: 24px;
-    }
-
-    .crow-logo img {
-        width: 128px;
-        height: 128px;
-        display: block;
-        object-fit: contain;
-    }
-</style>
-
-<div class="login-wrapper">
+<div class="login-wrapper auth-page-compact">
     <div class="auth-card">
         <div class="crow-logo">
             <img src="{% static 'images/favicon.svg' %}" alt="BlackFeather">
@@ -108,7 +75,7 @@
 
             <div class="card-footer">
                 Novo no BlackFeather?
-                <a href="{% url 'accounts:register' %}" style="font-weight: 500;">
+                <a href="{% url 'accounts:register' %}" class="auth-link-emphasis">
                     Criar conta
                 </a>
             </div>

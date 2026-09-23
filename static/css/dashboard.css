@@ -1,0 +1,9 @@
+.td-confirm-hidden { display: none; }
+.td-confirm-visible { display: inline-block; }
+.td-feedback-error { color: #ff9999; }
+.td-feedback-muted { color: #aaa; }
+.td-suggestion-card { padding: 12px; border: 1px solid #222; border-radius: 8px; background: #111; }
+.td-suggestion-description { color: #fff; font-weight: 600; margin-bottom: 6px; }
+.td-suggestion-assignment { font-size: 13px; }
+.td-suggestion-assignment.assigned { color: #8be3a1; }
+.td-suggestion-assignment.unassigned { color: #ff9999; }

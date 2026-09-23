@@ -1,10 +1,12 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% load static %}
 
 {% block title %}Painel - Sincrow{% endblock %}
 
 {% block content %}
+
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 
 <div class="dashboard-wrapper">
 
@@ -31,7 +33,7 @@
             </a>
 
             <a href="#" class="menu-item">
-                Configurações
+                ConfiguraÃ§Ãµes
             </a>
 
             <a href="{% url 'accounts:view_profile' %}" class="menu-item">
@@ -51,13 +53,13 @@
     </aside>
 
 
-    <!-- CONTEÚDO PRINCIPAL -->
+    <!-- CONTEÃšDO PRINCIPAL -->
     <main class="dashboard-main">
 
-        <!-- CABEÇALHO -->
+        <!-- CABEÃ‡ALHO -->
         <header class="main-header">
 
-            <h1>Visão Geral</h1>
+            <h1>VisÃ£o Geral</h1>
 
             <div class="user-profile">
                 Bem-vindo,
@@ -69,13 +71,13 @@
         </header>
 
 
-        <!-- VERIFICAÇÃO DE PROJETO NO BANCO DE DADOS -->
+        <!-- VERIFICAÃ‡ÃƒO DE PROJETO NO BANCO DE DADOS -->
 
         {% if projects %}
 
             <section
                 class="stats-grid"
-                aria-label="Estatísticas de produtividade"
+                aria-label="EstatÃ­sticas de produtividade"
             >
 
                 <div class="stat-card">
@@ -115,7 +117,7 @@
                 <div class="stat-card">
 
                     <span class="stat-label">
-                        Concluídas
+                        ConcluÃ­das
                     </span>
 
                     <strong>
@@ -136,7 +138,7 @@
                 <div>
 
                     <p class="section-kicker">
-                        Operações
+                        OperaÃ§Ãµes
                     </p>
 
                     <h2>
@@ -224,7 +226,7 @@
 
 
                                     <p>
-                                        {{ task.description|default:"Sem descrição." }}
+                                        {{ task.description|default:"Sem descriÃ§Ã£o." }}
                                     </p>
 
 
@@ -239,7 +241,7 @@
                                         {% else %}
 
                                             <span>
-                                                Sem responsável
+                                                Sem responsÃ¡vel
                                             </span>
 
                                         {% endif %}
@@ -323,7 +325,7 @@
                             </h3>
 
                             <p>
-                                {{ project.description|default:"Nenhuma descrição cadastrada."|truncatewords:20 }}
+                                {{ project.description|default:"Nenhuma descriÃ§Ã£o cadastrada."|truncatewords:20 }}
                             </p>
 
                         </div>
@@ -366,7 +368,7 @@
                             class="btn-secondary-action open-td-modal"
                             data-project-id="{{ project.pk }}"
                             data-project-title="{{ project.title|escapejs }}"
-                            style="width: 100%; margin-top: 12px;"
+                           
                         >
                             Sugerir tarefas com IA
                         </button>
@@ -377,13 +379,7 @@
                         <a
                             href="{% url 'project_chat' project.code %}"
                             class="btn-secondary-action"
-                            style="
-                                width: 100%;
-                                margin-top: 8px;
-                                display: block;
-                                text-align: center;
-                                text-decoration: none;
-                            "
+                           
                         >
                             Abrir chat
                         </a>
@@ -403,13 +399,13 @@
             <div class="empty-project-box">
 
                 <h2>
-                    Não tem um projeto?
+                    NÃ£o tem um projeto?
                 </h2>
 
                 <p>
-                    Você ainda não possui nenhum projeto cadastrado
-                    ou associado à sua conta. Crie um novo workspace
-                    para começar ou entre em uma equipe existente.
+                    VocÃª ainda nÃ£o possui nenhum projeto cadastrado
+                    ou associado Ã  sua conta. Crie um novo workspace
+                    para comeÃ§ar ou entre em uma equipe existente.
                 </p>
 
 
@@ -418,14 +414,14 @@
                     <a
                         href="{% url 'project_create' %}"
                         class="btn-primary"
-                        style="text-decoration: none;"
+                       
                     >
                         + Criar Projeto
                     </a>
 
 
                     <button class="btn-secondary-action">
-                        Entrar com Código
+                        Entrar com CÃ³digo
                     </button>
 
                 </div>
@@ -435,7 +431,7 @@
         {% endif %}
 
 
-        <!-- RESUMO NO RODAPÉ -->
+        <!-- RESUMO NO RODAPÃ‰ -->
 
         <div class="quick-summary">
 
@@ -512,7 +508,7 @@
                 aria-label="Fechar"
                 data-close-task-modal
             >
-                ×
+                Ã—
             </button>
 
         </div>
@@ -561,7 +557,7 @@
                 <div class="task-field">
 
                     <label for="task_title">
-                        Título
+                        TÃ­tulo
                     </label>
 
                     <input
@@ -578,7 +574,7 @@
                 <div class="task-field full">
 
                     <label for="task_description">
-                        Descrição
+                        DescriÃ§Ã£o
                     </label>
 
                     <textarea
@@ -611,7 +607,7 @@
                         </option>
 
                         <option value="completed">
-                            Concluída
+                            ConcluÃ­da
                         </option>
 
                     </select>
@@ -638,7 +634,7 @@
                             value="medium"
                             selected
                         >
-                            Média
+                            MÃ©dia
                         </option>
 
                         <option value="high">
@@ -714,7 +710,7 @@
 </div>
 
 
-<!-- MODAL DISTRIBUIÇÃO DE TAREFAS -->
+<!-- MODAL DISTRIBUIÃ‡ÃƒO DE TAREFAS -->
 
 <div
     id="taskDistributionModal"
@@ -742,23 +738,19 @@
                 aria-label="Fechar"
                 data-close-td-modal
             >
-                ×
+                Ã—
             </button>
 
         </div>
 
 
-        <div style="padding: 20px;">
+        <div>
 
             <p
-                style="
-                    color: #888;
-                    font-size: 13px;
-                    margin-bottom: 12px;
-                "
+               
             >
                 Digite uma tarefa por linha. A IA vai sugerir
-                o responsável ideal com base nas habilidades
+                o responsÃ¡vel ideal com base nas habilidades
                 de cada membro.
             </p>
 
@@ -769,15 +761,8 @@
                 placeholder="Ex:
 Fazer a capa e slides
 Escrever o texto do trabalho
-Preparar apresentação oral"
-                style="
-                    width: 100%;
-                    padding: 12px;
-                    background: #000;
-                    border: 1px solid #222;
-                    border-radius: 6px;
-                    color: #fff;
-                "
+Preparar apresentaÃ§Ã£o oral"
+               
             ></textarea>
 
 
@@ -785,30 +770,20 @@ Preparar apresentação oral"
                 type="button"
                 id="tdGenerateBtn"
                 class="btn-primary"
-                style="margin-top: 12px;"
+               
             >
-                Gerar sugestão
+                Gerar sugestÃ£o
             </button>
 
 
             <div
                 id="tdSuggestionResults"
-                style="
-                    margin-top: 16px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                "
+               
             ></div>
 
 
             <div
-                style="
-                    display: flex;
-                    justify-content: flex-end;
-                    gap: 12px;
-                    margin-top: 16px;
-                "
+               
             >
 
                 <button
@@ -820,11 +795,11 @@ Preparar apresentação oral"
                 </button>
 
 
-                <button
+                    <button
                     type="button"
                     id="tdConfirmBtn"
-                    class="btn-primary"
-                    style="display: none;"
+                        class="btn-primary td-confirm-hidden"
+                   
                 >
                     Confirmar e criar tarefas
                 </button>
@@ -838,793 +813,19 @@ Preparar apresentação oral"
 </div>
 
 
-<script>
-
-document.addEventListener('DOMContentLoaded', function () {
-
-    const csrfToken =
-        document.querySelector(
-            '[name=csrfmiddlewaretoken]'
-        )?.value;
-
-
-    const modal =
-        document.getElementById('taskModal');
-
-
-    const openBtn =
-        document.getElementById('openTaskModal');
-
-
-    const closeEls =
-        document.querySelectorAll(
-            '[data-close-task-modal]'
-        );
-
-
-    const projectSelect =
-        document.getElementById('task_project');
-
-
-    const responsibleSelect =
-        document.getElementById(
-            'task_responsible'
-        );
-
-
-    const taskCards =
-        document.querySelectorAll(
-            '.kanban-task'
-        );
-
-
-    const columns =
-        document.querySelectorAll(
-            '.kanban-column'
-        );
-
-
-    const tdModal =
-        document.getElementById(
-            'taskDistributionModal'
-        );
-
-
-    const tdOpenBtns =
-        document.querySelectorAll(
-            '.open-td-modal'
-        );
-
-
-    const tdCloseEls =
-        document.querySelectorAll(
-            '[data-close-td-modal]'
-        );
-
-
-    const tdTasksInput =
-        document.getElementById(
-            'tdTasksInput'
-        );
-
-
-    const tdGenerateBtn =
-        document.getElementById(
-            'tdGenerateBtn'
-        );
-
-
-    const tdConfirmBtn =
-        document.getElementById(
-            'tdConfirmBtn'
-        );
-
-
-    const tdSuggestionResults =
-        document.getElementById(
-            'tdSuggestionResults'
-        );
-
-
-    let tdCurrentProjectId = null;
-
-
-    tdOpenBtns.forEach(function (btn) {
-
-        btn.addEventListener(
-            'click',
-            function () {
-
-                tdCurrentProjectId =
-                    btn.dataset.projectId;
-
-
-                document.getElementById(
-                    'tdModalTitle'
-                ).textContent =
-                    `Sugerir tarefas — ${btn.dataset.projectTitle}`;
-
-
-                tdTasksInput.value = '';
-
-                tdSuggestionResults.innerHTML = '';
-
-                tdConfirmBtn.style.display =
-                    'none';
-
-
-                tdModal.classList.add('open');
-
-                tdModal.setAttribute(
-                    'aria-hidden',
-                    'false'
-                );
-
-            }
-        );
-
-    });
-
-
-    tdCloseEls.forEach(function (el) {
-
-        el.addEventListener(
-            'click',
-            function () {
-
-                tdModal.classList.remove('open');
-
-                tdModal.setAttribute(
-                    'aria-hidden',
-                    'true'
-                );
-
-            }
-        );
-
-    });
-
-
-    tdGenerateBtn.addEventListener(
-        'click',
-        function () {
-
-            const linhas =
-                tdTasksInput.value
-                    .split('\n')
-                    .map(l => l.trim())
-                    .filter(Boolean);
-
-
-            if (!linhas.length) {
-
-                tdSuggestionResults.innerHTML =
-                    '<div style="color: #ff9999;">Digite ao menos uma tarefa.</div>';
-
-                return;
-
-            }
-
-
-            tdGenerateBtn.disabled = true;
-
-            tdGenerateBtn.textContent =
-                'Analisando...';
-
-
-            tdSuggestionResults.innerHTML =
-                '<div style="color: #aaa;">Buscando membros e gerando sugestão...</div>';
-
-
-            const formData =
-                new FormData();
-
-
-            linhas.forEach(
-                desc =>
-                    formData.append(
-                        'task_description',
-                        desc
-                    )
-            );
-
-
-            fetch(
-                `/tarefas/${tdCurrentProjectId}/sugerir-distribuicao/`,
-                {
-                    method: 'POST',
-
-                    headers: {
-                        'X-CSRFToken':
-                            csrfToken
-                    },
-
-                    body: formData
-                }
-            )
-            .then(res => res.json())
-            .then(data => {
-
-                if (
-                    !data.tasks ||
-                    !data.tasks.length
-                ) {
-
-                    tdSuggestionResults.innerHTML =
-                        `<div style="color: #ff9999;">${data.error || 'Não foi possível gerar sugestão.'}</div>`;
-
-                    return;
-
-                }
-
-
-                const assignPorId = {};
-
-
-                (data.assignments || [])
-                    .forEach(
-                        a =>
-                            assignPorId[
-                                a.temp_id
-                            ] = a
-                    );
-
-
-                tdSuggestionResults.innerHTML =
-                    data.tasks
-                        .map(task => {
-
-                            const assign =
-                                assignPorId[
-                                    task.temp_id
-                                ];
-
-
-                            return `
-
-                                <div
-                                    style="
-                                        padding: 12px;
-                                        border: 1px solid #222;
-                                        border-radius: 8px;
-                                        background: #111;
-                                    "
-                                >
-
-                                    <div
-                                        style="
-                                            color: #fff;
-                                            font-weight: 600;
-                                            margin-bottom: 6px;
-                                        "
-                                    >
-                                        ${task.description}
-                                    </div>
-
-                                    <div
-                                        style="
-                                            color: ${assign ? '#8be3a1' : '#ff9999'};
-                                            font-size: 13px;
-                                        "
-                                    >
-                                        ${
-                                            assign
-                                                ? '→ Responsável sugerido (ID ' + assign.assigned_user_id + ')'
-                                                : 'Sem sugestão — atribuir manualmente depois'
-                                        }
-                                    </div>
-
-                                </div>
-
-                            `;
-
-                        })
-                        .join('');
-
-
-                tdConfirmBtn.style.display =
-                    'inline-block';
-
-            })
-            .catch(() => {
-
-                tdSuggestionResults.innerHTML =
-                    '<div style="color: #ff9999;">Erro ao gerar sugestão.</div>';
-
-            })
-            .finally(() => {
-
-                tdGenerateBtn.disabled = false;
-
-                tdGenerateBtn.textContent =
-                    'Gerar sugestão';
-
-            });
-
-        }
-    );
-
-
-    tdConfirmBtn.addEventListener(
-        'click',
-        function () {
-
-            tdConfirmBtn.disabled = true;
-
-            tdConfirmBtn.textContent =
-                'Criando...';
-
-
-            fetch(
-                `/tarefas/${tdCurrentProjectId}/confirmar-distribuicao/`,
-                {
-                    method: 'POST',
-
-                    headers: {
-                        'X-CSRFToken':
-                            csrfToken
-                    }
-                }
-            )
-            .then(res => res.json())
-            .then(data => {
-
-                if (data.status === 'success') {
-
-                    location.reload();
-
-                } else {
-
-                    alert(
-                        'Erro: ' +
-                        (
-                            data.error ||
-                            'não foi possível criar as tarefas.'
-                        )
-                    );
-
-                }
-
-            })
-            .finally(() => {
-
-                tdConfirmBtn.disabled = false;
-
-                tdConfirmBtn.textContent =
-                    'Confirmar e criar tarefas';
-
-            });
-
-        }
-    );
-
-
-    function moveTask(
-        taskId,
-        newStatus
-    ) {
-
-        if (!taskId || !newStatus) {
-            return;
-        }
-
-
-        fetch(
-            `/tarefas/${taskId}/status/`,
-            {
-                method: 'POST',
-
-                headers: {
-                    'Content-Type':
-                        'application/x-www-form-urlencoded; charset=UTF-8',
-
-                    'X-CSRFToken':
-                        csrfToken,
-
-                    'X-Requested-With':
-                        'XMLHttpRequest',
-                },
-
-                body: new URLSearchParams({
-                    status: newStatus
-                })
-            }
-        )
-        .then(response =>
-            response.json()
-        )
-        .then(data => {
-
-            if (!data.success) {
-
-                console.error(
-                    data.error ||
-                    'Erro ao mover tarefa'
-                );
-
-                return;
-
-            }
-
-
-            const taskElement =
-                document.querySelector(
-                    `.kanban-task[data-task-id="${taskId}"]`
-                );
-
-
-            if (taskElement) {
-
-                taskElement.dataset.status =
-                    newStatus;
-
-            }
-
-
-            location.reload();
-
-        })
-        .catch(error => {
-
-            console.error(
-                'Erro ao mover tarefa:',
-                error
-            );
-
-        });
-
-    }
-
-
-    taskCards.forEach(
-        function (taskCard) {
-
-            taskCard.addEventListener(
-                'dragstart',
-                function () {
-
-                    taskCard.classList.add(
-                        'dragging'
-                    );
-
-                    taskCard.setAttribute(
-                        'data-dragging',
-                        'true'
-                    );
-
-                }
-            );
-
-
-            taskCard.addEventListener(
-                'dragend',
-                function () {
-
-                    taskCard.classList.remove(
-                        'dragging'
-                    );
-
-                    taskCard.removeAttribute(
-                        'data-dragging'
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-    columns.forEach(
-        function (column) {
-
-            column.addEventListener(
-                'dragover',
-                function (event) {
-
-                    event.preventDefault();
-
-                    column.classList.add(
-                        'drag-over'
-                    );
-
-                }
-            );
-
-
-            column.addEventListener(
-                'dragleave',
-                function () {
-
-                    column.classList.remove(
-                        'drag-over'
-                    );
-
-                }
-            );
-
-
-            column.addEventListener(
-                'drop',
-                function (event) {
-
-                    event.preventDefault();
-
-                    column.classList.remove(
-                        'drag-over'
-                    );
-
-
-                    const draggedTask =
-                        document.querySelector(
-                            '.kanban-task[data-dragging="true"]'
-                        );
-
-
-                    if (!draggedTask) {
-                        return;
-                    }
-
-
-                    const taskId =
-                        draggedTask.dataset.taskId;
-
-
-                    const newStatus =
-                        column.dataset.status ||
-                        column.getAttribute(
-                            'data-status'
-                        );
-
-
-                    if (
-                        !taskId ||
-                        !newStatus
-                    ) {
-                        return;
-                    }
-
-
-                    const targetContainer =
-                        column.querySelector(
-                            '.drop-zone-placeholder'
-                        );
-
-
-                    if (targetContainer) {
-
-                        column.insertBefore(
-                            draggedTask,
-                            targetContainer
-                        );
-
-                    } else {
-
-                        column.appendChild(
-                            draggedTask
-                        );
-
-                    }
-
-
-                    moveTask(
-                        taskId,
-                        newStatus
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-    const projectMembers = {
-
-        {% for project in projects %}
-
-            "{{ project.pk }}": [
-
-                {% for member in project.members.all %}
-
-                    {
-                        value:
-                            "{{ member.pk }}",
-
-                        label:
-                            "{% if member.profile %}{{ member.profile.name|escapejs }}{% else %}{{ member.email|escapejs }}{% endif %}"
-                    }
-
-                    {% if not forloop.last %}
-                        ,
-                    {% endif %}
-
-                {% endfor %}
-
-            ]
-
-            {% if not forloop.last %}
-                ,
-            {% endif %}
-
-        {% endfor %}
-
-    };
-
-
-    function populateResponsibleOptions(
-        projectId
-    ) {
-
-        responsibleSelect.innerHTML =
-            '<option value="">Selecione um membro do projeto</option>';
-
-
-        const members =
-            projectMembers[projectId] || [];
-
-
-        if (!members.length) {
-
-            const ownerOption =
-                document.createElement(
-                    'option'
-                );
-
-
-            ownerOption.value =
-                '{{ user.pk }}';
-
-
-            {% if user.profile %}
-
-                ownerOption.textContent =
-                    '{{ user.profile.name|escapejs }}';
-
-            {% else %}
-
-                ownerOption.textContent =
-                    '{{ user.email|escapejs }}';
-
-            {% endif %}
-
-
-            responsibleSelect.appendChild(
-                ownerOption
-            );
-
-            return;
-
-        }
-
-
-        members.forEach(
-            function (member) {
-
-                const option =
-                    document.createElement(
-                        'option'
-                    );
-
-
-                option.value =
-                    member.value;
-
-
-                option.textContent =
-                    member.label;
-
-
-                responsibleSelect.appendChild(
-                    option
-                );
-
-            }
-        );
-
-    }
-
-
-    if (
-        projectSelect &&
-        responsibleSelect
-    ) {
-
-        projectSelect.addEventListener(
-            'change',
-            function () {
-
-                populateResponsibleOptions(
-                    this.value
-                );
-
-            }
-        );
-
-
-        if (projectSelect.value) {
-
-            populateResponsibleOptions(
-                projectSelect.value
-            );
-
-        }
-
-    }
-
-
-    if (
-        modal &&
-        openBtn
-    ) {
-
-        openBtn.addEventListener(
-            'click',
-            function () {
-
-                modal.classList.add(
-                    'open'
-                );
-
-                modal.setAttribute(
-                    'aria-hidden',
-                    'false'
-                );
-
-            }
-        );
-
-
-        closeEls.forEach(
-            function (el) {
-
-                el.addEventListener(
-                    'click',
-                    function () {
-
-                        modal.classList.remove(
-                            'open'
-                        );
-
-                        modal.setAttribute(
-                            'aria-hidden',
-                            'true'
-                        );
-
-                    }
-                );
-
-            }
-        );
-
-
-        document.addEventListener(
-            'keydown',
-            function (event) {
-
-                if (
-                    event.key === 'Escape' &&
-                    modal.classList.contains('open')
-                ) {
-
-                    modal.classList.remove(
-                        'open'
-                    );
-
-                    modal.setAttribute(
-                        'aria-hidden',
-                        'true'
-                    );
-
-                }
-
-            }
-        );
-
-    }
-
-});
-
+<script id="dashboardData" type="application/json">{"id":"{{ user.pk }}","name":"{% if user.profile %}{{ user.profile.name|escapejs }}{% else %}{{ user.email|escapejs }}{% endif %}"}</script>
+<script id="projectMembersData" type="application/json">
+{
+{% for project in projects %}
+"{{ project.pk }}": [
+{% for member in project.members.all %}
+{"value":"{{ member.pk }}","label":"{% if member.profile %}{{ member.profile.name|escapejs }}{% else %}{{ member.email|escapejs }}{% endif %}"}{% if not forloop.last %},{% endif %}
+{% endfor %}
+]{% if not forloop.last %},{% endif %}
+{% endfor %}
+}
 </script>
+<script src="{% static 'js/dashboard.js' %}"></script>
 
 {% endblock %}
+
