@@ -268,3 +268,7 @@ def view_profile_view(request):
         return redirect('accounts:view_profile')
 
     return render(request, 'profile/view_profile.html', {'profile': profile})
+
+def logout_view(request):
+    logout(request)
+    return redirect("accounts:login")
