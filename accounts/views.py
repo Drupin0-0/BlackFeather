@@ -272,3 +272,7 @@ def view_profile_view(request):
 def logout_view(request):
     logout(request)
     return redirect("accounts:login")
+
+@login_required
+def settings_view(request):
+    return render(request, 'settings.html')
