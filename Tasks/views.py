@@ -10,12 +10,15 @@ from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
+from django.http import HttpResponseForbidden
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
 
 from .models import Project, Task
 from .serializers import ProjectSerializer, TaskSerializer
 from accounts.models import UserProfile, Technology
+from .forms import ProjectInvitationForm
+from .models import Project, ProjectInvitation
 
 User = get_user_model()
 
@@ -406,7 +409,19 @@ def setup_profile_view(request):
 
     return render(request, 'accounts/setup.html', {'profile': profile})
 
+@login_required
+@require_POST
+def invite_user(request, project_id):
+    project = get_object_or_404(
+        Project,
+        id=project_id
+    )
+    if project.owner != request.user:
+        return HttpResponseForbidden
+
 @require_POST
 @login_required
 def user_invitation(request, project_id):
-    
+    project = get_object_or_404(Project, id=project_id)
+    if not user_cant_invite(request.user, project):
+        return HttpResponseForbidden(   )
