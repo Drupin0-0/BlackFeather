@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
 
@@ -404,3 +405,8 @@ def setup_profile_view(request):
         return redirect('accounts:dashboard')
 
     return render(request, 'accounts/setup.html', {'profile': profile})
+
+@require_POST
+@login_required
+def user_invitation(request, project_id):
+    

@@ -2,6 +2,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from .models import User
 import secrets
 import string
 
@@ -100,3 +101,31 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+    
+# Invite users to a project class
+class ProjectInvitation(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    invited_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='project_invitations'
+    )
+    invited_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='project_invitations'
+        )
+
+    created_at =  models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ('pending', 'Pendente')
+            ('accepted', 'Aceito')
+            ('rejected', 'Recusado')
+            ('expired', 'Expirado')
+        ],
+        default='pending',
+    )
