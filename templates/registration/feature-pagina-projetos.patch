@@ -1,0 +1,937 @@
+diff --git a/Tasks/urls.py b/Tasks/urls.py
+index f72feef..44c9909 100644
+--- a/Tasks/urls.py
++++ b/Tasks/urls.py
+@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
+ from .views import (
+     ProjectViewSet,
+     TaskViewSet,
++    project_list_view,
+     create_project_view,
+     create_task_view,
+     update_task_status_view,
+@@ -17,6 +18,7 @@ router.register(r'projetos', ProjectViewSet, basename='projeto')
+ router.register(r'tarefas', TaskViewSet, basename='tarefas')
+ 
+ urlpatterns = [
++    path('meus-projetos/', project_list_view, name='project_list'),
+     path('projetos/novo/', create_project_view, name='project_create'),
+     path('projetos/sugerir-ia/', suggest_project_ai_view, name='project_suggest_ai'),
+     path('tarefas/novo/', create_task_view, name='task_create'),
+diff --git a/Tasks/views.py b/Tasks/views.py
+index cd29c75..6d2bc3a 100644
+--- a/Tasks/views.py
++++ b/Tasks/views.py
+@@ -5,7 +5,7 @@ from urllib.request import Request, urlopen
+ from urllib.error import URLError, HTTPError
+ 
+ from django.contrib.auth import get_user_model
+-from django.db.models import Q
++from django.db.models import Q, Count
+ from django.http import JsonResponse
+ from django.shortcuts import render, redirect, get_object_or_404
+ from django.contrib.auth.decorators import login_required
+@@ -43,6 +43,21 @@ class TaskViewSet(viewsets.ModelViewSet):
+         serializer.save()
+ 
+ 
++@login_required
++def project_list_view(request):
++    projects = Project.objects.filter(
++        Q(owner=request.user) | Q(members=request.user)
++    ).select_related(
++        'owner__profile'
++    ).prefetch_related(
++        'members__profile'
++    ).annotate(
++        members_count=Count('members', distinct=True)
++    ).distinct().order_by('-created_at')
++
++    return render(request, 'projetos.html', {'projects': projects})
++
++
+ @login_required
+ def create_project_view(request):
+     if request.method == 'POST':
+diff --git a/static/css/style.css b/static/css/style.css
+index cc5651c..7ba32cb 100644
+--- a/static/css/style.css
++++ b/static/css/style.css
+@@ -989,4 +989,351 @@ body {
+ .status-tag.status-low { border-color: #777777; color: #777777; }
+ .status-tag.status-completed { border-color: #ffffff; background-color: #ffffff; color: #000000; }
+ .status-tag.status-in_progress { border-color: #409eff; color: #409eff; }
+-.status-tag.status-pending { border-color: #666666; color: #888888; }
+\ No newline at end of file
++.status-tag.status-pending { border-color: #666666; color: #888888; }
++/* ==========================================================
++   PÁGINA "PROJETOS" — Tabela + Painel lateral de detalhes
++   ========================================================== */
++
++.projects-toolbar {
++    display: flex;
++    justify-content: space-between;
++    align-items: center;
++    margin-bottom: 20px;
++}
++
++.projects-toolbar h1 {
++    font-size: 22px;
++    font-weight: 700;
++    letter-spacing: -0.5px;
++    color: #ffffff;
++}
++
++.projects-table-wrapper {
++    background: #090909;
++    border: 1px solid #1a1a1a;
++    border-radius: 6px;
++    overflow: hidden;
++}
++
++.projects-table {
++    width: 100%;
++    border-collapse: collapse;
++}
++
++.projects-table thead th {
++    text-align: left;
++    font-size: 11px;
++    font-weight: 700;
++    text-transform: uppercase;
++    letter-spacing: 0.6px;
++    color: #8c8c8c;
++    padding: 14px 20px;
++    border-bottom: 1px solid #1a1a1a;
++    background: #0c0c0c;
++}
++
++.projects-table tbody tr {
++    cursor: pointer;
++    transition: background 0.15s ease;
++}
++
++.projects-table tbody tr:hover {
++    background: #111111;
++}
++
++.projects-table tbody tr:not(:last-child) td {
++    border-bottom: 1px solid #141414;
++}
++
++.projects-table td {
++    padding: 16px 20px;
++    font-size: 13px;
++    color: #e5e5e5;
++    vertical-align: middle;
++}
++
++.project-name-cell strong {
++    display: block;
++    color: #ffffff;
++    font-size: 14px;
++    font-weight: 600;
++}
++
++.project-name-cell small {
++    display: block;
++    color: #8c8c8c;
++    font-size: 11px;
++    margin-top: 3px;
++}
++
++.code-badge {
++    font-family: 'Courier New', monospace;
++    background: #141414;
++    border: 1px solid #262626;
++    padding: 3px 9px;
++    border-radius: 4px;
++    font-size: 12px;
++    letter-spacing: 1.5px;
++    color: #d4d4d4;
++}
++
++.projects-empty-cell {
++    padding: 48px 20px;
++    text-align: center;
++    color: #8f8f8f;
++}
++
++/* Painel lateral de detalhes do projeto */
++
++.project-panel-backdrop {
++    position: fixed;
++    inset: 0;
++    background: rgba(0, 0, 0, 0.6);
++    opacity: 0;
++    pointer-events: none;
++    transition: opacity 0.2s ease;
++    z-index: 40;
++}
++
++.project-panel-backdrop.open {
++    opacity: 1;
++    pointer-events: auto;
++}
++
++.project-panel {
++    position: fixed;
++    top: 0;
++    right: 0;
++    height: 100vh;
++    width: 380px;
++    max-width: 90vw;
++    background: #090909;
++    border-left: 1px solid #1c1c1c;
++    box-shadow: -24px 0 48px rgba(0, 0, 0, 0.55);
++    transform: translateX(100%);
++    transition: transform 0.25s ease;
++    z-index: 41;
++    display: flex;
++    flex-direction: column;
++    padding: 26px 24px;
++    overflow: hidden;
++}
++
++.project-panel.open {
++    transform: translateX(0);
++}
++
++.project-panel-view {
++    display: flex;
++    flex-direction: column;
++    height: 100%;
++    min-height: 0;
++    overflow-y: auto;
++}
++
++.project-panel-header {
++    display: flex;
++    justify-content: space-between;
++    align-items: flex-start;
++    gap: 12px;
++    padding-bottom: 18px;
++    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
++}
++
++.project-panel-header h2 {
++    font-size: 18px;
++    font-weight: 700;
++    color: #ffffff;
++    word-break: break-word;
++}
++
++.project-panel-close {
++    background: transparent;
++    border: 1px solid #262626;
++    color: #a0a0a0;
++    width: 28px;
++    height: 28px;
++    border-radius: 4px;
++    cursor: pointer;
++    flex-shrink: 0;
++    line-height: 1;
++    font-size: 14px;
++}
++
++.project-panel-close:hover {
++    color: #ffffff;
++    border-color: #444444;
++}
++
++.project-panel-meta {
++    display: flex;
++    flex-direction: column;
++    gap: 16px;
++    margin: 20px 0;
++}
++
++.project-panel-meta-item span {
++    display: block;
++    font-size: 10px;
++    font-weight: 700;
++    text-transform: uppercase;
++    letter-spacing: 0.6px;
++    color: #8c8c8c;
++    margin-bottom: 4px;
++}
++
++.project-panel-meta-item strong,
++.project-panel-meta-item p {
++    color: #e5e5e5;
++    font-size: 13px;
++    font-weight: 500;
++    line-height: 1.5;
++}
++
++.project-panel-actions {
++    margin-top: auto;
++    display: flex;
++    flex-direction: column;
++    gap: 10px;
++    padding-top: 20px;
++}
++
++/* Chat embutido dentro do painel lateral (view "ppViewChat") */
++
++.project-panel-chat-header {
++    display: flex;
++    align-items: center;
++    gap: 10px;
++    padding-bottom: 16px;
++    margin-bottom: 14px;
++    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
++    flex-shrink: 0;
++}
++
++.ppc-chat-title {
++    flex: 1;
++    min-width: 0;
++}
++
++.ppc-chat-title strong {
++    display: block;
++    color: #ffffff;
++    font-size: 14px;
++    font-weight: 700;
++    white-space: nowrap;
++    overflow: hidden;
++    text-overflow: ellipsis;
++}
++
++.ppc-chat-title span {
++    display: block;
++    color: #777777;
++    font-size: 10px;
++    text-transform: uppercase;
++    letter-spacing: 0.6px;
++    margin-top: 2px;
++}
++
++.ppc-icon-btn {
++    background: transparent;
++    border: 1px solid #262626;
++    color: #a0a0a0;
++    width: 28px;
++    height: 28px;
++    border-radius: 4px;
++    cursor: pointer;
++    flex-shrink: 0;
++    display: inline-flex;
++    align-items: center;
++    justify-content: center;
++    text-decoration: none;
++    font-size: 14px;
++}
++
++.ppc-icon-btn:hover {
++    color: #ffffff;
++    border-color: #444444;
++}
++
++.ppc-messages {
++    flex: 1;
++    min-height: 0;
++    overflow-y: auto;
++    background: #050505;
++    border: 1px solid #1a1a1a;
++    border-radius: 4px;
++    padding: 14px;
++    margin-bottom: 12px;
++}
++
++.ppc-empty {
++    color: #555555;
++    font-size: 11px;
++    text-align: center;
++    padding: 20px 0;
++    text-transform: uppercase;
++    letter-spacing: 0.6px;
++}
++
++.ppc-message {
++    padding: 10px 0;
++    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
++}
++
++.ppc-message:last-child {
++    border-bottom: none;
++}
++
++.ppc-message-header {
++    display: flex;
++    justify-content: space-between;
++    gap: 8px;
++    margin-bottom: 4px;
++}
++
++.ppc-username {
++    color: #ffffff;
++    font-size: 11px;
++    font-weight: 700;
++}
++
++.ppc-time {
++    color: #555555;
++    font-size: 9px;
++    flex-shrink: 0;
++}
++
++.ppc-message-content {
++    color: #bdbdbd;
++    font-size: 12px;
++    line-height: 1.5;
++    word-break: break-word;
++    white-space: pre-wrap;
++}
++
++.ppc-form {
++    display: flex;
++    gap: 8px;
++    flex-shrink: 0;
++}
++
++.ppc-form input {
++    flex: 1;
++    min-width: 0;
++    background: #050505;
++    border: 1px solid #222222;
++    color: #ffffff;
++    padding: 10px 12px;
++    font-size: 12px;
++    border-radius: 4px;
++    outline: none;
++    font-family: inherit;
++}
++
++.ppc-form input:focus {
++    border-color: #444444;
++}
++
++.ppc-form input::placeholder {
++    color: #3d3d3d;
++}
+diff --git a/templates/dashboard.html b/templates/dashboard.html
+index a2a4246..7f03ab8 100644
+--- a/templates/dashboard.html
++++ b/templates/dashboard.html
+@@ -22,7 +22,7 @@
+                 Painel
+             </a>
+ 
+-            <a href="#" class="menu-item">
++            <a href="{% url 'project_list' %}" class="menu-item">
+                 Projetos
+             </a>
+ 
+diff --git a/templates/projetos.html b/templates/projetos.html
+new file mode 100644
+index 0000000..e1ecd2d
+--- /dev/null
++++ b/templates/projetos.html
+@@ -0,0 +1,426 @@
++{% extends 'base.html' %}
++
++{% load static %}
++
++{% block title %}Projetos - Sincrow{% endblock %}
++
++{% block content %}
++
++<div class="dashboard-wrapper">
++
++    <!-- BARRA LATERAL (SIDEBAR) -->
++    <aside class="dashboard-sidebar">
++
++        <div class="sidebar-brand">
++            <div class="sidebar-logo">SC</div>
++            <span>Sincrow</span>
++        </div>
++
++        <nav class="sidebar-menu">
++
++            <a href="{% url 'accounts:dashboard' %}" class="menu-item">
++                Painel
++            </a>
++
++            <a href="{% url 'project_list' %}" class="menu-item active">
++                Projetos
++            </a>
++
++            <a href="#" class="menu-item">
++                Minhas Tarefas
++            </a>
++
++            <a href="{% url 'accounts:settings' %}" class="menu-item">
++                Configurações
++            </a>
++
++            <a href="{% url 'accounts:view_profile' %}" class="menu-item">
++                Meu Perfil
++            </a>
++
++        </nav>
++
++        <div class="sidebar-footer">
++            <a href="{% url 'accounts:logout' %}" class="logout-btn">
++                Sair
++            </a>
++        </div>
++
++    </aside>
++
++    <!-- CONTEÚDO PRINCIPAL -->
++    <main class="dashboard-main">
++
++        <header class="main-header">
++            <h1>Projetos</h1>
++
++            <div class="user-profile">
++                Logado como <strong>{{ user.profile.name|default:user.email }}</strong>
++            </div>
++        </header>
++
++        <div class="projects-toolbar">
++            <span style="color:#8c8c8c; font-size:13px;">
++                {{ projects|length }} projeto(s) vinculado(s) à sua conta
++            </span>
++
++            <a href="{% url 'project_create' %}" class="btn-primary" style="text-decoration:none;">
++                + Criar Projeto
++            </a>
++        </div>
++
++        <div class="projects-table-wrapper">
++
++            {% if projects %}
++
++                <table class="projects-table">
++                    <thead>
++                        <tr>
++                            <th>Nome</th>
++                            <th>Código</th>
++                            <th>Líder</th>
++                            <th>Membros</th>
++                            <th>Criado em</th>
++                        </tr>
++                    </thead>
++
++                    <tbody>
++                        {% for project in projects %}
++                            <tr
++                                class="project-row"
++                                data-id="{{ project.pk }}"
++                                data-title="{{ project.title|escapejs }}"
++                                data-code="{{ project.code }}"
++                                data-description="{{ project.description|default:"Sem descrição."|escapejs }}"
++                                data-owner="{{ project.owner.profile.name|default:project.owner.email|escapejs }}"
++                                data-members="{{ project.members_count }}"
++                                data-created="{{ project.created_at|date:"d/m/Y" }}"
++                                data-chat-url="{% url 'project_chat' project.code %}"
++                            >
++                                <td class="project-name-cell">
++                                    <strong>{{ project.title }}</strong>
++                                    <small>{{ project.description|default:"Sem descrição"|truncatechars:60 }}</small>
++                                </td>
++                                <td><span class="code-badge">{{ project.code }}</span></td>
++                                <td>{{ project.owner.profile.name|default:project.owner.email }}</td>
++                                <td>{{ project.members_count }}</td>
++                                <td>{{ project.created_at|date:"d/m/Y" }}</td>
++                            </tr>
++                        {% endfor %}
++                    </tbody>
++                </table>
++
++            {% else %}
++
++                <div class="projects-empty-cell">
++                    Você ainda não faz parte de nenhum projeto.
++                    <br>
++                    <a href="{% url 'project_create' %}" class="btn-primary" style="text-decoration:none; display:inline-flex; margin-top:16px;">
++                        + Criar Projeto
++                    </a>
++                </div>
++
++            {% endif %}
++
++        </div>
++
++    </main>
++
++</div>
++
++<!-- PAINEL LATERAL DE DETALHES DO PROJETO -->
++<div class="project-panel-backdrop" id="projectPanelBackdrop"></div>
++
++<aside class="project-panel" id="projectPanel">
++
++    <!-- VISÃO 1: DETALHES DO PROJETO -->
++    <div class="project-panel-view" id="ppViewDetails">
++
++        <div class="project-panel-header">
++            <h2 id="ppTitle">—</h2>
++            <button type="button" class="project-panel-close" id="ppClose">✕</button>
++        </div>
++
++        <div class="project-panel-meta">
++
++            <div class="project-panel-meta-item">
++                <span>Código</span>
++                <strong id="ppCode" class="code-badge">—</strong>
++            </div>
++
++            <div class="project-panel-meta-item">
++                <span>Descrição</span>
++                <p id="ppDescription">—</p>
++            </div>
++
++            <div class="project-panel-meta-item">
++                <span>Líder</span>
++                <strong id="ppOwner">—</strong>
++            </div>
++
++            <div class="project-panel-meta-item">
++                <span>Membros</span>
++                <strong id="ppMembers">—</strong>
++            </div>
++
++            <div class="project-panel-meta-item">
++                <span>Criado em</span>
++                <strong id="ppCreated">—</strong>
++            </div>
++
++        </div>
++
++        <div class="project-panel-actions">
++            <!-- Não navega: apenas alterna para a view de chat, dentro do mesmo painel. -->
++            <button type="button" id="ppOpenChatBtn" class="btn-secondary-action" style="width:100%;">
++                Abrir chat
++            </button>
++        </div>
++
++    </div>
++
++    <!-- VISÃO 2: CHAT EMBUTIDO (mesma página, mesma barrinha) -->
++    <div class="project-panel-view project-panel-chat" id="ppViewChat" style="display:none;">
++
++        <div class="project-panel-chat-header">
++            <button type="button" class="ppc-icon-btn" id="ppChatBack" title="Voltar para detalhes">←</button>
++
++            <div class="ppc-chat-title">
++                <strong id="ppChatTitle">—</strong>
++                <span id="ppChatStatus">Conectando...</span>
++            </div>
++
++            <!-- Link real: definido via JS antes de aparecer. Clique = navegação normal
++                 para a página de chat de verdade (/chat/projetos/<code>/). -->
++            <a id="ppChatMaximize" href="#" class="ppc-icon-btn" title="Abrir em tela cheia">⤢</a>
++
++            <button type="button" class="ppc-icon-btn" id="ppCloseFromChat" title="Fechar">✕</button>
++        </div>
++
++        <div class="ppc-messages" id="ppcMessages">
++            <div class="ppc-empty">Carregando mensagens...</div>
++        </div>
++
++        <form class="ppc-form" id="ppcForm">
++            <input
++                type="text"
++                id="ppcInput"
++                placeholder="Digite uma mensagem..."
++                maxlength="2000"
++                autocomplete="off"
++            >
++            <button type="submit" id="ppcSend" class="btn-primary" style="min-height:auto; padding:10px 16px;" disabled>
++                Enviar
++            </button>
++        </form>
++
++    </div>
++
++</aside>
++
++<script>
++document.addEventListener('DOMContentLoaded', function () {
++    const panel = document.getElementById('projectPanel');
++    const backdrop = document.getElementById('projectPanelBackdrop');
++    const closeBtn = document.getElementById('ppClose');
++    const closeFromChatBtn = document.getElementById('ppCloseFromChat');
++
++    const viewDetails = document.getElementById('ppViewDetails');
++    const viewChat = document.getElementById('ppViewChat');
++
++    const fields = {
++        title: document.getElementById('ppTitle'),
++        code: document.getElementById('ppCode'),
++        description: document.getElementById('ppDescription'),
++        owner: document.getElementById('ppOwner'),
++        members: document.getElementById('ppMembers'),
++        created: document.getElementById('ppCreated'),
++    };
++
++    const openChatBtn = document.getElementById('ppOpenChatBtn');
++    const chatBackBtn = document.getElementById('ppChatBack');
++    const chatMaximizeLink = document.getElementById('ppChatMaximize');
++    const chatTitle = document.getElementById('ppChatTitle');
++    const chatStatus = document.getElementById('ppChatStatus');
++    const chatMessages = document.getElementById('ppcMessages');
++    const chatForm = document.getElementById('ppcForm');
++    const chatInput = document.getElementById('ppcInput');
++    const chatSend = document.getElementById('ppcSend');
++
++    let currentProject = null;
++    let socket = null;
++
++    function openPanel(row) {
++        currentProject = {
++            title: row.dataset.title,
++            code: row.dataset.code,
++            chatUrl: row.dataset.chatUrl,
++        };
++
++        fields.title.textContent = row.dataset.title;
++        fields.code.textContent = row.dataset.code;
++        fields.description.textContent = row.dataset.description;
++        fields.owner.textContent = row.dataset.owner;
++        fields.members.textContent = row.dataset.members;
++        fields.created.textContent = row.dataset.created;
++
++        showDetailsView();
++
++        panel.classList.add('open');
++        backdrop.classList.add('open');
++    }
++
++    function closePanel() {
++        panel.classList.remove('open');
++        backdrop.classList.remove('open');
++        disconnectChat();
++    }
++
++    function showDetailsView() {
++        disconnectChat();
++        viewChat.style.display = 'none';
++        viewDetails.style.display = 'flex';
++    }
++
++    function showChatView() {
++        if (!currentProject) return;
++
++        viewDetails.style.display = 'none';
++        viewChat.style.display = 'flex';
++
++        chatTitle.textContent = currentProject.title;
++
++        // Href real: se o usuário clicar, sai da barrinha e vai pra página de chat de verdade.
++        chatMaximizeLink.href = currentProject.chatUrl;
++
++        connectChat(currentProject.code);
++    }
++
++    function connectChat(code) {
++        disconnectChat();
++
++        chatMessages.innerHTML = '<div class="ppc-empty">Carregando mensagens...</div>';
++        chatStatus.textContent = 'Conectando...';
++        chatSend.disabled = true;
++
++        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
++        socket = new WebSocket(`${protocol}//${window.location.host}/ws/projetos/${code}/chat/`);
++
++        socket.onopen = function () {
++            chatStatus.textContent = 'Conectado';
++            chatSend.disabled = false;
++            chatInput.focus();
++        };
++
++        socket.onmessage = function (event) {
++            const data = JSON.parse(event.data);
++
++            if (data.type === 'history') {
++                chatMessages.innerHTML = '';
++
++                if (data.messages.length === 0) {
++                    chatMessages.innerHTML = '<div class="ppc-empty">Nenhuma mensagem ainda.</div>';
++                } else {
++                    data.messages.forEach(addChatMessage);
++                }
++
++                scrollChatToBottom();
++                return;
++            }
++
++            if (data.type === 'message') {
++                addChatMessage(data);
++                scrollChatToBottom();
++            }
++        };
++
++        socket.onclose = function () {
++            chatStatus.textContent = 'Desconectado';
++            chatSend.disabled = true;
++        };
++
++        socket.onerror = function () {
++            chatStatus.textContent = 'Erro na conexão';
++            chatSend.disabled = true;
++        };
++    }
++
++    function disconnectChat() {
++        if (socket) {
++            socket.onclose = null;
++            socket.close();
++            socket = null;
++        }
++    }
++
++    function addChatMessage(message) {
++        const empty = chatMessages.querySelector('.ppc-empty');
++        if (empty) empty.remove();
++
++        const wrapper = document.createElement('div');
++        wrapper.className = 'ppc-message';
++
++        const header = document.createElement('div');
++        header.className = 'ppc-message-header';
++
++        const username = document.createElement('span');
++        username.className = 'ppc-username';
++        username.textContent = message.username;
++
++        const time = document.createElement('span');
++        time.className = 'ppc-time';
++        time.textContent = new Date(message.created_at).toLocaleString('pt-BR');
++
++        header.appendChild(username);
++        header.appendChild(time);
++
++        const content = document.createElement('div');
++        content.className = 'ppc-message-content';
++        // textContent (não innerHTML) evita que HTML/JS numa mensagem seja executado.
++        content.textContent = message.message;
++
++        wrapper.appendChild(header);
++        wrapper.appendChild(content);
++
++        chatMessages.appendChild(wrapper);
++    }
++
++    function scrollChatToBottom() {
++        chatMessages.scrollTop = chatMessages.scrollHeight;
++    }
++
++    document.querySelectorAll('.project-row').forEach(function (row) {
++        row.addEventListener('click', function () {
++            openPanel(row);
++        });
++    });
++
++    openChatBtn.addEventListener('click', showChatView);
++    chatBackBtn.addEventListener('click', showDetailsView);
++
++    closeBtn.addEventListener('click', closePanel);
++    closeFromChatBtn.addEventListener('click', closePanel);
++    backdrop.addEventListener('click', closePanel);
++
++    chatForm.addEventListener('submit', function (event) {
++        event.preventDefault();
++
++        const content = chatInput.value.trim();
++        if (!content || !socket || socket.readyState !== WebSocket.OPEN) {
++            return;
++        }
++
++        socket.send(JSON.stringify({ message: content }));
++        chatInput.value = '';
++        chatInput.focus();
++    });
++
++    document.addEventListener('keydown', function (event) {
++        if (event.key === 'Escape') {
++            closePanel();
++        }
++    });
++});
++</script>
++
++{% endblock %}
+diff --git a/templates/settings.html b/templates/settings.html
+index c67bdbd..9a24aee 100644
+--- a/templates/settings.html
++++ b/templates/settings.html
+@@ -20,7 +20,7 @@
+                 Painel
+             </a>
+ 
+-            <a href="#" class="menu-item">
++            <a href="{% url 'project_list' %}" class="menu-item">
+                 Projetos
+             </a>
+ 
+diff --git a/templates/test.html b/templates/test.html
+index 0830c0e..0283490 100644
+--- a/templates/test.html
++++ b/templates/test.html
+@@ -44,6 +44,22 @@
+             letter-spacing: -0.5px;
+         }
+ 
++        .chat-back-link {
++            display: inline-block;
++            color: #777777;
++            font-size: 11px;
++            font-weight: 700;
++            text-transform: uppercase;
++            letter-spacing: 0.6px;
++            text-decoration: none;
++            margin-bottom: 8px;
++            transition: color 0.2s ease;
++        }
++
++        .chat-back-link:hover {
++            color: #ffffff;
++        }
++
+         .chat-header span {
+             color: #777777;
+             font-size: 11px;
+@@ -259,7 +275,13 @@
+ 
+     <div class="chat-header">
+ 
+-        <h1>Chat do Projeto</h1>
++        <div>
++            <a href="{% url 'project_list' %}" id="backLink" class="chat-back-link">
++                ← Voltar
++            </a>
++
++            <h1>Chat do Projeto</h1>
++        </div>
+ 
+         <span>
+             Comunicação da equipe
+@@ -311,7 +333,22 @@
+ 
+ <script>
+ 
+-  
++    /*
++     * Botão "Voltar": se o usuário veio de outra página do próprio site
++     * (dashboard ou lista de projetos), volta pra ela com o histórico do
++     * navegador. Se a página foi aberta direto (link salvo, nova aba, etc.),
++     * o href real do link já leva pra lista de projetos.
++     */
++    const backLink = document.getElementById("backLink");
++
++    backLink.addEventListener("click", function (event) {
++        if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
++            event.preventDefault();
++            history.back();
++        }
++    });
++
++
+     const projectCode = "{{ project_code }}";
+ 
+ 

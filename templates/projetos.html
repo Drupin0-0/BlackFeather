@@ -1,0 +1,426 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Projetos - Sincrow{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-wrapper">
+
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <aside class="dashboard-sidebar">
+
+        <div class="sidebar-brand">
+            <div class="sidebar-logo">SC</div>
+            <span>Sincrow</span>
+        </div>
+
+        <nav class="sidebar-menu">
+
+            <a href="{% url 'accounts:dashboard' %}" class="menu-item">
+                Painel
+            </a>
+
+            <a href="{% url 'project_list' %}" class="menu-item active">
+                Projetos
+            </a>
+
+            <a href="#" class="menu-item">
+                Minhas Tarefas
+            </a>
+
+            <a href="{% url 'accounts:settings' %}" class="menu-item">
+                Configurações
+            </a>
+
+            <a href="{% url 'accounts:view_profile' %}" class="menu-item">
+                Meu Perfil
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="{% url 'accounts:logout' %}" class="logout-btn">
+                Sair
+            </a>
+        </div>
+
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="dashboard-main">
+
+        <header class="main-header">
+            <h1>Projetos</h1>
+
+            <div class="user-profile">
+                Logado como <strong>{{ user.profile.name|default:user.email }}</strong>
+            </div>
+        </header>
+
+        <div class="projects-toolbar">
+            <span style="color:#8c8c8c; font-size:13px;">
+                {{ projects|length }} projeto(s) vinculado(s) à sua conta
+            </span>
+
+            <a href="{% url 'project_create' %}" class="btn-primary" style="text-decoration:none;">
+                + Criar Projeto
+            </a>
+        </div>
+
+        <div class="projects-table-wrapper">
+
+            {% if projects %}
+
+                <table class="projects-table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Código</th>
+                            <th>Líder</th>
+                            <th>Membros</th>
+                            <th>Criado em</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for project in projects %}
+                            <tr
+                                class="project-row"
+                                data-id="{{ project.pk }}"
+                                data-title="{{ project.title|escapejs }}"
+                                data-code="{{ project.code }}"
+                                data-description="{{ project.description|default:"Sem descrição."|escapejs }}"
+                                data-owner="{{ project.owner.profile.name|default:project.owner.email|escapejs }}"
+                                data-members="{{ project.members_count }}"
+                                data-created="{{ project.created_at|date:"d/m/Y" }}"
+                                data-chat-url="{% url 'project_chat' project.code %}"
+                            >
+                                <td class="project-name-cell">
+                                    <strong>{{ project.title }}</strong>
+                                    <small>{{ project.description|default:"Sem descrição"|truncatechars:60 }}</small>
+                                </td>
+                                <td><span class="code-badge">{{ project.code }}</span></td>
+                                <td>{{ project.owner.profile.name|default:project.owner.email }}</td>
+                                <td>{{ project.members_count }}</td>
+                                <td>{{ project.created_at|date:"d/m/Y" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+            {% else %}
+
+                <div class="projects-empty-cell">
+                    Você ainda não faz parte de nenhum projeto.
+                    <br>
+                    <a href="{% url 'project_create' %}" class="btn-primary" style="text-decoration:none; display:inline-flex; margin-top:16px;">
+                        + Criar Projeto
+                    </a>
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </main>
+
+</div>
+
+<!-- PAINEL LATERAL DE DETALHES DO PROJETO -->
+<div class="project-panel-backdrop" id="projectPanelBackdrop"></div>
+
+<aside class="project-panel" id="projectPanel">
+
+    <!-- VISÃO 1: DETALHES DO PROJETO -->
+    <div class="project-panel-view" id="ppViewDetails">
+
+        <div class="project-panel-header">
+            <h2 id="ppTitle">—</h2>
+            <button type="button" class="project-panel-close" id="ppClose">✕</button>
+        </div>
+
+        <div class="project-panel-meta">
+
+            <div class="project-panel-meta-item">
+                <span>Código</span>
+                <strong id="ppCode" class="code-badge">—</strong>
+            </div>
+
+            <div class="project-panel-meta-item">
+                <span>Descrição</span>
+                <p id="ppDescription">—</p>
+            </div>
+
+            <div class="project-panel-meta-item">
+                <span>Líder</span>
+                <strong id="ppOwner">—</strong>
+            </div>
+
+            <div class="project-panel-meta-item">
+                <span>Membros</span>
+                <strong id="ppMembers">—</strong>
+            </div>
+
+            <div class="project-panel-meta-item">
+                <span>Criado em</span>
+                <strong id="ppCreated">—</strong>
+            </div>
+
+        </div>
+
+        <div class="project-panel-actions">
+            <!-- Não navega: apenas alterna para a view de chat, dentro do mesmo painel. -->
+            <button type="button" id="ppOpenChatBtn" class="btn-secondary-action" style="width:100%;">
+                Abrir chat
+            </button>
+        </div>
+
+    </div>
+
+    <!-- VISÃO 2: CHAT EMBUTIDO (mesma página, mesma barrinha) -->
+    <div class="project-panel-view project-panel-chat" id="ppViewChat" style="display:none;">
+
+        <div class="project-panel-chat-header">
+            <button type="button" class="ppc-icon-btn" id="ppChatBack" title="Voltar para detalhes">←</button>
+
+            <div class="ppc-chat-title">
+                <strong id="ppChatTitle">—</strong>
+                <span id="ppChatStatus">Conectando...</span>
+            </div>
+
+            <!-- Link real: definido via JS antes de aparecer. Clique = navegação normal
+                 para a página de chat de verdade (/chat/projetos/<code>/). -->
+            <a id="ppChatMaximize" href="#" class="ppc-icon-btn" title="Abrir em tela cheia">⤢</a>
+
+            <button type="button" class="ppc-icon-btn" id="ppCloseFromChat" title="Fechar">✕</button>
+        </div>
+
+        <div class="ppc-messages" id="ppcMessages">
+            <div class="ppc-empty">Carregando mensagens...</div>
+        </div>
+
+        <form class="ppc-form" id="ppcForm">
+            <input
+                type="text"
+                id="ppcInput"
+                placeholder="Digite uma mensagem..."
+                maxlength="2000"
+                autocomplete="off"
+            >
+            <button type="submit" id="ppcSend" class="btn-primary" style="min-height:auto; padding:10px 16px;" disabled>
+                Enviar
+            </button>
+        </form>
+
+    </div>
+
+</aside>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const panel = document.getElementById('projectPanel');
+    const backdrop = document.getElementById('projectPanelBackdrop');
+    const closeBtn = document.getElementById('ppClose');
+    const closeFromChatBtn = document.getElementById('ppCloseFromChat');
+
+    const viewDetails = document.getElementById('ppViewDetails');
+    const viewChat = document.getElementById('ppViewChat');
+
+    const fields = {
+        title: document.getElementById('ppTitle'),
+        code: document.getElementById('ppCode'),
+        description: document.getElementById('ppDescription'),
+        owner: document.getElementById('ppOwner'),
+        members: document.getElementById('ppMembers'),
+        created: document.getElementById('ppCreated'),
+    };
+
+    const openChatBtn = document.getElementById('ppOpenChatBtn');
+    const chatBackBtn = document.getElementById('ppChatBack');
+    const chatMaximizeLink = document.getElementById('ppChatMaximize');
+    const chatTitle = document.getElementById('ppChatTitle');
+    const chatStatus = document.getElementById('ppChatStatus');
+    const chatMessages = document.getElementById('ppcMessages');
+    const chatForm = document.getElementById('ppcForm');
+    const chatInput = document.getElementById('ppcInput');
+    const chatSend = document.getElementById('ppcSend');
+
+    let currentProject = null;
+    let socket = null;
+
+    function openPanel(row) {
+        currentProject = {
+            title: row.dataset.title,
+            code: row.dataset.code,
+            chatUrl: row.dataset.chatUrl,
+        };
+
+        fields.title.textContent = row.dataset.title;
+        fields.code.textContent = row.dataset.code;
+        fields.description.textContent = row.dataset.description;
+        fields.owner.textContent = row.dataset.owner;
+        fields.members.textContent = row.dataset.members;
+        fields.created.textContent = row.dataset.created;
+
+        showDetailsView();
+
+        panel.classList.add('open');
+        backdrop.classList.add('open');
+    }
+
+    function closePanel() {
+        panel.classList.remove('open');
+        backdrop.classList.remove('open');
+        disconnectChat();
+    }
+
+    function showDetailsView() {
+        disconnectChat();
+        viewChat.style.display = 'none';
+        viewDetails.style.display = 'flex';
+    }
+
+    function showChatView() {
+        if (!currentProject) return;
+
+        viewDetails.style.display = 'none';
+        viewChat.style.display = 'flex';
+
+        chatTitle.textContent = currentProject.title;
+
+        // Href real: se o usuário clicar, sai da barrinha e vai pra página de chat de verdade.
+        chatMaximizeLink.href = currentProject.chatUrl;
+
+        connectChat(currentProject.code);
+    }
+
+    function connectChat(code) {
+        disconnectChat();
+
+        chatMessages.innerHTML = '<div class="ppc-empty">Carregando mensagens...</div>';
+        chatStatus.textContent = 'Conectando...';
+        chatSend.disabled = true;
+
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        socket = new WebSocket(`${protocol}//${window.location.host}/ws/projetos/${code}/chat/`);
+
+        socket.onopen = function () {
+            chatStatus.textContent = 'Conectado';
+            chatSend.disabled = false;
+            chatInput.focus();
+        };
+
+        socket.onmessage = function (event) {
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'history') {
+                chatMessages.innerHTML = '';
+
+                if (data.messages.length === 0) {
+                    chatMessages.innerHTML = '<div class="ppc-empty">Nenhuma mensagem ainda.</div>';
+                } else {
+                    data.messages.forEach(addChatMessage);
+                }
+
+                scrollChatToBottom();
+                return;
+            }
+
+            if (data.type === 'message') {
+                addChatMessage(data);
+                scrollChatToBottom();
+            }
+        };
+
+        socket.onclose = function () {
+            chatStatus.textContent = 'Desconectado';
+            chatSend.disabled = true;
+        };
+
+        socket.onerror = function () {
+            chatStatus.textContent = 'Erro na conexão';
+            chatSend.disabled = true;
+        };
+    }
+
+    function disconnectChat() {
+        if (socket) {
+            socket.onclose = null;
+            socket.close();
+            socket = null;
+        }
+    }
+
+    function addChatMessage(message) {
+        const empty = chatMessages.querySelector('.ppc-empty');
+        if (empty) empty.remove();
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'ppc-message';
+
+        const header = document.createElement('div');
+        header.className = 'ppc-message-header';
+
+        const username = document.createElement('span');
+        username.className = 'ppc-username';
+        username.textContent = message.username;
+
+        const time = document.createElement('span');
+        time.className = 'ppc-time';
+        time.textContent = new Date(message.created_at).toLocaleString('pt-BR');
+
+        header.appendChild(username);
+        header.appendChild(time);
+
+        const content = document.createElement('div');
+        content.className = 'ppc-message-content';
+        // textContent (não innerHTML) evita que HTML/JS numa mensagem seja executado.
+        content.textContent = message.message;
+
+        wrapper.appendChild(header);
+        wrapper.appendChild(content);
+
+        chatMessages.appendChild(wrapper);
+    }
+
+    function scrollChatToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    document.querySelectorAll('.project-row').forEach(function (row) {
+        row.addEventListener('click', function () {
+            openPanel(row);
+        });
+    });
+
+    openChatBtn.addEventListener('click', showChatView);
+    chatBackBtn.addEventListener('click', showDetailsView);
+
+    closeBtn.addEventListener('click', closePanel);
+    closeFromChatBtn.addEventListener('click', closePanel);
+    backdrop.addEventListener('click', closePanel);
+
+    chatForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        const content = chatInput.value.trim();
+        if (!content || !socket || socket.readyState !== WebSocket.OPEN) {
+            return;
+        }
+
+        socket.send(JSON.stringify({ message: content }));
+        chatInput.value = '';
+        chatInput.focus();
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closePanel();
+        }
+    });
+});
+</script>
+
+{% endblock %}

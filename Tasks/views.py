@@ -5,7 +5,7 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -41,6 +41,21 @@ class TaskViewSet(viewsets.ModelViewSet):
         if not (project.owner == self.request.user or self.request.user in project.members.all()):
             raise PermissionDenied("Você não tem acesso a esse projeto.")
         serializer.save()
+
+
+@login_required
+def project_list_view(request):
+    projects = Project.objects.filter(
+        Q(owner=request.user) | Q(members=request.user)
+    ).select_related(
+        'owner__profile'
+    ).prefetch_related(
+        'members__profile'
+    ).annotate(
+        members_count=Count('members', distinct=True)
+    ).distinct().order_by('-created_at')
+
+    return render(request, 'projetos.html', {'projects': projects})
 
 
 @login_required
