@@ -44,6 +44,22 @@
             letter-spacing: -0.5px;
         }
 
+        .chat-back-link {
+            display: inline-block;
+            color: #777777;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            text-decoration: none;
+            margin-bottom: 8px;
+            transition: color 0.2s ease;
+        }
+
+        .chat-back-link:hover {
+            color: #ffffff;
+        }
+
         .chat-header span {
             color: #777777;
             font-size: 11px;
@@ -259,7 +275,13 @@
 
     <div class="chat-header">
 
-        <h1>Chat do Projeto</h1>
+        <div>
+            <a href="{% url 'project_list' %}" id="backLink" class="chat-back-link">
+                ← Voltar
+            </a>
+
+            <h1>Chat do Projeto</h1>
+        </div>
 
         <span>
             Comunicação da equipe
@@ -311,7 +333,22 @@
 
 <script>
 
-  
+    /*
+     * Botão "Voltar": se o usuário veio de outra página do próprio site
+     * (dashboard ou lista de projetos), volta pra ela com o histórico do
+     * navegador. Se a página foi aberta direto (link salvo, nova aba, etc.),
+     * o href real do link já leva pra lista de projetos.
+     */
+    const backLink = document.getElementById("backLink");
+
+    backLink.addEventListener("click", function (event) {
+        if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
+            event.preventDefault();
+            history.back();
+        }
+    });
+
+
     const projectCode = "{{ project_code }}";
 
 
