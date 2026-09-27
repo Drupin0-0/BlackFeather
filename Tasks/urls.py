@@ -5,6 +5,7 @@ from .views import (
     ProjectViewSet,
     TaskViewSet,
     project_list_view,
+    my_tasks_view,
     create_project_view,
     create_task_view,
     update_task_status_view,
@@ -19,6 +20,7 @@ router.register(r'tarefas', TaskViewSet, basename='tarefas')
 
 urlpatterns = [
     path('meus-projetos/', project_list_view, name='project_list'),
+    path('minhas-tarefas/', my_tasks_view, name='my_tasks'),
     path('projetos/novo/', create_project_view, name='project_create'),
     path('projetos/sugerir-ia/', suggest_project_ai_view, name='project_suggest_ai'),
     path('tarefas/novo/', create_task_view, name='task_create'),
