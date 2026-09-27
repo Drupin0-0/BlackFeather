@@ -9,6 +9,7 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
 
@@ -41,6 +42,63 @@ class TaskViewSet(viewsets.ModelViewSet):
         if not (project.owner == self.request.user or self.request.user in project.members.all()):
             raise PermissionDenied("Você não tem acesso a esse projeto.")
         serializer.save()
+
+
+@login_required
+def my_tasks_view(request):
+    today = timezone.localdate()
+    tomorrow = today + timezone.timedelta(days=1)
+    week_end = today + timezone.timedelta(days=7)
+
+    base_qs = Task.objects.filter(
+        task_responsible=request.user
+    ).select_related('project').order_by('deadline', 'created_at')
+
+    pending_qs = base_qs.exclude(status='completed')
+
+    buckets = {
+        'overdue': [],
+        'today': [],
+        'tomorrow': [],
+        'week': [],
+        'later': [],
+        'no_deadline': [],
+    }
+
+    for task in pending_qs:
+        if not task.deadline:
+            buckets['no_deadline'].append(task)
+        elif task.deadline < today:
+            buckets['overdue'].append(task)
+        elif task.deadline == today:
+            buckets['today'].append(task)
+        elif task.deadline == tomorrow:
+            buckets['tomorrow'].append(task)
+        elif task.deadline <= week_end:
+            buckets['week'].append(task)
+        else:
+            buckets['later'].append(task)
+
+    sections = [
+        {'key': 'overdue', 'label': 'Atrasadas', 'tone': 'danger', 'tasks': buckets['overdue']},
+        {'key': 'today', 'label': 'Hoje', 'tone': 'today', 'tasks': buckets['today']},
+        {'key': 'tomorrow', 'label': 'Amanhã', 'tone': 'default', 'tasks': buckets['tomorrow']},
+        {'key': 'week', 'label': 'Essa semana', 'tone': 'default', 'tasks': buckets['week']},
+        {'key': 'later', 'label': 'Mais pra frente', 'tone': 'muted', 'tasks': buckets['later']},
+        {'key': 'no_deadline', 'label': 'Sem prazo definido', 'tone': 'muted', 'tasks': buckets['no_deadline']},
+    ]
+
+    recently_completed = base_qs.filter(
+        status='completed'
+    ).order_by('-updated_at')[:8]
+
+    context = {
+        'sections': sections,
+        'recently_completed': recently_completed,
+        'pending_total': pending_qs.count(),
+    }
+
+    return render(request, 'minhas_tarefas.html', context)
 
 
 @login_required

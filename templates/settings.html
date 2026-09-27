@@ -24,17 +24,19 @@
                 Projetos
             </a>
 
-            <a href="#" class="menu-item">
+            <a href="{% url 'my_tasks' %}" class="menu-item">
                 Minhas Tarefas
+            </a>
+
+             <a href="{% url 'accounts:settings' %}" class="menu-item active">
+                Configurações
             </a>
 
             <a href="{% url 'accounts:view_profile' %}" class="menu-item">
                 Meu Perfil
             </a>
 
-            <a href="{% url 'accounts:settings' %}" class="menu-item active">
-                Configurações
-            </a>
+            
 
         </nav>
 

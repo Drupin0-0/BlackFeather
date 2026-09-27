@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Minhas Tarefas - Sincrow{% endblock %}
+
+{% block content %}
+
+{% csrf_token %}
+
+<div class="dashboard-wrapper">
+
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <aside class="dashboard-sidebar">
+
+        <div class="sidebar-brand">
+            <div class="sidebar-logo">SC</div>
+            <span>Sincrow</span>
+        </div>
+
+        <nav class="sidebar-menu">
+
+            <a href="{% url 'accounts:dashboard' %}" class="menu-item">
+                Painel
+            </a>
+
+            <a href="{% url 'project_list' %}" class="menu-item">
+                Projetos
+            </a>
+
+            <a href="{% url 'my_tasks' %}" class="menu-item active">
+                Minhas Tarefas
+            </a>
+
+            <a href="{% url 'accounts:settings' %}" class="menu-item">
+                Configurações
+            </a>
+
+            <a href="{% url 'accounts:view_profile' %}" class="menu-item">
+                Meu Perfil
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="{% url 'accounts:logout' %}" class="logout-btn">
+                Sair
+            </a>
+        </div>
+
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="dashboard-main">
+
+        <header class="main-header">
+            <h1>Minhas Tarefas</h1>
+
+            <div class="user-profile">
+                Logado como <strong>{{ user.profile.name|default:user.email }}</strong>
+            </div>
+        </header>
+
+        <div class="tasks-toolbar">
+            <span id="pendingCounter">
+                {{ pending_total }} tarefa(s) sob sua responsabilidade
+            </span>
+        </div>
+
+        {% if pending_total == 0 and not recently_completed %}
+
+            <div class="agenda-empty-state">
+                Nenhuma tarefa atribuída a você no momento. 🎉
+            </div>
+
+        {% else %}
+
+            {% for section in sections %}
+                {% if section.tasks %}
+                    <section class="agenda-section tone-{{ section.tone }}" data-section="{{ section.key }}">
+
+                        <div class="agenda-section-header">
+                            <h2>{{ section.label }}</h2>
+                            <span class="agenda-count">{{ section.tasks|length }}</span>
+                        </div>
+
+                        <div class="task-agenda-list">
+                            {% for task in section.tasks %}
+                                <div
+                                    class="task-agenda-card"
+                                    data-task-id="{{ task.pk }}"
+                                    data-title="{{ task.title|escapejs }}"
+                                    data-project="{{ task.project.title|escapejs }}"
+                                    data-description="{{ task.description|default:"Sem descrição."|escapejs }}"
+                                    data-priority-label="{{ task.get_priority_display }}"
+                                    data-priority="{{ task.priority }}"
+                                    data-status="{{ task.status }}"
+                                    data-deadline="{{ task.deadline|date:"d/m/Y"|default:"Sem prazo definido" }}"
+                                >
+                                    <label class="task-agenda-check" onclick="event.stopPropagation();">
+                                        <input type="checkbox" class="task-complete-checkbox" data-task-id="{{ task.pk }}">
+                                        <span class="task-agenda-checkmark"></span>
+                                    </label>
+
+                                    <div class="task-agenda-body">
+                                        <div class="task-agenda-top">
+                                            <span class="task-project">{{ task.project.title }}</span>
+                                            <span class="task-priority priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                                        </div>
+
+                                        <strong class="task-agenda-title">{{ task.title }}</strong>
+
+                                        {% if task.deadline %}
+                                            <span class="task-agenda-deadline">{{ task.deadline|date:"d/m/Y" }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                    </section>
+                {% endif %}
+            {% endfor %}
+
+            {% if recently_completed %}
+                <section class="agenda-section recently-completed-section" data-section="completed">
+
+                    <div class="agenda-section-header">
+                        <h2>Concluídas recentemente</h2>
+                        <span class="agenda-count">{{ recently_completed|length }}</span>
+                    </div>
+
+                    <div class="task-agenda-list">
+                        {% for task in recently_completed %}
+                            <div
+                                class="task-agenda-card task-agenda-card--done"
+                                data-task-id="{{ task.pk }}"
+                                data-title="{{ task.title|escapejs }}"
+                                data-project="{{ task.project.title|escapejs }}"
+                                data-description="{{ task.description|default:"Sem descrição."|escapejs }}"
+                                data-priority-label="{{ task.get_priority_display }}"
+                                data-priority="{{ task.priority }}"
+                                data-status="{{ task.status }}"
+                                data-deadline="{{ task.deadline|date:"d/m/Y"|default:"Sem prazo definido" }}"
+                            >
+                                <label class="task-agenda-check" onclick="event.stopPropagation();">
+                                    <input type="checkbox" class="task-complete-checkbox" data-task-id="{{ task.pk }}" checked>
+                                    <span class="task-agenda-checkmark"></span>
+                                </label>
+
+                                <div class="task-agenda-body">
+                                    <div class="task-agenda-top">
+                                        <span class="task-project">{{ task.project.title }}</span>
+                                        <span class="task-priority priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                                    </div>
+
+                                    <strong class="task-agenda-title">{{ task.title }}</strong>
+
+                                    {% if task.deadline %}
+                                        <span class="task-agenda-deadline">{{ task.deadline|date:"d/m/Y" }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                </section>
+            {% endif %}
+
+        {% endif %}
+
+    </main>
+
+</div>
+
+<!-- PAINEL LATERAL DE DETALHES DA TAREFA -->
+<div class="project-panel-backdrop" id="taskPanelBackdrop"></div>
+
+<aside class="project-panel" id="taskPanel">
+
+    <div class="project-panel-header">
+        <h2 id="tpTitle">—</h2>
+        <button type="button" class="project-panel-close" id="tpClose">✕</button>
+    </div>
+
+    <div class="project-panel-meta">
+
+        <div class="project-panel-meta-item">
+            <span>Projeto</span>
+            <strong id="tpProject">—</strong>
+        </div>
+
+        <div class="project-panel-meta-item">
+            <span>Descrição</span>
+            <p id="tpDescription">—</p>
+        </div>
+
+        <div class="project-panel-meta-item">
+            <span>Prioridade</span>
+            <strong id="tpPriority">—</strong>
+        </div>
+
+        <div class="project-panel-meta-item">
+            <span>Prazo</span>
+            <strong id="tpDeadline">—</strong>
+        </div>
+
+        <div class="project-panel-meta-item">
+            <span>Status</span>
+            <strong id="tpStatus">—</strong>
+        </div>
+
+    </div>
+
+    <div class="project-panel-actions">
+        <button type="button" id="tpToggleStatus" class="btn-secondary-action" style="width:100%;">
+            Marcar como concluída
+        </button>
+    </div>
+
+</aside>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+    const panel = document.getElementById('taskPanel');
+    const backdrop = document.getElementById('taskPanelBackdrop');
+    const closeBtn = document.getElementById('tpClose');
+    const toggleBtn = document.getElementById('tpToggleStatus');
+    const pendingCounter = document.getElementById('pendingCounter');
+
+    const fields = {
+        title: document.getElementById('tpTitle'),
+        project: document.getElementById('tpProject'),
+        description: document.getElementById('tpDescription'),
+        priority: document.getElementById('tpPriority'),
+        deadline: document.getElementById('tpDeadline'),
+        status: document.getElementById('tpStatus'),
+    };
+
+    let currentCard = null;
+
+    function statusLabel(status) {
+        return status === 'completed' ? 'Concluída'
+            : status === 'in_progress' ? 'Em andamento'
+            : 'Pendente';
+    }
+
+    function openPanel(card) {
+        currentCard = card;
+
+        fields.title.textContent = card.dataset.title;
+        fields.project.textContent = card.dataset.project;
+        fields.description.textContent = card.dataset.description;
+        fields.priority.textContent = card.dataset.priorityLabel;
+        fields.deadline.textContent = card.dataset.deadline;
+        fields.status.textContent = statusLabel(card.dataset.status);
+
+        toggleBtn.textContent = card.dataset.status === 'completed'
+            ? 'Reabrir tarefa'
+            : 'Marcar como concluída';
+
+        panel.classList.add('open');
+        backdrop.classList.add('open');
+    }
+
+    function closePanel() {
+        panel.classList.remove('open');
+        backdrop.classList.remove('open');
+        currentCard = null;
+    }
+
+    function updateStatus(taskId, newStatus) {
+        return fetch(`/tarefas/${taskId}/status/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: new URLSearchParams({ status: newStatus }),
+        }).then(function (response) {
+            return response.json();
+        });
+    }
+
+    function updatePendingCounter(delta) {
+        if (!pendingCounter) return;
+        const match = pendingCounter.textContent.match(/\d+/);
+        if (!match) return;
+        const newValue = Math.max(0, parseInt(match[0], 10) + delta);
+        pendingCounter.textContent = pendingCounter.textContent.replace(/\d+/, newValue);
+    }
+
+    function completeCardVisually(card) {
+        card.classList.add('task-agenda-card--done');
+        card.dataset.status = 'completed';
+        setTimeout(function () {
+            card.style.opacity = '0';
+            card.style.transform = 'translateX(12px)';
+            setTimeout(function () { card.remove(); }, 250);
+        }, 500);
+    }
+
+    document.querySelectorAll('.task-agenda-card').forEach(function (card) {
+        card.addEventListener('click', function () {
+            openPanel(card);
+        });
+    });
+
+    document.querySelectorAll('.task-complete-checkbox').forEach(function (checkbox) {
+        checkbox.addEventListener('change', function () {
+            const card = checkbox.closest('.task-agenda-card');
+            const taskId = checkbox.dataset.taskId;
+            const willComplete = checkbox.checked;
+            const newStatus = willComplete ? 'completed' : 'pending';
+
+            checkbox.disabled = true;
+
+            updateStatus(taskId, newStatus).then(function (data) {
+                checkbox.disabled = false;
+
+                if (!data.success) {
+                    checkbox.checked = !willComplete;
+                    return;
+                }
+
+                if (willComplete) {
+                    updatePendingCounter(-1);
+                    completeCardVisually(card);
+                } else {
+                    // Reabrindo a partir da lista de "Concluídas recentemente":
+                    // some da lista de concluídas; a tarefa volta a aparecer
+                    // na próxima vez que a página for recarregada.
+                    updatePendingCounter(1);
+                    card.style.opacity = '0';
+                    setTimeout(function () { card.remove(); }, 250);
+                }
+            }).catch(function () {
+                checkbox.disabled = false;
+                checkbox.checked = !willComplete;
+            });
+        });
+    });
+
+    toggleBtn.addEventListener('click', function () {
+        if (!currentCard) return;
+
+        const willComplete = currentCard.dataset.status !== 'completed';
+        const newStatus = willComplete ? 'completed' : 'pending';
+
+        updateStatus(currentCard.dataset.taskId, newStatus).then(function (data) {
+            if (!data.success) return;
+
+            if (willComplete) {
+                updatePendingCounter(-1);
+                completeCardVisually(currentCard);
+            } else {
+                updatePendingCounter(1);
+                currentCard.style.opacity = '0';
+                setTimeout(function () { currentCard.remove(); }, 250);
+            }
+
+            closePanel();
+        });
+    });
+
+    closeBtn.addEventListener('click', closePanel);
+    backdrop.addEventListener('click', closePanel);
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') {
+            closePanel();
+        }
+    });
+});
+</script>
+
+{% endblock %}

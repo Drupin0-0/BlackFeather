@@ -1337,9 +1337,174 @@ body {
 .ppc-form input::placeholder {
     color: #3d3d3d;
 }
-.ppc-form input#ppcInput {
-    flex: 1 1 auto !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box !important;
+
+/* ==========================================================
+   PÁGINA "MINHAS TAREFAS" — Agenda agrupada por prazo
+   ========================================================== */
+
+.tasks-toolbar {
+    margin-bottom: 24px;
+}
+
+.tasks-toolbar span {
+    color: #8c8c8c;
+    font-size: 13px;
+}
+
+.agenda-empty-state {
+    text-align: center;
+    color: #7a7a7a;
+    padding: 60px 20px;
+    background: #090909;
+    border: 1px solid #1a1a1a;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.agenda-section {
+    margin-bottom: 28px;
+}
+
+.agenda-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.agenda-section-header h2 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #e5e5e5;
+}
+
+.agenda-count {
+    font-size: 11px;
+    color: #8c8c8c;
+    background: #141414;
+    border: 1px solid #262626;
+    padding: 2px 9px;
+    border-radius: 20px;
+}
+
+.agenda-section.tone-danger .agenda-section-header h2 {
+    color: #ff8080;
+}
+
+.agenda-section.tone-danger .agenda-count {
+    color: #ff8080;
+    border-color: rgba(255, 123, 123, 0.35);
+    background: rgba(255, 82, 82, 0.08);
+}
+
+.task-agenda-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.task-agenda-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #101010;
+    border: 1px solid #1d1d1d;
+    border-radius: 6px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, opacity 0.3s ease, transform 0.3s ease;
+}
+
+.task-agenda-card:hover {
+    background: #151515;
+}
+
+.agenda-section.tone-danger .task-agenda-card {
+    border-left: 2px solid #ff5252;
+}
+
+.task-agenda-check {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: pointer;
+}
+
+.task-agenda-check input {
+    position: absolute;
+    opacity: 0;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.task-agenda-checkmark {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #3a3a3a;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #000000;
+    font-weight: 700;
+    transition: all 0.15s ease;
+}
+
+.task-agenda-check input:checked + .task-agenda-checkmark {
+    background: #ffffff;
+    border-color: #ffffff;
+}
+
+.task-agenda-check input:checked + .task-agenda-checkmark::after {
+    content: "✓";
+}
+
+.task-agenda-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.task-agenda-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.task-agenda-title {
+    display: block;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    line-height: 1.4;
+}
+
+.task-agenda-deadline {
+    display: inline-block;
+    font-size: 10px;
+    color: #777777;
+}
+
+.task-agenda-card--done {
+    opacity: 0.45;
+}
+
+.task-agenda-card--done .task-agenda-title {
+    text-decoration: line-through;
+}
+
+.recently-completed-section {
+    margin-top: 8px;
+    padding-top: 20px;
+    border-top: 1px solid #141414;
 }
