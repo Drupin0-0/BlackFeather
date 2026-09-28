@@ -1508,3 +1508,61 @@ body {
     padding-top: 20px;
     border-top: 1px solid #141414;
 }
+
+/* ==========================================================
+BOTÃO DE NOTIFICAÇÕES
+========================================================== */
+
+.notification-button {
+position: relative;
+display: inline-flex;
+align-items: center;
+justify-content: center;
+width: 36px;
+height: 36px;
+padding: 0;
+color: #8c8c8c;
+background: transparent;
+border: 1px solid #1c1c1c;
+border-radius: 4px;
+text-decoration: none;
+cursor: pointer;
+transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.notification-button:hover {
+color: #ffffff;
+background: #111111;
+border-color: #2a2a2a;
+}
+
+.notification-bell {
+width: 18px;
+height: 18px;
+display: block;
+}
+
+.notification-badge {
+position: absolute;
+top: -5px;
+right: -5px;
+
+min-width: 17px;
+height: 17px;
+padding: 0 4px;
+
+display: flex;
+align-items: center;
+justify-content: center;
+
+border: 2px solid #090909;
+border-radius: 50%;
+
+background: #ffffff;
+color: #000000;
+
+font-size: 9px;
+font-weight: 800;
+line-height: 1;
+
+}

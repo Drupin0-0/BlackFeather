@@ -1,0 +1,726 @@
+.mailbox-page {
+    min-height: 100vh;
+    padding: 28px 32px 40px;
+    background: #0a0a0a;
+    color: #ffffff;
+}
+
+
+/* ==========================================================
+   CABEÇALHO
+   ========================================================== */
+
+.mailbox-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 30px;
+    margin-bottom: 24px;
+}
+
+.mailbox-header-left {
+    display: flex;
+    align-items: flex-end;
+    gap: 24px;
+}
+
+.mailbox-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 11px;
+
+    color: #999;
+    background: #101010;
+    border: 1px solid #222;
+    border-radius: 6px;
+
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+
+    transition:
+        color 0.2s ease,
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.mailbox-back:hover {
+    color: #fff;
+    background: #151515;
+    border-color: #333;
+}
+
+.mailbox-back-icon {
+    font-size: 17px;
+    line-height: 1;
+}
+
+.mailbox-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mailbox-kicker {
+    color: #666;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+}
+
+.mailbox-heading h1 {
+    margin: 0;
+    color: #fff;
+    font-size: 28px;
+    font-weight: 650;
+    letter-spacing: -0.5px;
+}
+
+.mailbox-header-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 3px;
+}
+
+.mailbox-total,
+.mailbox-unread-total {
+    padding: 6px 10px;
+    border: 1px solid #252525;
+    border-radius: 5px;
+
+    color: #888;
+    background: #101010;
+
+    font-size: 12px;
+}
+
+.mailbox-unread-total {
+    color: #ddd;
+}
+
+
+/* ==========================================================
+   CONTAINER
+   ========================================================== */
+
+.mailbox-container {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+}
+
+
+/* ==========================================================
+   BARRA DE FERRAMENTAS
+   ========================================================== */
+
+.mailbox-toolbar {
+    display: grid;
+    grid-template-columns: auto minmax(220px, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.mailbox-filters {
+    display: flex;
+    align-items: center;
+    height: 48px;
+
+    overflow: hidden;
+
+    background: #090909;
+    border: 1px solid #252525;
+    border-radius: 7px;
+}
+
+.mailbox-filter {
+    height: 100%;
+    padding: 0 17px;
+
+    color: #999;
+    background: transparent;
+    border: 0;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+    transition:
+        color 0.2s ease,
+        background 0.2s ease;
+}
+
+.mailbox-filter:hover {
+    color: #fff;
+}
+
+.mailbox-filter.active {
+    color: #fff;
+    background: #1c1f23;
+    box-shadow: inset 0 0 0 1px #30353b;
+}
+
+.filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 18px;
+    height: 18px;
+    margin-left: 5px;
+    padding: 0 5px;
+
+    border-radius: 10px;
+    background: #292d33;
+
+    color: #ddd;
+    font-size: 10px;
+}
+
+
+/* ==========================================================
+   PESQUISA
+   ========================================================== */
+
+.mailbox-search {
+    position: relative;
+    height: 48px;
+}
+
+.mailbox-search .search-icon {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+
+    width: 20px;
+    height: 20px;
+
+    color: #777;
+
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.mailbox-search input {
+    width: 100%;
+    height: 100%;
+
+    padding: 0 16px 0 47px;
+
+    color: #fff;
+    background: #0c0c0c;
+
+    border: 1px solid #292d32;
+    border-radius: 7px;
+    outline: none;
+
+    font-size: 14px;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease;
+}
+
+.mailbox-search input::placeholder {
+    color: #777;
+}
+
+.mailbox-search input:focus {
+    background: #101010;
+    border-color: #444;
+}
+
+
+/* ==========================================================
+   CONTROLES
+   ========================================================== */
+
+.mailbox-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+
+    height: 48px;
+    min-width: 220px;
+    padding: 0 14px;
+
+    color: #999;
+    background: #191e24;
+    border: 1px solid #30363d;
+    border-radius: 7px;
+
+    font-size: 13px;
+
+    cursor: pointer;
+}
+
+.mailbox-control strong {
+    color: #fff;
+    font-weight: 600;
+}
+
+.control-arrow {
+    color: #aaa;
+    font-size: 15px;
+}
+
+
+/* ==========================================================
+   PAINEL DE NOTIFICAÇÕES
+   ========================================================== */
+
+.notification-panel {
+    overflow: hidden;
+
+    background: #101419;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+}
+
+.notification-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    min-height: 60px;
+    padding: 0 18px;
+
+    background: #151a20;
+    border-bottom: 1px solid #30363d;
+}
+
+.select-all {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    color: #ddd;
+
+    font-size: 13px;
+
+    cursor: pointer;
+}
+
+.select-all input,
+.notification-select input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.custom-checkbox {
+    display: inline-block;
+
+    width: 18px;
+    height: 18px;
+
+    background: #202020;
+    border: 1px solid #777;
+    border-radius: 4px;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.select-all input:checked + .custom-checkbox,
+.notification-checkbox:checked + .custom-checkbox {
+    background: #444;
+    border-color: #777;
+}
+
+.select-all input:checked + .custom-checkbox::after,
+.notification-checkbox:checked + .custom-checkbox::after {
+    display: block;
+
+    width: 5px;
+    height: 9px;
+
+    margin: 2px 0 0 5px;
+
+    border-right: 2px solid #fff;
+    border-bottom: 2px solid #fff;
+
+    content: "";
+    transform: rotate(45deg);
+}
+
+.notification-panel-actions {
+    display: flex;
+    align-items: center;
+}
+
+.panel-action {
+    padding: 7px 10px;
+
+    color: #999;
+    background: transparent;
+    border: 0;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    cursor: pointer;
+}
+
+.panel-action:hover {
+    color: #fff;
+}
+
+
+/* ==========================================================
+   LINHAS
+   ========================================================== */
+
+.notification-list {
+    width: 100%;
+}
+
+.notification-row {
+    position: relative;
+
+    display: grid;
+    grid-template-columns: 24px 8px 38px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+
+    min-height: 84px;
+    padding: 12px 18px;
+
+    background: #101419;
+    border-bottom: 1px solid #2a3036;
+
+    transition:
+        background 0.15s ease;
+}
+
+.notification-row:last-child {
+    border-bottom: 0;
+}
+
+.notification-row:hover {
+    background: #161c23;
+}
+
+.notification-row.is-unread {
+    background: #131a22;
+}
+
+.notification-row.is-unread:hover {
+    background: #18212b;
+}
+
+
+/* ==========================================================
+   SELEÇÃO
+   ========================================================== */
+
+.notification-select {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.notification-select .custom-checkbox {
+    width: 18px;
+    height: 18px;
+}
+
+
+/* ==========================================================
+   INDICADOR DE NÃO LIDA
+   ========================================================== */
+
+.notification-unread-dot {
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+    background: #2388ff;
+}
+
+.notification-unread-dot.hidden {
+    visibility: hidden;
+}
+
+
+/* ==========================================================
+   ÍCONE
+   ========================================================== */
+
+.notification-type-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 36px;
+    height: 36px;
+
+    color: #8f9baa;
+    background: #1c2530;
+    border: 1px solid #303b47;
+    border-radius: 50%;
+}
+
+.notification-type-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+
+/* ==========================================================
+   CONTEÚDO
+   ========================================================== */
+
+.notification-content {
+    min-width: 0;
+}
+
+.notification-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    min-width: 0;
+}
+
+.notification-title-row h2 {
+    overflow: hidden;
+
+    margin: 0;
+
+    color: #f0f2f4;
+
+    font-size: 14px;
+    font-weight: 650;
+    line-height: 1.4;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.notification-message {
+    overflow: hidden;
+
+    margin: 3px 0 0;
+
+    color: #9da5ae;
+
+    font-size: 13px;
+    line-height: 1.45;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.notification-new {
+    flex-shrink: 0;
+
+    padding: 3px 7px;
+
+    color: #9ecbff;
+    background: #172a43;
+    border: 1px solid #25486f;
+    border-radius: 10px;
+
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+
+/* ==========================================================
+   META
+   ========================================================== */
+
+.notification-meta {
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 12px;
+
+    min-width: 150px;
+}
+
+.notification-meta time {
+    color: #8b949e;
+
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.notification-mark-read {
+    display: none;
+
+    padding: 5px 8px;
+
+    color: #aaa;
+    background: #1b2229;
+    border: 1px solid #30363d;
+    border-radius: 5px;
+
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.notification-row:hover .notification-mark-read {
+    display: block;
+}
+
+.notification-mark-read:hover {
+    color: #fff;
+    background: #252c34;
+}
+
+
+/* ==========================================================
+   ESTADO VAZIO
+   ========================================================== */
+
+.notification-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 300px;
+    padding: 40px;
+
+    text-align: center;
+}
+
+.empty-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 54px;
+    height: 54px;
+    margin-bottom: 16px;
+
+    color: #777;
+    background: #171c21;
+    border: 1px solid #2d3339;
+    border-radius: 50%;
+}
+
+.empty-icon svg {
+    width: 25px;
+    height: 25px;
+}
+
+.notification-empty h2 {
+    margin: 0 0 6px;
+
+    color: #ddd;
+
+    font-size: 17px;
+}
+
+.notification-empty p {
+    max-width: 420px;
+    margin: 0;
+
+    color: #777;
+
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+
+/* ==========================================================
+   RESPONSIVIDADE
+   ========================================================== */
+
+@media (max-width: 1000px) {
+
+    .mailbox-toolbar {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .mailbox-search {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    .mailbox-filters {
+        grid-column: 1;
+    }
+
+    .mailbox-control {
+        grid-column: 2;
+        width: 100%;
+    }
+
+    .notification-meta {
+        min-width: 100px;
+    }
+
+    .notification-mark-read {
+        display: none !important;
+    }
+}
+
+
+@media (max-width: 700px) {
+
+    .mailbox-page {
+        padding: 20px 14px 30px;
+    }
+
+    .mailbox-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .mailbox-header-left {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .mailbox-header-info {
+        padding: 0;
+    }
+
+    .mailbox-toolbar {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .mailbox-filters,
+    .mailbox-search,
+    .mailbox-control {
+        width: 100%;
+    }
+
+    .notification-row {
+        grid-template-columns: 24px 8px 36px minmax(0, 1fr);
+        padding: 13px 12px;
+    }
+
+    .notification-meta {
+        grid-column: 4;
+        justify-content: flex-start;
+        min-width: 0;
+        margin-top: 5px;
+    }
+
+    .notification-message {
+        white-space: normal;
+    }
+
+    .notification-title-row h2 {
+        white-space: normal;
+    }
+}
