@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Notificações | Sincrow{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'css/mailbox.css' %}">
+
+<div class="mailbox-page">
+
+```
+<div class="mailbox-header">
+    <div class="mailbox-title">
+        <span class="mailbox-label">CENTRAL DE NOTIFICAÇÕES</span>
+        <h1>Notificações</h1>
+        <p>Acompanhe convites, mensagens e outras atividades da sua conta.</p>
+    </div>
+
+    <button
+        type="button"
+        class="mark-all-read"
+        id="mark-all-read"
+    >
+        Marcar todas como lidas
+    </button>
+</div>
+
+<div class="mailbox-content">
+
+    <div class="mailbox-toolbar">
+        <div class="mailbox-status">
+            <span class="status-dot"></span>
+            <span>Notificações</span>
+
+            {% if unread_count %}
+                <span class="unread-count" id="unread-count">
+                    {{ unread_count }}
+                </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <div
+        class="notification-list"
+        id="notification-list"
+    >
+
+        {% for notification in notifications %}
+
+            <article
+                class="notification-card {% if not notification.is_read %}is-unread{% endif %}"
+                data-notification-id="{{ notification.id }}"
+            >
+
+                <div class="notification-icon">
+                    <span>!</span>
+                </div>
+
+                <div class="notification-body">
+
+                    <div class="notification-main">
+
+                        <div class="notification-heading">
+                            <h2>{{ notification.title }}</h2>
+
+                            {% if not notification.is_read %}
+                                <span class="new-badge">
+                                    Nova
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <p class="notification-message">
+                            {{ notification.message }}
+                        </p>
+
+                    </div>
+
+                    <div class="notification-footer">
+
+                        <time
+                            class="notification-date"
+                            datetime="{{ notification.created_at|date:'c' }}"
+                        >
+                            {{ notification.created_at|date:"d/m/Y H:i" }}
+                        </time>
+
+                        {% if not notification.is_read %}
+                            <button
+                                type="button"
+                                class="mark-read-button"
+                                data-notification-id="{{ notification.id }}"
+                            >
+                                Marcar como lida
+                            </button>
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            </article>
+
+        {% empty %}
+
+            <div
+                class="empty-mailbox"
+                id="empty-mailbox"
+            >
+
+                <div class="empty-mailbox-icon">
+                    <span>✓</span>
+                </div>
+
+                <h2>Tudo em dia</h2>
+
+                <p>
+                    Você não possui nenhuma notificação no momento.
+                </p>
+
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+```
+
+</div>
+
+<script src="{% static 'js/mailbox.js' %}"></script>
+
+{% endblock %}
