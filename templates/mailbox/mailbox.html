@@ -9,124 +9,326 @@
 
 <div class="mailbox-page">
 
-```
-<div class="mailbox-header">
-    <div class="mailbox-title">
-        <span class="mailbox-label">CENTRAL DE NOTIFICAÇÕES</span>
-        <h1>Notificações</h1>
-        <p>Acompanhe convites, mensagens e outras atividades da sua conta.</p>
-    </div>
+    <header class="mailbox-header">
 
-    <button
-        type="button"
-        class="mark-all-read"
-        id="mark-all-read"
-    >
-        Marcar todas como lidas
-    </button>
-</div>
+        <div class="mailbox-header-left">
 
-<div class="mailbox-content">
+            <a
+                href="{% url 'accounts:dashboard' %}"
+                class="mailbox-back"
+            >
+                <span class="mailbox-back-icon">←</span>
+                Voltar ao painel
+            </a>
 
-    <div class="mailbox-toolbar">
-        <div class="mailbox-status">
-            <span class="status-dot"></span>
-            <span>Notificações</span>
+            <div class="mailbox-heading">
+                <span class="mailbox-kicker">
+                    CENTRAL DE NOTIFICAÇÕES
+                </span>
+
+                <h1>Notificações</h1>
+            </div>
+
+        </div>
+
+        <div class="mailbox-header-info">
+
+            <span class="mailbox-total">
+                {{ notifications|length }} notificações
+            </span>
 
             {% if unread_count %}
-                <span class="unread-count" id="unread-count">
-                    {{ unread_count }}
+                <span class="mailbox-unread-total">
+                    {{ unread_count }} não lida{{ unread_count|pluralize }}
                 </span>
             {% endif %}
+
         </div>
-    </div>
 
-    <div
-        class="notification-list"
-        id="notification-list"
-    >
+    </header>
 
-        {% for notification in notifications %}
 
-            <article
-                class="notification-card {% if not notification.is_read %}is-unread{% endif %}"
-                data-notification-id="{{ notification.id }}"
+    <main class="mailbox-container">
+
+        <!-- FILTROS -->
+
+        <div class="mailbox-toolbar">
+
+            <div class="mailbox-filters">
+
+                <button
+                    type="button"
+                    class="mailbox-filter active"
+                    data-filter="all"
+                >
+                    Todas
+                </button>
+
+                <button
+                    type="button"
+                    class="mailbox-filter"
+                    data-filter="unread"
+                >
+                    Não lidas
+
+                    {% if unread_count %}
+                        <span class="filter-count">
+                            {{ unread_count }}
+                        </span>
+                    {% endif %}
+                </button>
+
+            </div>
+
+
+            <div class="mailbox-search">
+
+                <svg
+                    class="search-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                >
+                    <circle
+                        cx="11"
+                        cy="11"
+                        r="7"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    />
+
+                    <path
+                        d="M16.5 16.5L21 21"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                    />
+                </svg>
+
+                <input
+                    type="search"
+                    id="notification-search"
+                    placeholder="Pesquisar notificações"
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <button
+                type="button"
+                class="mailbox-control"
+                id="sort-notifications"
             >
+                <span>
+                    Ordenar por:
+                    <strong>Mais recentes</strong>
+                </span>
 
-                <div class="notification-icon">
-                    <span>!</span>
+                <span class="control-arrow">⌄</span>
+            </button>
+
+        </div>
+
+
+        <!-- LISTA -->
+
+        <section class="notification-panel">
+
+            <div class="notification-panel-header">
+
+                <label class="select-all">
+
+                    <input
+                        type="checkbox"
+                        id="select-all-notifications"
+                    >
+
+                    <span class="custom-checkbox"></span>
+
+                    <strong>Selecionar todas</strong>
+
+                </label>
+
+
+                <div class="notification-panel-actions">
+
+                    {% if unread_count %}
+                        <button
+                            type="button"
+                            class="panel-action"
+                            id="mark-all-read"
+                        >
+                            Marcar todas como lidas
+                        </button>
+                    {% endif %}
+
                 </div>
 
-                <div class="notification-body">
+            </div>
 
-                    <div class="notification-main">
 
-                        <div class="notification-heading">
-                            <h2>{{ notification.title }}</h2>
+            <div
+                class="notification-list"
+                id="notification-list"
+            >
 
+                {% for notification in notifications %}
+
+                    <article
+                        class="
+                            notification-row
                             {% if not notification.is_read %}
-                                <span class="new-badge">
-                                    Nova
-                                </span>
+                                is-unread
                             {% endif %}
+                        "
+                        data-notification-id="{{ notification.id }}"
+                        data-read="{{ notification.is_read|yesno:'true,false' }}"
+                        data-title="{{ notification.title|lower }}"
+                        data-message="{{ notification.message|lower }}"
+                    >
+
+                        <div class="notification-select">
+
+                            <input
+                                type="checkbox"
+                                class="notification-checkbox"
+                                aria-label="Selecionar notificação"
+                            >
+
+                            <span class="custom-checkbox"></span>
+
                         </div>
 
-                        <p class="notification-message">
-                            {{ notification.message }}
+
+                        {% if not notification.is_read %}
+                            <span class="notification-unread-dot"></span>
+                        {% else %}
+                            <span class="notification-unread-dot hidden"></span>
+                        {% endif %}
+
+
+                        <div class="notification-type-icon">
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M18 8C18 4.686 15.314 2 12 2C8.686 2 6 4.686 6 8C6 15 3 16 3 18H21C21 16 18 15 18 8Z"
+                                    stroke="currentColor"
+                                    stroke-width="1.7"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+
+                                <path
+                                    d="M10 21H14"
+                                    stroke="currentColor"
+                                    stroke-width="1.7"
+                                    stroke-linecap="round"
+                                />
+                            </svg>
+                        </div>
+
+
+                        <div class="notification-content">
+
+                            <div class="notification-title-row">
+
+                                <h2>
+                                    {{ notification.title }}
+                                </h2>
+
+                                {% if not notification.is_read %}
+                                    <span class="notification-new">
+                                        Nova
+                                    </span>
+                                {% endif %}
+
+                            </div>
+
+
+                            <p class="notification-message">
+                                {{ notification.message }}
+                            </p>
+
+                        </div>
+
+
+                        <div class="notification-meta">
+
+                            <time
+                                datetime="{{ notification.created_at|date:'c' }}"
+                            >
+                                {{ notification.created_at|date:"d/m/Y H:i" }}
+                            </time>
+
+
+                            {% if not notification.is_read %}
+
+                                <button
+                                    type="button"
+                                    class="notification-mark-read"
+                                    data-notification-id="{{ notification.id }}"
+                                >
+                                    Marcar como lida
+                                </button>
+
+                            {% endif %}
+
+                        </div>
+
+                    </article>
+
+                {% empty %}
+
+                    <div
+                        class="notification-empty"
+                        id="empty-mailbox"
+                    >
+
+                        <div class="empty-icon">
+
+                            <svg
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    d="M18 8C18 4.686 15.314 2 12 2C8.686 2 6 4.686 6 8C6 15 3 16 3 18H21C21 16 18 15 18 8Z"
+                                    stroke="currentColor"
+                                    stroke-width="1.7"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+
+                                <path
+                                    d="M10 21H14"
+                                    stroke="currentColor"
+                                    stroke-width="1.7"
+                                    stroke-linecap="round"
+                                />
+                            </svg>
+
+                        </div>
+
+                        <h2>Nenhuma notificação</h2>
+
+                        <p>
+                            Quando houver alguma atividade na sua conta,
+                            ela aparecerá aqui.
                         </p>
 
                     </div>
 
-                    <div class="notification-footer">
-
-                        <time
-                            class="notification-date"
-                            datetime="{{ notification.created_at|date:'c' }}"
-                        >
-                            {{ notification.created_at|date:"d/m/Y H:i" }}
-                        </time>
-
-                        {% if not notification.is_read %}
-                            <button
-                                type="button"
-                                class="mark-read-button"
-                                data-notification-id="{{ notification.id }}"
-                            >
-                                Marcar como lida
-                            </button>
-                        {% endif %}
-
-                    </div>
-
-                </div>
-
-            </article>
-
-        {% empty %}
-
-            <div
-                class="empty-mailbox"
-                id="empty-mailbox"
-            >
-
-                <div class="empty-mailbox-icon">
-                    <span>✓</span>
-                </div>
-
-                <h2>Tudo em dia</h2>
-
-                <p>
-                    Você não possui nenhuma notificação no momento.
-                </p>
+                {% endfor %}
 
             </div>
 
-        {% endfor %}
+        </section>
 
-    </div>
-
-</div>
-```
+    </main>
 
 </div>
 
