@@ -95,15 +95,32 @@
 
         .required { color: #f87171; }
 
-        .skills-label {
-            margin-bottom: 8px;
+        /* Barra de Busca de Tecnologias */
+        .search-box {
+            position: relative;
+            margin-bottom: 10px;
+        }
+
+        .search-box input {
+            background: #09090a;
+            border: 1px solid #29292e;
+            border-radius: 5px;
+            color: #fff;
+            padding: 8px 12px;
+            font-size: 12px;
+            width: 100%;
+            outline: none;
+        }
+
+        .search-box input:focus {
+            border-color: #0070f3;
         }
 
         .skills-container {
             display: flex;
             flex-direction: column;
-            gap: 14px;
-            max-height: 245px;
+            gap: 16px;
+            max-height: 280px;
             overflow-y: auto;
             padding-right: 6px;
         }
@@ -232,27 +249,37 @@
 
             <div class="input-group">
                 <label for="birth_date">Data de Nascimento</label>
-                <input type="date" name="birth_date" id="birth_date" value="{{ profile.birth_date|date:'Y-m-d' }}">
+                <input type="date" name="birth_date" id="birth_date" value="{{ profile.birth_date|date:'Y-m-d' }}" onclick="this.showPicker()">
             </div>
 
-            <div class="input-group skills-label">
+            <div class="input-group">
                 <label>Tecnologias & Ferramentas</label>
+                <div class="search-box">
+                    <input type="text" id="skill-search" placeholder=" Filtrar tecnologias (ex: Postgres, Docker, React)...">
+                </div>
             </div>
 
-            <div class="skills-container">
+            <div class="skills-container" id="skills-container">
+
+                <!-- Linguagens -->
                 <div class="category-group">
                     <h4 class="category-title">Linguagens de Programação</h4>
                     <div class="skills-grid">
-                        <label class="skill-card"><input type="checkbox" name="skills" value="JavaScript" {% if profile.skills.all %}{% endif %}><i class="devicon-javascript-plain colored"></i><span>JavaScript</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="JavaScript"><i class="devicon-javascript-plain colored"></i><span>JavaScript</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="TypeScript"><i class="devicon-typescript-plain colored"></i><span>TypeScript</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="Python"><i class="devicon-python-plain colored"></i><span>Python</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="Java"><i class="devicon-java-plain colored"></i><span>Java</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="C++"><i class="devicon-cplusplus-plain colored"></i><span>C++</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="C#"><i class="devicon-csharp-plain colored"></i><span>C#</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="PHP"><i class="devicon-php-plain colored"></i><span>PHP</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Go"><i class="devicon-go-original-wordmark colored"></i><span>Go</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Rust"><i class="devicon-rust-plain colored"></i><span>Rust</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Ruby"><i class="devicon-ruby-plain colored"></i><span>Ruby</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Kotlin"><i class="devicon-kotlin-plain colored"></i><span>Kotlin</span></label>
                     </div>
                 </div>
 
+                <!-- Frontend -->
                 <div class="category-group">
                     <h4 class="category-title">Frontend</h4>
                     <div class="skills-grid">
@@ -261,10 +288,15 @@
                         <label class="skill-card"><input type="checkbox" name="skills" value="React"><i class="devicon-react-original colored"></i><span>React</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="Vue.js"><i class="devicon-vuejs-plain colored"></i><span>Vue.js</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="Angular"><i class="devicon-angularjs-plain colored"></i><span>Angular</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Next.js"><i class="devicon-nextjs-plain colored"></i><span>Next.js</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Svelte"><i class="devicon-svelte-plain colored"></i><span>Svelte</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="Tailwind CSS"><i class="devicon-tailwindcss-plain colored"></i><span>Tailwind</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Bootstrap"><i class="devicon-bootstrap-plain colored"></i><span>Bootstrap</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Sass"><i class="devicon-sass-original colored"></i><span>Sass</span></label>
                     </div>
                 </div>
 
+                <!-- Backend -->
                 <div class="category-group">
                     <h4 class="category-title">Backend</h4>
                     <div class="skills-grid">
@@ -272,9 +304,55 @@
                         <label class="skill-card"><input type="checkbox" name="skills" value="Express.js"><i class="devicon-express-original colored"></i><span>Express.js</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="Django"><i class="devicon-django-plain colored"></i><span>Django</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="Flask"><i class="devicon-flask-original colored"></i><span>Flask</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="FastAPI"><i class="devicon-fastapi-plain colored"></i><span>FastAPI</span></label>
                         <label class="skill-card"><input type="checkbox" name="skills" value="Spring Boot"><i class="devicon-spring-plain colored"></i><span>Spring Boot</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Laravel"><i class="devicon-laravel-original colored"></i><span>Laravel</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="NestJS"><i class="devicon-nestjs-plain colored"></i><span>NestJS</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value=".NET Core"><i class="devicon-dotnetcore-plain colored"></i><span>.NET Core</span></label>
                     </div>
                 </div>
+
+                <!-- Bancos de Dados -->
+                <div class="category-group">
+                    <h4 class="category-title">Bancos de Dados</h4>
+                    <div class="skills-grid">
+                        <label class="skill-card"><input type="checkbox" name="skills" value="PostgreSQL"><i class="devicon-postgresql-plain colored"></i><span>PostgreSQL</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="MySQL"><i class="devicon-mysql-plain colored"></i><span>MySQL</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="MongoDB"><i class="devicon-mongodb-plain colored"></i><span>MongoDB</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Redis"><i class="devicon-redis-plain colored"></i><span>Redis</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="SQLite"><i class="devicon-sqlite-plain colored"></i><span>SQLite</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="MariaDB"><i class="devicon-mariadb-plain colored"></i><span>MariaDB</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Firebase"><i class="devicon-firebase-plain colored"></i><span>Firebase</span></label>
+                    </div>
+                </div>
+
+                <!-- DevOps & Nuvem -->
+                <div class="category-group">
+                    <h4 class="category-title">DevOps & Cloud</h4>
+                    <div class="skills-grid">
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Docker"><i class="devicon-docker-plain colored"></i><span>Docker</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Kubernetes"><i class="devicon-kubernetes-plain colored"></i><span>Kubernetes</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="AWS"><i class="devicon-amazonwebservices-plain-wordmark colored"></i><span>AWS</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="GCP"><i class="devicon-googlecloud-plain colored"></i><span>Google Cloud</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Azure"><i class="devicon-azure-plain colored"></i><span>Azure</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Git"><i class="devicon-git-plain colored"></i><span>Git</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="GitHub Actions"><i class="devicon-githubactions-plain colored"></i><span>GH Actions</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Nginx"><i class="devicon-nginx-original colored"></i><span>Nginx</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Linux"><i class="devicon-linux-plain colored"></i><span>Linux</span></label>
+                    </div>
+                </div>
+
+                <!-- Mobile & Ferramentas -->
+                <div class="category-group">
+                    <h4 class="category-title">Mobile & Outros</h4>
+                    <div class="skills-grid">
+                        <label class="skill-card"><input type="checkbox" name="skills" value="React Native"><i class="devicon-react-original colored"></i><span>React Native</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Flutter"><i class="devicon-flutter-plain colored"></i><span>Flutter</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="Android"><i class="devicon-android-plain colored"></i><span>Android</span></label>
+                        <label class="skill-card"><input type="checkbox" name="skills" value="iOS"><i class="devicon-apple-original colored"></i><span>iOS</span></label>
+                    </div>
+                </div>
+
             </div>
 
             <button type="submit" class="btn-submit">Continuar</button>
@@ -282,6 +360,7 @@
     </div>
 
     <script>
+        // Marcando opções vindas do Django
         const existingSkills = [
             {% for skill in profile.skills.all %}
                 "{{ skill.name|escapejs }}"{% if not forloop.last %},{% endif %}
@@ -290,6 +369,32 @@
 
         document.querySelectorAll('input[name="skills"]').forEach(input => {
             if (existingSkills.includes(input.value)) input.checked = true;
+        });
+
+        // Filtro em tempo real
+        const searchInput = document.getElementById('skill-search');
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase().trim();
+            const categoryGroups = document.querySelectorAll('.category-group');
+
+            categoryGroups.forEach(group => {
+                let hasVisibleCard = false;
+                const cards = group.querySelectorAll('.skill-card');
+
+                cards.forEach(card => {
+                    const text = card.querySelector('span').textContent.toLowerCase();
+                    const val = card.querySelector('input').value.toLowerCase();
+                    
+                    if (text.includes(term) || val.includes(term)) {
+                        card.style.display = 'flex';
+                        hasVisibleCard = true;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                group.style.display = hasVisibleCard ? 'flex' : 'none';
+            });
         });
     </script>
 </body>

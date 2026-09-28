@@ -40,10 +40,12 @@ class User(AbstractUser):
 
 
 class CategoryChoices(models.TextChoices):
-    PROGRAMMING = 'programming', 'Programming Languages'
+    PROGRAMMING = 'programming', 'Linguagens de Programação'
     FRONTEND = 'frontend', 'Frontend'
     BACKEND = 'backend', 'Backend'
-
+    DATABASE = 'database', 'Bancos de Dados'      
+    DEVOPS = 'devops', 'DevOps & Cloud'           
+    MOBILE = 'mobile', 'Mobile & Ferramentas'     
 
 class Technology(models.Model):
     name = models.CharField(max_length=50, unique=True)
@@ -61,11 +63,16 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     name = models.CharField(max_length=100)
     bio = models.TextField(blank=True)
+
     birth_date = models.DateField(null=True, blank=True)
     course_area = models.CharField(max_length=150, blank=True)
     website = models.URLField(blank=True)
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     skills = models.ManyToManyField(Technology, blank=True, related_name="profiles")
 
-    def __str__(self):
-        return self.name or self.user.email
+
+from django.db import models
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
