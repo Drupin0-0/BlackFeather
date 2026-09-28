@@ -28,15 +28,27 @@ class Notification(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='notifications'
+        related_name="notifications",
     )
+
     title = models.CharField(max_length=200)
+
     description = models.TextField()
+
     is_read = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
+    join_request = models.ForeignKey(
+        "JoinRequest",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="notifications",
+    )
+
     class Meta:
-        ordering = ['-created_at']
-        
+        ordering = ["-created_at"]
+
     def __str__(self):
-        return f'{self.user.email} - {self.title}'
+        return f"{self.user.email} - {self.title}"

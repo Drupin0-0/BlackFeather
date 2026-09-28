@@ -3,11 +3,18 @@ from channels.layers import get_channel_layer
 
 from .models import Notification
 
-def create_notification(user, title, message):
+
+def create_notification(
+    user,
+    title,
+    description,
+    join_request=None,
+):
     notification = Notification.objects.create(
         user=user,
         title=title,
-        message=message,
+        description=description,
+        join_request=join_request,
     )
 
     channel_layer = get_channel_layer()
@@ -19,9 +26,14 @@ def create_notification(user, title, message):
             "notification": {
                 "id": notification.pk,
                 "title": notification.title,
-                "message": notification.message,
+                "description": notification.description,
                 "is_read": notification.is_read,
                 "created_at": notification.created_at.isoformat(),
+                "join_request_id": (
+                    notification.join_request_id
+                    if notification.join_request_id
+                    else None
+                ),
             },
         },
     )

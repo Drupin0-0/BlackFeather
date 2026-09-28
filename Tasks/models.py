@@ -100,3 +100,6 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+    
+def validate_future_date(   ):
+    pass
