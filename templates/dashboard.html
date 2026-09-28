@@ -55,18 +55,57 @@
     <main class="dashboard-main">
 
         <!-- CABEÇALHO -->
-        <header class="main-header">
+<header class="main-header">
+    <h1>Visão Geral</h1>
 
-            <h1>Visão Geral</h1>
+    <div class="header-actions">
 
-            <div class="user-profile">
-                Bem-vindo,
-                <strong>
-                    {{ user.profile.name|default:user.email }}
-                </strong>
-            </div>
+        <a
+            href="{% url 'mailbox' %}"
+            class="notification-button"
+            aria-label="Abrir notificações"
+            title="Notificações"
+        >
+            <svg
+                class="notification-bell"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+            >
+                <path
+                    d="M18 8C18 4.686 15.314 2 12 2C8.686 2 6 4.686 6 8C6 15 3 16 3 18H21C21 16 18 15 18 8Z"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                />
 
-        </header>
+                <path
+                    d="M10 21H14"
+                    stroke="currentColor"
+                    stroke-width="1.8"
+                    stroke-linecap="round"
+                />
+            </svg>
+
+            {% if unread_count %}
+                <span class="notification-badge">
+                    {{ unread_count }}
+                </span>
+            {% endif %}
+        </a>
+
+        <div class="user-profile">
+            Bem-vindo,
+
+            <strong>
+                {{ user.profile.name|default:user.email }}
+            </strong>
+        </div>
+
+    </div>
+</header>
 
 
         <!-- VERIFICAÇÃO DE PROJETO NO BANCO DE DADOS -->
