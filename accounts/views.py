@@ -14,7 +14,7 @@ import secrets
 
 from .forms import CustomUserCreationForm
 from .services import enviar_email_codigo
-from .models import UserProfile, Technology
+from .models import UserProfile, Technology, CategoryChoices
 from Tasks.models import Project, Task
 
 User = get_user_model()
@@ -158,14 +158,17 @@ def delete_account_page(request):
 
 @login_required
 def setup_profile_view(request):
-    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
         name = (request.POST.get("name") or "").strip()
 
         if not name:
+            technologies = Technology.objects.all()
             return render(request, 'profile/setup.html', {
                 'profile': profile,
+                'technologies': technologies,
+                'categories': CategoryChoices.choices,
                 'error': 'O nome é obrigatório.'
             })
 
@@ -177,31 +180,48 @@ def setup_profile_view(request):
         skills_selected = request.POST.getlist("skills")
         skill_objects = []
 
-        for tech_name in skills_selected:
-            tech_name = tech_name.strip()
-
-            if not tech_name:
+        for skill_val in skills_selected:
+            skill_val = skill_val.strip()
+            if not skill_val:
                 continue
 
-            tech, _ = Technology.objects.get_or_create(name=tech_name)
-            skill_objects.append(tech)
+            # Funciona tanto se o form mandar o ID quanto se mandar o Nome da tecnologia
+            if skill_val.isdigit():
+                tech = Technology.objects.filter(id=int(skill_val)).first()
+            else:
+                tech, _ = Technology.objects.get_or_create(name=skill_val)
+
+            if tech:
+                skill_objects.append(tech)
 
         profile.skills.set(skill_objects)
 
         return redirect('accounts:dashboard')
 
-    return render(request, 'profile/setup.html', {'profile': profile})
+    technologies = Technology.objects.all()
+    user_skill_ids = list(profile.skills.values_list('id', flat=True))
+
+    context = {
+        'profile': profile,
+        'technologies': technologies,
+        'categories': CategoryChoices.choices,
+        'user_skill_ids': user_skill_ids,
+    }
+    return render(request, 'profile/setup.html', context)
+
 
 @login_required
 @require_POST
 def bio_update(request):
     profile = request.user.profile
     bio = request.POST.get('bio', '').strip()
-    if len > 500:
-        return redirect('perfil')
+    
+    if len(bio) > 500:
+        return redirect('accounts:view_profile')
+        
     profile.bio = bio
     profile.save(update_fields=['bio'])
-    return redirect['perfil']
+    return redirect('accounts:view_profile')
 
 
 @login_required
@@ -237,7 +257,7 @@ def search_users(request):
 
 @login_required
 def view_profile_view(request):
-    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == 'POST':
         name = (request.POST.get('name') or '').strip()
@@ -269,9 +289,11 @@ def view_profile_view(request):
 
     return render(request, 'profile/view_profile.html', {'profile': profile})
 
+
 def logout_view(request):
     logout(request)
     return redirect("accounts:login")
+
 
 @login_required
 def settings_view(request):
