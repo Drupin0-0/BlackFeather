@@ -12,6 +12,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
+from django.shortcuts import redirect
 
 from .models import Project, Task
 from .serializers import ProjectSerializer, TaskSerializer
@@ -477,3 +478,55 @@ def setup_profile_view(request):
         return redirect('accounts:dashboard')
 
     return render(request, 'accounts/setup.html', {'profile': profile})
+
+@login_required
+def project_detail(request, project_id):
+    project = get_object_or_404(
+        Project.objects.select_related('owner').prefetch_related(
+            'members__profile'
+        ),
+        pk=project_id
+    )
+
+    if (
+        request.user != project.owner
+        and not project.members.filter(pk=request.user.pk).exists()
+    ):
+        return redirect("project_list")
+
+    tasks = Task.objects.filter(
+        project=project
+    ).select_related(
+        'task_responsible__profile',
+        'project'
+    ).order_by(
+        'deadline',
+        'created_at'
+    )
+
+    kanban_columns = [
+        {
+            'key': 'pending',
+            'label': 'A fazer',
+            'tasks': tasks.filter(status='pending'),
+        },
+        {
+            'key': 'in_progress',
+            'label': 'Em andamento',
+            'tasks': tasks.filter(status='in_progress'),
+        },
+        {
+            'key': 'completed',
+            'label': 'Concluído',
+            'tasks': tasks.filter(status='completed'),
+        },
+    ]
+
+    return render(
+        request,
+        "project_detail.html",
+        {
+            "project": project,
+            "kanban_columns": kanban_columns,
+        }
+    )

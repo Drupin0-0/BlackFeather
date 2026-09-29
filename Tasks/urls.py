@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from Tasks import views
 
 from .views import (
     ProjectViewSet,
@@ -28,4 +29,5 @@ urlpatterns = [
     path('tarefas/<int:project_id>/sugerir-distribuicao/', suggest_task_distribution_view, name='task_suggest_distribution'),
     path('tarefas/<int:project_id>/confirmar-distribuicao/', confirm_task_distribution_view, name='task_confirm_distribution'),
     path('', include(router.urls)),
+    path("projects/<int:project_id>/", views.project_detail, name="project_detail"),
 ]
