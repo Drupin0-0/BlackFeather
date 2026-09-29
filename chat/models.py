@@ -24,6 +24,64 @@ class Message(models.Model):
     def __str__(self):
         return f"{self.user.profile.name}: {self.content[:50]}"
 
+class JoinRequest(models.Model):
+    STATUS_CHOICES = [
+        ("pending", "Pendente"),
+        ("accepted", "Aceita"),
+        ("rejected", "Recusada"),
+    ]
+
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="sent_join_requests",
+    )
+
+    recipient = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="received_join_requests",
+    )
+
+    project = models.ForeignKey(
+        "Tasks.Project",
+        on_delete=models.CASCADE,
+        related_name="join_requests",
+    )
+
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default="pending",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    responded_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["sender", "recipient", "project"],
+                condition=models.Q(status="pending"),
+                name="unique_pending_join_request",
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.sender.username} -> "
+            f"{self.recipient.username} | "
+            f"{self.project} | "
+            f"{self.status}"
+        )
+
+
 class Notification(models.Model):
     user = models.ForeignKey(
         User,

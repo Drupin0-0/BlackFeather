@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.urls import path, include
 from chat import views
+from chat.views import send_join_request
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,4 +32,6 @@ urlpatterns = [
         views.mark_all_notifications_read,
         name="mark_all_notifications_read",
     ),
+        path("mailbox/join-request/", views.send_join_request, name="send_join_request",),
+
 ]
