@@ -32,6 +32,9 @@ urlpatterns = [
         views.mark_all_notifications_read,
         name="mark_all_notifications_read",
     ),
-        path("mailbox/join-request/", views.send_join_request, name="send_join_request",),
-
+    path(
+        "mailbox/project/<str:project_code>/join-request/",
+        views.send_join_request,
+        name="send_join_request",
+    ),
 ]

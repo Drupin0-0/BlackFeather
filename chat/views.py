@@ -184,3 +184,53 @@ def send_join_request(request, project_code):
             "request_id": join_request.id,
         }
     )
+
+@login_required
+@require_POST
+def respond_join_request(request, request_id):
+    action = request.POST.get("action")
+
+    if action not in ("accept", "reject"):
+        return JsonResponse(
+            {
+                "success": False,
+                "error": "Ação inválida.",
+            },
+            status=400,
+        )
+
+    join_request = get_object_or_404(
+        JoinRequest,
+        pk=request_id,
+        recipient=request.user,
+        status="pending",
+    )
+
+    if action == "accept":
+        project = join_request.project
+
+        if not project.members.filter(
+            id=request.user.id
+        ).exists():
+            project.members.add(request.user)
+
+        join_request.status = "accepted"
+
+        message = "Solicitação aceita."
+
+    else:
+        join_request.status = "rejected"
+
+        message = "Solicitação recusada."
+
+    join_request.save(
+        update_fields=["status"]
+    )
+
+    return JsonResponse(
+        {
+            "success": True,
+            "status": join_request.status,
+            "message": message,
+        }
+    )
