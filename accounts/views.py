@@ -19,6 +19,14 @@ from Tasks.models import Project, Task
 
 User = get_user_model()
 
+def grouped_technologies():
+    techs = list(Technology.objects.order_by("name"))
+    groups = []
+    for value, label in CategoryChoices.choices:
+        items = [t for t in techs if t.category == value]
+        if items:
+            groups.append({"category": label, "skills": items})
+    return groups
 
 class RegisterView(View):
     def get(self, request):
@@ -164,12 +172,10 @@ def setup_profile_view(request):
         name = (request.POST.get("name") or "").strip()
 
         if not name:
-            technologies = Technology.objects.all()
             return render(request, 'profile/setup.html', {
                 'profile': profile,
-                'technologies': technologies,
-                'categories': CategoryChoices.choices,
-                'error': 'O nome é obrigatório.'
+                'skill_catalog': grouped_technologies(),
+                'error': 'O nome é obrigatório.',
             })
 
         profile.name = name
@@ -177,39 +183,15 @@ def setup_profile_view(request):
         profile.birth_date = request.POST.get("birth_date") or None
         profile.save()
 
-        skills_selected = request.POST.getlist("skills")
-        skill_objects = []
-
-        for skill_val in skills_selected:
-            skill_val = skill_val.strip()
-            if not skill_val:
-                continue
-
-            # Funciona tanto se o form mandar o ID quanto se mandar o Nome da tecnologia
-            if skill_val.isdigit():
-                tech = Technology.objects.filter(id=int(skill_val)).first()
-            else:
-                tech, _ = Technology.objects.get_or_create(name=skill_val)
-
-            if tech:
-                skill_objects.append(tech)
-
-        profile.skills.set(skill_objects)
+        ids = [int(v) for v in request.POST.getlist("skills") if v.strip().isdigit()]
+        profile.skills.set(Technology.objects.filter(pk__in=ids))
 
         return redirect('accounts:dashboard')
 
-    technologies = Technology.objects.all()
-    user_skill_ids = list(profile.skills.values_list('id', flat=True))
-
-    context = {
+    return render(request, 'profile/setup.html', {
         'profile': profile,
-        'technologies': technologies,
-        'categories': CategoryChoices.choices,
-        'user_skill_ids': user_skill_ids,
-    }
-    return render(request, 'profile/setup.html', context)
-
-
+        'skill_catalog': grouped_technologies(),
+    })
 @login_required
 @require_POST
 def bio_update(request):
@@ -259,14 +241,20 @@ def search_users(request):
 def view_profile_view(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
+    def ctx(**extra):
+        return {
+            'profile': profile,
+            'skills': profile.skills.all(),
+            'skill_catalog': grouped_technologies(),
+            **extra,
+        }
+
     if request.method == 'POST':
         name = (request.POST.get('name') or '').strip()
 
         if not name:
-            return render(request, 'profile/view_profile.html', {
-                'profile': profile,
-                'error': 'O nome é obrigatório.'
-            })
+            return render(request, 'profile/view_profile.html',
+                          ctx(error='O nome é obrigatório.'))
 
         profile.name = name
         profile.bio = (request.POST.get('bio') or '').strip()
@@ -285,9 +273,12 @@ def view_profile_view(request):
 
         profile.save()
 
+        ids = [int(v) for v in request.POST.getlist('skills') if v.strip().isdigit()]
+        profile.skills.set(Technology.objects.filter(pk__in=ids))
+
         return redirect('accounts:view_profile')
 
-    return render(request, 'profile/view_profile.html', {'profile': profile})
+    return render(request, 'profile/view_profile.html', ctx())
 
 
 def logout_view(request):
