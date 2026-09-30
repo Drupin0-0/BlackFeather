@@ -1572,7 +1572,8 @@ line-height: 1;
    ========================================================== */
 
 .project-page {
-    min-height: 100%;
+    width: 100%;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     background: #000000;
@@ -1650,6 +1651,31 @@ line-height: 1;
     flex-shrink: 0;
 }
 
+.project-icon-button {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid #222222;
+    border-radius: 4px;
+    color: #8c8c8c;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.project-icon-button:hover {
+    color: #ffffff;
+    background: #111111;
+    border-color: #333333;
+}
+
 .project-members-button {
     min-height: 36px;
     padding: 0 12px;
@@ -1695,9 +1721,106 @@ line-height: 1;
     border-color: #333333;
 }
 
+.search-icon {
+    width: 13px;
+    height: 13px;
+    display: block;
+    position: relative;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+}
+
+.search-icon::after {
+    content: "";
+    position: absolute;
+    width: 6px;
+    height: 1.5px;
+    background: currentColor;
+    right: -5px;
+    bottom: -2px;
+    transform: rotate(45deg);
+    transform-origin: left center;
+}
+
+.project-search-wrapper {
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+.project-task-search {
+    width: 0;
+    height: 34px;
+    padding: 0;
+    margin-right: 0;
+    opacity: 0;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    outline: none;
+    background: #0d0d0d;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 11px;
+    transition:
+        width 0.2s ease,
+        padding 0.2s ease,
+        margin 0.2s ease,
+        opacity 0.15s ease;
+}
+
+.project-search-wrapper.expanded .project-task-search {
+    width: 155px;
+    padding: 0 10px;
+    margin-right: 8px;
+    opacity: 1;
+    border-color: #292929;
+}
+
+.project-task-search::placeholder {
+    color: #666666;
+}
+
+.project-task-search:focus {
+    border-color: #3a3a3a;
+}
+
+.project-search-toggle {
+    position: relative;
+    z-index: 2;
+}
+
+.project-navigation-toggle {
+    width: 30px;
+    height: 20px;
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: -1px auto 0;
+    padding: 0;
+    background: #090909;
+    border: 1px solid #1b1b1b;
+    border-top: 0;
+    border-radius: 0 0 4px 4px;
+    color: #777777;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    transition:
+        color 0.15s ease,
+        background 0.15s ease;
+}
+
+.project-navigation-toggle:hover {
+    color: #ffffff;
+    background: #111111;
+}
+
 /* NAVEGAÇÃO */
 
 .project-navigation {
+    width: 100%;
     min-height: 50px;
     display: flex;
     align-items: center;
@@ -1758,15 +1881,25 @@ line-height: 1;
 
 /* CONTEÚDO */
 
+.project-page {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
 .project-content {
     flex: 1;
+    min-height: 0;
     padding: 32px 36px;
     background: #000000;
-    overflow-y: auto;
+    overflow: hidden;
 }
 
 .project-board {
     width: 100%;
+    max-width: none;
 }
 
 .project-board-header {
@@ -1794,21 +1927,31 @@ line-height: 1;
 /* QUADRO */
 
 .project-kanban-board {
+    height: calc(100vh - 190px);
+    min-height: 0;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
-    align-items: start;
+    align-items: stretch;
 }
 
 .project-kanban-column {
-    min-height: 420px;
+    min-height: 0;
+    height: 100%;
     padding: 13px;
-    background: #0b0b0b;
-    border: 1px solid #1a1a1a;
-    border-radius: 4px;
-    transition:
-        border-color 0.15s ease,
-        background 0.15s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.project-kanban-tasks {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
 }
 
 .project-kanban-column.drag-over {
@@ -1964,9 +2107,18 @@ line-height: 1;
 
 @media (max-width: 600px) {
 
-    .project-header {
-        padding: 0 16px;
-    }
+.project-header {
+    min-height: 70px;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 0 30px;
+    background: #090909;
+    border-bottom: 1px solid #1b1b1b;
+}
 
     .project-members-button span:last-child {
         display: none;

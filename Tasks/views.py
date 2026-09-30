@@ -482,9 +482,7 @@ def setup_profile_view(request):
 @login_required
 def project_detail(request, project_id):
     project = get_object_or_404(
-        Project.objects.select_related('owner').prefetch_related(
-            'members__profile'
-        ),
+        Project.objects.select_related('owner'),
         pk=project_id
     )
 
@@ -492,16 +490,16 @@ def project_detail(request, project_id):
         request.user != project.owner
         and not project.members.filter(pk=request.user.pk).exists()
     ):
-        return redirect("project_list")
+        return redirect('project_list')
 
-    tasks = Task.objects.filter(
-        project=project
-    ).select_related(
-        'task_responsible__profile',
-        'project'
-    ).order_by(
-        'deadline',
-        'created_at'
+    tasks = (
+        Task.objects
+        .filter(project=project)
+        .select_related(
+            'task_responsible',
+            'task_responsible__profile'
+        )
+        .order_by('created_at')
     )
 
     kanban_columns = [
@@ -524,9 +522,9 @@ def project_detail(request, project_id):
 
     return render(
         request,
-        "project_detail.html",
+        'project_detail.html',
         {
-            "project": project,
-            "kanban_columns": kanban_columns,
+            'project': project,
+            'kanban_columns': kanban_columns,
         }
     )

@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-
 {% load static %}
 
 {% block title %}{{ project.title }} - Sincrow{% endblock %}
@@ -9,14 +8,8 @@
 <div class="project-page">
 
     <header class="project-header">
-
         <div class="project-header-left">
-
-            <a
-                href="{% url 'project_list' %}"
-                class="project-back"
-                title="Voltar para projetos"
-            >
+            <a href="{% url 'project_list' %}" class="project-back" title="Voltar para projetos">
                 ←
             </a>
 
@@ -24,38 +17,41 @@
                 <span>Projeto</span>
                 <h1>{{ project.title }}</h1>
             </div>
-
         </div>
 
-        <div class="project-header-actions">
+<div class="project-header-actions">
 
-            <a
-                href="#"
-                class="project-members-button"
-                title="Gerenciar integrantes"
-            >
-                <span class="project-members-icon">👥</span>
-                <span>Integrantes</span>
-            </a>
+    <div class="project-search-wrapper">
+        <button
+            type="button"
+            class="project-icon-button project-search-toggle"
+            id="projectSearchToggle"
+            title="Pesquisar tarefas"
+        >
+            <span class="search-icon"></span>
+        </button>
 
-            <button
-                type="button"
-                class="project-menu-toggle"
-                id="projectMenuToggle"
-                title="Minimizar barra"
-            >
-                ☰
-            </button>
+        <input
+            type="search"
+            id="projectTaskSearch"
+            class="project-task-search"
+            placeholder="Pesquisar tarefas..."
+            autocomplete="off"
+        >
+    </div>
 
-        </div>
+    <a
+        href="#"
+        class="project-icon-button project-members-button"
+        title="Integrantes"
+    >
+        <span class="person-icon"></span>
+    </a>
 
+</div>
     </header>
 
-    <nav
-        class="project-navigation"
-        id="projectNavigation"
-    >
-
+    <nav class="project-navigation" id="projectNavigation">
         <div class="project-navigation-center">
 
             <a
@@ -65,34 +61,56 @@
                 Quadro
             </a>
 
-            <a
-                href="#"
-                class="project-nav-item"
-            >
+            <a href="#" class="project-nav-item">
                 Resumo
             </a>
 
         </div>
-
     </nav>
+
+    <button
+    type="button"
+    class="project-navigation-toggle"
+    id="projectMenuToggle"
+    title="Minimizar barra"
+    aria-label="Minimizar barra"
+>
+    ↓
+</button>
 
     <main class="project-content">
 
         <section class="project-board">
 
-            <div class="project-board-header">
+            <div class="project-board-top">
 
-                <div>
-                    <p class="section-kicker">
-                        {{ project.code }}
-                    </p>
-
+                <div class="project-board-heading">
+                    <span class="section-kicker">{{ project.code }}</span>
                     <h2>Quadro</h2>
-
-                    <p>
-                        Gerencie as tarefas deste projeto.
-                    </p>
+                    <p>Gerencie as tarefas deste projeto.</p>
                 </div>
+
+            </div>
+
+            <div class="project-board-toolbar">
+
+                <div class="project-board-search">
+                    <span>⌕</span>
+                    <input
+                        type="text"
+                        id="taskSearch"
+                        placeholder="Pesquisar tarefas..."
+                        autocomplete="off"
+                    >
+                </div>
+
+                <button type="button" class="project-board-filter">
+                    ☰ Filtrar
+                </button>
+
+                <button type="button" class="project-board-filter">
+                    ◈ Grupo
+                </button>
 
             </div>
 
@@ -110,15 +128,13 @@
 
                         <div class="project-kanban-column-header">
 
-                            <h3>
-                                {{ column.label }}
-                            </h3>
+                            <div class="project-column-title">
+                                <h3>{{ column.label }}</h3>
+                                <span class="project-column-count">
+                                    {{ column.tasks|length }}
+                                </span>
+                            </div>
 
-                            <span>
-                                {{ column.tasks|length }}
-                            </span>
-
-                        </div>
 
                         <div class="project-kanban-tasks">
 
@@ -130,54 +146,39 @@
                                         class="project-kanban-task"
                                         data-task-id="{{ task.pk }}"
                                         data-status="{{ task.status }}"
+                                        data-update-url="{% url 'update_task_status' task.pk %}"
                                         draggable="true"
                                     >
 
                                         <div class="project-task-head">
-
                                             <span class="project-task-priority priority-{{ task.priority }}">
                                                 {{ task.get_priority_display }}
                                             </span>
-
                                         </div>
 
-                                        <h4>
-                                            {{ task.title }}
-                                        </h4>
+                                        <h4>{{ task.title }}</h4>
 
-                                        <p>
-                                            {{ task.description|default:"Sem descrição." }}
-                                        </p>
+                                        {% if task.description %}
+                                            <p>{{ task.description }}</p>
+                                        {% endif %}
 
                                         <div class="project-task-meta">
 
-                                            {% if task.task_responsible %}
-
-                                                <span>
+                                            <span>
+                                                {% if task.task_responsible %}
                                                     {{ task.task_responsible.profile.name|default:task.task_responsible.email }}
-                                                </span>
-
-                                            {% else %}
-
-                                                <span>
+                                                {% else %}
                                                     Sem responsável
-                                                </span>
+                                                {% endif %}
+                                            </span>
 
-                                            {% endif %}
-
-                                            {% if task.deadline %}
-
-                                                <span>
+                                            <span>
+                                                {% if task.deadline %}
                                                     {{ task.deadline|date:"d/m/Y" }}
-                                                </span>
-
-                                            {% else %}
-
-                                                <span>
+                                                {% else %}
                                                     Sem data
-                                                </span>
-
-                                            {% endif %}
+                                                {% endif %}
+                                            </span>
 
                                         </div>
 
@@ -185,14 +186,15 @@
 
                                 {% endfor %}
 
-                            {% else %}
-
-                                <div class="project-empty-column">
-                                    Sem tarefas
-                                </div>
-
                             {% endif %}
 
+                        </div>
+
+                        <div
+                            class="project-empty-column"
+                            {% if column.tasks %}style="display:none;"{% endif %}
+                        >
+                            Sem tarefas
                         </div>
 
                     </div>
@@ -207,180 +209,401 @@
 
 </div>
 
+{% csrf_token %}
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    const csrfToken =
-        document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+const toggleButton =
+    document.getElementById('projectMenuToggle');
 
-    const toggleButton =
-        document.getElementById('projectMenuToggle');
+const navigation =
+    document.getElementById('projectNavigation');
 
-    const navigation =
-        document.getElementById('projectNavigation');
+toggleButton.addEventListener('click', function () {
 
-    const taskCards =
-        document.querySelectorAll('.project-kanban-task');
+    navigation.classList.toggle('collapsed');
 
-    const columns =
-        document.querySelectorAll('.project-kanban-column');
+    const collapsed =
+        navigation.classList.contains('collapsed');
 
-    toggleButton.addEventListener('click', function () {
+    toggleButton.textContent =
+        collapsed ? '↑' : '↓';
 
-        navigation.classList.toggle('collapsed');
+    toggleButton.title =
+        collapsed
+            ? 'Expandir barra'
+            : 'Minimizar barra';
 
-        const collapsed =
-            navigation.classList.contains('collapsed');
+    toggleButton.setAttribute(
+        'aria-label',
+        collapsed
+            ? 'Expandir barra'
+            : 'Minimizar barra'
+    );
+});
 
-        toggleButton.title =
-            collapsed
-                ? 'Abrir barra'
-                : 'Minimizar barra';
+const searchToggle =
+    document.getElementById('projectSearchToggle');
 
-    });
+const searchWrapper =
+    document.querySelector('.project-search-wrapper');
 
-    function moveTask(taskId, newStatus) {
+const searchInput =
+    document.getElementById('projectTaskSearch');
 
-        if (!taskId || !newStatus) {
-            return;
+searchToggle.addEventListener('click', function () {
+
+    searchWrapper.classList.toggle('expanded');
+
+    if (searchWrapper.classList.contains('expanded')) {
+        searchInput.focus();
+    } else {
+        searchInput.value = '';
+        filterTasks('');
+    }
+});
+
+function filterTasks(searchTerm) {
+
+    const term = searchTerm
+        .trim()
+        .toLowerCase();
+
+    document
+        .querySelectorAll('.project-kanban-task')
+        .forEach(function (task) {
+
+            const title =
+                task.querySelector('h4')?.textContent
+                .toLowerCase() || '';
+
+            const description =
+                task.querySelector('p')?.textContent
+                .toLowerCase() || '';
+
+            const matches =
+                !term ||
+                title.includes(term) ||
+                description.includes(term);
+
+            task.style.display =
+                matches ? '' : 'none';
+        });
+
+    updateColumnCounts();
+}
+
+function updateColumnCounts() {
+
+    document
+        .querySelectorAll('.project-kanban-column')
+        .forEach(function (column) {
+
+            const visibleTasks =
+                Array.from(
+                    column.querySelectorAll(
+                        '.project-kanban-task'
+                    )
+                )
+                .filter(function (task) {
+                    return task.style.display !== 'none';
+                });
+
+            const counter =
+                column.querySelector(
+                    '.project-task-count'
+                );
+
+            if (counter) {
+                counter.textContent =
+                    visibleTasks.length;
+            }
+        });
+}
+
+    /*
+     * ==========================================================
+     * CSRF
+     * ==========================================================
+     */
+
+    const csrfToken = document.querySelector(
+        '[name=csrfmiddlewaretoken]'
+    )?.value;
+
+
+    /*
+     * ==========================================================
+     * ATUALIZAÇÃO VISUAL DA COLUNA
+     * ==========================================================
+     */
+
+    function updateColumnState(column) {
+
+        const tasksContainer = column.querySelector(
+            '.project-kanban-tasks'
+        );
+
+        const emptyState = column.querySelector(
+            '.project-empty-column'
+        );
+
+        const counter = column.querySelector(
+            '.project-column-count'
+        );
+
+        const tasks = tasksContainer.querySelectorAll(
+            '.project-kanban-task'
+        );
+
+        const taskCount = tasks.length;
+
+        counter.textContent = taskCount;
+
+        if (taskCount === 0) {
+            emptyState.style.display = 'flex';
+        } else {
+            emptyState.style.display = 'none';
+        }
+    }
+
+
+    /*
+     * ==========================================================
+     * ATUALIZA TODAS AS COLUNAS
+     * ==========================================================
+     */
+
+    function updateBoardState() {
+        document
+            .querySelectorAll('.project-kanban-column')
+            .forEach(function (column) {
+                updateColumnState(column);
+            });
+    }
+
+
+    /*
+     * ==========================================================
+     * SALVAR STATUS NO BANCO
+     * ==========================================================
+     */
+
+    async function saveTaskStatus(task, newStatus, oldColumn) {
+
+        const updateUrl = task.dataset.updateUrl;
+
+        if (!updateUrl || !csrfToken) {
+            console.error('URL de atualização ou CSRF não encontrado.');
+            return false;
         }
 
-        fetch(`/tarefas/${taskId}/status/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type':
-                    'application/x-www-form-urlencoded; charset=UTF-8',
-                'X-CSRFToken':
-                    csrfToken,
-                'X-Requested-With':
-                    'XMLHttpRequest',
-            },
-            body: new URLSearchParams({
-                status: newStatus
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
+        try {
 
-            if (!data.success) {
-                console.error(
-                    data.error || 'Erro ao mover tarefa'
+            const response = await fetch(updateUrl, {
+                method: 'POST',
+
+                headers: {
+                    'Content-Type':
+                        'application/x-www-form-urlencoded; charset=UTF-8',
+
+                    'X-CSRFToken': csrfToken,
+
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+
+                body: new URLSearchParams({
+                    status: newStatus
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(
+                    data.error || 'Não foi possível atualizar a tarefa.'
                 );
-                return;
             }
 
-            location.reload();
+            task.dataset.status = newStatus;
 
-        })
-        .catch(error => {
+            updateBoardState();
+
+            return true;
+
+        } catch (error) {
 
             console.error(
-                'Erro ao mover tarefa:',
+                'Erro ao salvar status da tarefa:',
                 error
             );
 
-        });
+            /*
+             * Se o banco recusou a alteração,
+             * devolve o card para a coluna original.
+             */
+
+            if (oldColumn) {
+                oldColumn
+                    .querySelector('.project-kanban-tasks')
+                    .appendChild(task);
+            }
+
+            updateBoardState();
+
+            return false;
+        }
     }
 
-    taskCards.forEach(function (taskCard) {
 
-        taskCard.addEventListener(
-            'dragstart',
-            function () {
+    /*
+     * ==========================================================
+     * DRAG AND DROP
+     * ==========================================================
+     */
+
+    document
+        .querySelectorAll('.project-kanban-task')
+        .forEach(function (taskCard) {
+
+            taskCard.addEventListener('dragstart', function () {
+
+                draggedTask = taskCard;
 
                 taskCard.classList.add('dragging');
+            });
 
-                taskCard.setAttribute(
-                    'data-dragging',
-                    'true'
-                );
-
-            }
-        );
-
-        taskCard.addEventListener(
-            'dragend',
-            function () {
+            taskCard.addEventListener('dragend', function () {
 
                 taskCard.classList.remove('dragging');
 
-                taskCard.removeAttribute(
-                    'data-dragging'
-                );
+                draggedTask = null;
 
-            }
-        );
+                document
+                    .querySelectorAll('.project-kanban-column')
+                    .forEach(function (column) {
+                        column.classList.remove('drag-over');
+                    });
+            });
+        });
 
-    });
 
-    columns.forEach(function (column) {
+    document
+        .querySelectorAll('.project-kanban-column')
+        .forEach(function (column) {
 
-        column.addEventListener(
-            'dragover',
-            function (event) {
-
-                event.preventDefault();
-
-                column.classList.add(
-                    'drag-over'
-                );
-
-            }
-        );
-
-        column.addEventListener(
-            'dragleave',
-            function () {
-
-                column.classList.remove(
-                    'drag-over'
-                );
-
-            }
-        );
-
-        column.addEventListener(
-            'drop',
-            function (event) {
+            column.addEventListener('dragover', function (event) {
 
                 event.preventDefault();
 
-                column.classList.remove(
-                    'drag-over'
-                );
+                column.classList.add('drag-over');
+            });
 
-                const draggedTask =
-                    document.querySelector(
-                        '.project-kanban-task[data-dragging="true"]'
-                    );
+
+            column.addEventListener('dragleave', function () {
+
+                column.classList.remove('drag-over');
+            });
+
+
+            column.addEventListener('drop', async function (event) {
+
+                event.preventDefault();
+
+                column.classList.remove('drag-over');
 
                 if (!draggedTask) {
                     return;
                 }
 
-                const taskId =
-                    draggedTask.dataset.taskId;
+                const newStatus = column.dataset.status;
+                const oldStatus = draggedTask.dataset.status;
 
-                const newStatus =
-                    column.dataset.status;
+                const oldColumn = document.querySelector(
+                    `.project-kanban-column[data-status="${oldStatus}"]`
+                );
 
-                if (!taskId || !newStatus) {
+                if (!newStatus || !oldColumn) {
                     return;
                 }
 
-                column
-                    .querySelector('.project-kanban-tasks')
-                    .appendChild(draggedTask);
+                /*
+                 * Não faz nada se a tarefa foi solta
+                 * na própria coluna.
+                 */
 
-                moveTask(
-                    taskId,
-                    newStatus
+                if (newStatus === oldStatus) {
+                    return;
+                }
+
+                const tasksContainer = column.querySelector(
+                    '.project-kanban-tasks'
                 );
 
-            }
-        );
+                tasksContainer.appendChild(draggedTask);
 
+                /*
+                 * Atualiza imediatamente a interface.
+                 */
+
+                updateBoardState();
+
+                /*
+                 * Depois persiste no banco.
+                 */
+
+                await saveTaskStatus(
+                    draggedTask,
+                    newStatus,
+                    oldColumn
+                );
+            });
+        });
+
+
+    /*
+     * ==========================================================
+     * PESQUISA DE TAREFAS
+     * ==========================================================
+     */
+
+    searchInput.addEventListener('input', function () {
+
+        const search = searchInput.value
+            .trim()
+            .toLowerCase();
+
+        document
+            .querySelectorAll('.project-kanban-task')
+            .forEach(function (task) {
+
+                const title = task
+                    .querySelector('h4')
+                    ?.textContent
+                    .toLowerCase() || '';
+
+                const description = task
+                    .querySelector('p')
+                    ?.textContent
+                    .toLowerCase() || '';
+
+                const matches =
+                    title.includes(search) ||
+                    description.includes(search);
+
+                task.style.display = matches
+                    ? ''
+                    : 'none';
+            });
     });
+
+
+    /*
+     * Estado inicial
+     */
+
+    updateBoardState();
 
 });
 </script>
