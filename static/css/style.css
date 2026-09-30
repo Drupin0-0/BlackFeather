@@ -436,7 +436,7 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 40px;
+    min-height: 20px;
     line-height: 1.2;
     white-space: nowrap;
     transition: opacity 0.15s ease, transform 0.1s ease;
