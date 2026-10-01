@@ -8,9 +8,17 @@
 <!-- BLOCO ADICIONADO PARA REMOVER A ROLAGEM EXCLUSIVAMENTE NESTA TELA -->
 <style>
     body {
-        height: 100vh !important;
-        overflow: hidden !important;
+        min-height: 100dvh;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         padding: 0 !important;
+    }
+
+    .auth-card {
+        margin: 24px 0;
     }
 
     /* Estilo para a imagem do corvo ficar perfeita no topo */

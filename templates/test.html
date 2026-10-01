@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Chat do Projeto</title>
+    <title>Chat · {{ project.title }}</title>
 
     <style>
         * {
@@ -14,17 +14,27 @@
         }
 
         body {
-            background: #0a0a0a;
+            background: radial-gradient(ellipse at 78% 0%, rgba(41, 62, 91, 0.16), transparent 42%), #08090b;
             color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
+            font-family: Inter, 'Segoe UI', sans-serif;
+            min-height: 100dvh;
+            display: flex;
+            justify-content: center;
+            padding: 18px;
         }
 
         .chat-container {
             width: 100%;
             max-width: 900px;
+            min-height: calc(100dvh - 36px);
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: clamp(20px, 4vw, 38px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(12, 15, 19, 0.92);
+            border: 1px solid #252b34;
+            border-radius: 16px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
             animation: smoothFadeIn 0.3s ease-out forwards;
         }
 
@@ -33,13 +43,13 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 18px;
-            padding-bottom: 18px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            padding-bottom: 16px;
         }
 
         .chat-header h1 {
             color: #ffffff;
-            font-size: 22px;
+            font-size: clamp(20px, 4vw, 28px);
             font-weight: 700;
             letter-spacing: -0.5px;
         }
@@ -67,11 +77,18 @@
             letter-spacing: 0.8px;
         }
 
+        .chat-back-link:focus-visible, .chat-input:focus-visible, .chat-send:focus-visible {
+            outline: 2px solid #a3c7ff;
+            outline-offset: 3px;
+        }
+
         .chat-box {
-            height: 500px;
+            flex: 1;
+            min-height: 320px;
             overflow-y: auto;
-            background: #090909;
-            border: 1px solid #1a1a1a;
+            background: linear-gradient(145deg, #101318, #090b0e);
+            border: 1px solid #252b34;
+            border-radius: 12px;
             padding: 20px;
         }
 
@@ -80,6 +97,7 @@
         .chat-box::-webkit-scrollbar {
             width: 5px;
         }
+
 
         .chat-box::-webkit-scrollbar-track {
             background: #090909;
@@ -165,6 +183,7 @@
             transition:
                 border-color 0.2s ease,
                 box-shadow 0.2s ease;
+            border-radius: 9px;
         }
 
         .chat-input::placeholder {
@@ -189,6 +208,7 @@
             font-weight: 700;
 
             cursor: pointer;
+            border-radius: 9px;
 
             transition:
                 opacity 0.2s ease,
@@ -215,7 +235,7 @@
 
             color: #555555;
 
-            font-size: 10px;
+            font-size: 12px;
 
             text-transform: uppercase;
             letter-spacing: 0.7px;
@@ -245,7 +265,9 @@
 
             .chat-container {
                 max-width: 100%;
-                padding: 25px 15px;
+                min-height: calc(100dvh - 20px);
+                padding: 18px 14px;
+                border-radius: 12px;
             }
 
             .chat-header {
@@ -255,15 +277,15 @@
             }
 
             .chat-box {
-                height: 60vh;
+                min-height: min(52vh, 420px);
             }
 
             .chat-form {
-                flex-direction: column;
+                align-items: stretch;
             }
 
             .chat-send {
-                width: 100%;
+                padding-inline: 14px;
             }
         }
     </style>
@@ -280,7 +302,7 @@
                 ← Voltar
             </a>
 
-            <h1>Chat do Projeto</h1>
+            <h1>{{ project.title }}</h1>
         </div>
 
         <span>
@@ -308,12 +330,14 @@
             placeholder="Digite uma mensagem..."
             autocomplete="off"
             maxlength="2000"
+                disabled
         >
 
         <button
             type="submit"
             id="sendButton"
             class="chat-send"
+            disabled
         >
             Enviar
         </button>
@@ -349,7 +373,7 @@
     });
 
 
-    const projectCode = "{{ project_code }}";
+    const projectCode = "{{ project_code|escapejs }}";
 
 
     const chat = document.getElementById("chat");
@@ -409,6 +433,12 @@
 
             chat.innerHTML = "";
 
+            if (!data.messages.length) {
+                const empty = document.createElement("div");
+                empty.className = "chat-empty";
+                empty.textContent = "Ainda não há mensagens. Comece a conversa da equipe.";
+                chat.appendChild(empty);
+            }
 
             data.messages.forEach(function (message) {
 

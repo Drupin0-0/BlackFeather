@@ -43,6 +43,7 @@
             cursor: pointer; transition: border-color .2s;
         }
         .avatar-wrapper:hover { border-color: #525252; }
+        .avatar-wrapper:focus-visible { outline: 2px solid #a3c7ff; outline-offset: 4px; }
         .avatar-img { width: 100%; height: 100%; object-fit: cover; }
         .avatar-overlay {
             position: absolute; inset: 0; background: rgba(0,0,0,.6);
@@ -185,7 +186,7 @@
 
             <!-- Avatar -->
             <div class="avatar-section">
-                <div class="avatar-wrapper" onclick="document.getElementById('photoInput').click()">
+                <div class="avatar-wrapper" id="avatarWrapper" role="button" tabindex="0" aria-label="Alterar foto de perfil" onclick="document.getElementById('photoInput').click()">
                     {% if profile.avatar %}
                         <img src="{{ profile.avatar.url }}" alt="Foto de Perfil" id="avatarPreview" class="avatar-img">
                     {% else %}
@@ -341,6 +342,13 @@
         let currentEditingSkillId = null;
 
         const $ = (id) => document.getElementById(id);
+
+        $('avatarWrapper').addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                $('photoInput').click();
+            }
+        });
 
         /* ---------- Avatar ---------- */
         function previewImage(event) {

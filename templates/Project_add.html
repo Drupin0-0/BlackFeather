@@ -5,53 +5,61 @@
 
 {% block content %}
 <div class="dashboard-wrapper">
-    <main class="dashboard-main" style="max-width: 760px; margin: 40px auto;">
-        <div class="card-box" style="background-color: #080808; border: 1px solid #222; padding: 30px; border-radius: 8px;">
-            <h2 style="color: #fff; margin-bottom: 8px;">Criar Novo Projeto</h2>
-            <p style="color: #888; margin-bottom: 24px; font-size: 14px;">Preencha os detalhes e selecione os membros que farão parte do workspace.</p>
+    <main class="dashboard-main project-create-main">
+        <div class="card-box project-create-card">
+            <header class="project-create-header">
+                <span class="section-kicker">Novo workspace</span>
+                <h1>Criar novo projeto</h1>
+                <p>Defina o espaço de trabalho e convide as pessoas que vão construir com você.</p>
+            </header>
 
             <form method="POST" action="{% url 'project_create' %}" id="projectForm">
                 {% csrf_token %}
 
-                <div class="input-group" style="margin-bottom: 20px;">
-                    <label for="title" style="display: block; color: #ccc; margin-bottom: 8px;">Nome do Projeto *</label>
-                    <input type="text" id="title" name="title" placeholder="Ex: Sincrow Core" required maxlength="100" style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff;">
+                <div class="input-group project-create-field">
+                    <label for="title">Nome do projeto <span>*</span></label>
+                    <input type="text" id="title" name="title" placeholder="Ex.: Sincrow Core" required maxlength="100">
                 </div>
 
-                <div class="input-group" style="margin-bottom: 20px;">
-                    <label for="description" style="display: block; color: #ccc; margin-bottom: 8px;">Descrição (Opcional)</label>
-                    <textarea id="description" name="description" placeholder="Descreva os objetivos deste projeto..." style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff; min-height: 100px;"></textarea>
+                <div class="input-group project-create-field">
+                    <label for="description">Descrição <span>(opcional)</span></label>
+                    <textarea id="description" name="description" placeholder="Descreva os objetivos deste projeto..."></textarea>
                 </div>
 
-                <div class="input-group" style="margin-bottom: 20px;">
-                    <label for="memberSearch" style="display: block; color: #ccc; margin-bottom: 8px;">Adicionar membros</label>
-                    <input type="text" id="memberSearch" placeholder="Buscar por nome ou email" autocomplete="off" style="width: 100%; padding: 12px; background: #000; border: 1px solid #222; border-radius: 6px; color: #fff;">
-                    <div id="memberSearchResults" style="margin-top: 12px; display: flex; flex-direction: column; gap: 10px;"></div>
+                <div class="input-group project-create-field">
+                    <label for="memberSearch">Adicionar membros</label>
+                    <input type="search" id="memberSearch" placeholder="Buscar por nome ou e-mail" autocomplete="off">
+                    <div id="memberSearchResults" class="project-member-results"></div>
                 </div>
 
-                <div class="input-group" style="margin-bottom: 20px;">
-                    <label style="display: block; color: #ccc; margin-bottom: 8px;">Membros selecionados</label>
-                    <div id="selectedMembers" style="display: flex; flex-wrap: wrap; gap: 8px; min-height: 44px; padding: 10px; border: 1px solid #222; border-radius: 6px; background: #101010;">
+                <div class="input-group project-create-field">
+                    <span class="project-create-label">Membros selecionados</span>
+                    <div id="selectedMembers" class="selected-project-members">
                         <span style="color: #777; font-size: 14px;">Nenhum membro selecionado.</span>
                     </div>
                 </div>
 
-                <div style="margin-bottom: 20px;">
-                    <button type="button" id="suggestMembersBtn" class="btn-primary" style="padding: 10px 16px;">
+                <div class="project-ai-actions">
+                    <button type="button" id="suggestMembersBtn" class="btn-secondary-action">
                         Sugerir membros com IA
                     </button>
                 </div>
 
-                <div id="suggestionBox" style="display: none; margin-bottom: 20px; background: #0d0d0d; border: 1px solid #222; border-radius: 8px; padding: 16px; color: #ddd;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px;">
-                        <strong style="color: #fff;">Sugestão de alocação por IA</strong>
+                <div id="suggestionBox" class="project-suggestion-box">
+                    <div class="project-suggestion-heading">
+                        <strong>Sugestão de alocação por IA</strong>
                     </div>
-                    <div id="suggestionResults" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                    <div id="suggestionResults" class="project-suggestion-results"></div>
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: 12px;">
-                    <a href="{% url 'accounts:dashboard' %}" class="btn-secondary-action" style="padding: 10px 20px; text-decoration: none;">Cancelar</a>
-                    <button type="submit" class="btn-primary" style="padding: 10px 20px;">Criar Projeto</button>
+                <label class="ai-option">
+                    <input type="checkbox" name="generate_tasks_ai" checked>
+                    <span>Gerar tarefas automaticamente com IA e distribuir entre os membros</span>
+                </label>
+
+                <div class="project-create-actions">
+                    <a href="{% url 'accounts:dashboard' %}" class="btn-secondary-action">Cancelar</a>
+                    <button type="submit" class="btn-primary">Criar projeto</button>
                 </div>
             </form>
         </div>
