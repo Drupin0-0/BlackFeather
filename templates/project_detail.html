@@ -1,0 +1,578 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ project.title }} - Sincrow{% endblock %}
+
+{% block content %}
+
+
+<div class="project-page">
+
+    <header class="project-header">
+
+        <div class="project-header-left">
+
+            <a
+                href="{% url 'project_list' %}"
+                class="project-back"
+                title="Voltar para projetos"
+            >
+                ←
+            </a>
+
+            <div class="project-title-wrapper">
+                <span>Projeto</span>
+                <h1>{{ project.title }}</h1>
+            </div>
+
+        </div>
+
+        <div class="project-header-actions">
+
+            <div class="project-search" id="projectSearch">
+
+                <button
+                    type="button"
+                    class="project-search-button"
+                    id="projectSearchButton"
+                    title="Pesquisar tarefas"
+                    aria-label="Pesquisar tarefas"
+                >
+                    <span class="search-icon"></span>
+                </button>
+
+                <input
+                    type="text"
+                    id="projectTaskSearch"
+                    class="project-search-input"
+                    placeholder="Pesquisar tarefa..."
+                    autocomplete="off"
+                >
+
+            </div>
+
+            <a
+                href="#"
+                class="project-members-button"
+                title="Integrantes"
+                aria-label="Integrantes"
+            >
+                <span class="person-icon"></span>
+            </a>
+
+        </div>
+
+    </header>
+
+
+    <nav
+        class="project-navigation"
+        id="projectNavigation"
+    >
+
+        <div class="project-navigation-center">
+
+            <a
+                href="{% url 'project_detail' project.pk %}"
+                class="project-nav-item active"
+            >
+                Quadro
+            </a>
+
+            <a
+                href="#"
+                class="project-nav-item"
+            >
+                Resumo
+            </a>
+
+        </div>
+
+    </nav>
+
+
+    <button
+        type="button"
+        class="project-navigation-toggle"
+        id="projectMenuToggle"
+        title="Minimizar barra"
+        aria-label="Minimizar barra"
+    >
+        ↓
+    </button>
+
+
+    <main class="project-content">
+
+        <section class="project-board">
+
+            <div class="project-board-header">
+
+                <p class="section-kicker">
+                    {{ project.code }}
+                </p>
+
+                <h2>
+                    Quadro
+                </h2>
+
+                <p>
+                    Gerencie as tarefas deste projeto.
+                </p>
+
+            </div>
+
+
+            <section
+                class="project-kanban-board"
+                aria-label="Quadro de tarefas do projeto"
+            >
+
+                {% for column in kanban_columns %}
+
+                    <div
+                        class="project-kanban-column"
+                        data-status="{{ column.key }}"
+                    >
+
+                        <div class="project-kanban-column-header">
+
+                            <h3>
+                                {{ column.label }}
+                            </h3>
+
+                            <span class="project-task-count">
+                                {{ column.tasks|length }}
+                            </span>
+
+                        </div>
+
+
+                        <div class="project-kanban-tasks">
+
+                            {% if column.tasks %}
+
+                                {% for task in column.tasks %}
+
+                                    <article
+                                        class="project-kanban-task"
+                                        data-task-id="{{ task.pk }}"
+                                        data-status="{{ task.status }}"
+                                        draggable="true"
+                                    >
+
+                                        <div class="project-task-head">
+
+                                            <span class="project-task-priority priority-{{ task.priority }}">
+                                                {{ task.get_priority_display }}
+                                            </span>
+
+                                        </div>
+
+
+                                        <h4>
+                                            {{ task.title }}
+                                        </h4>
+
+
+                                        <p>
+                                            {{ task.description|default:"Sem descrição." }}
+                                        </p>
+
+
+                                        <div class="project-task-meta">
+
+                                            {% if task.task_responsible %}
+
+                                                <span>
+                                                    {{ task.task_responsible.profile.name|default:task.task_responsible.email }}
+                                                </span>
+
+                                            {% else %}
+
+                                                <span>
+                                                    Sem responsável
+                                                </span>
+
+                                            {% endif %}
+
+
+                                            {% if task.deadline %}
+
+                                                <span>
+                                                    {{ task.deadline|date:"d/m/Y" }}
+                                                </span>
+
+                                            {% else %}
+
+                                                <span>
+                                                    Sem data
+                                                </span>
+
+                                            {% endif %}
+
+                                        </div>
+
+                                    </article>
+
+                                {% endfor %}
+
+                            {% else %}
+
+                                <div class="project-empty-column">
+                                    Sem tarefas
+                                </div>
+
+                            {% endif %}
+
+                        </div>
+
+                    </div>
+
+                {% endfor %}
+
+            </section>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<form id="csrf-form" style="display: none;">
+    {% csrf_token %}
+</form>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const csrfToken =
+        document.querySelector(
+            '#csrf-form [name=csrfmiddlewaretoken]'
+        )?.value;
+
+
+    const toggleButton =
+        document.getElementById('projectMenuToggle');
+
+    const navigation =
+        document.getElementById('projectNavigation');
+
+
+    const search =
+        document.getElementById('projectSearch');
+
+    const searchButton =
+        document.getElementById('projectSearchButton');
+
+    const searchInput =
+        document.getElementById('projectTaskSearch');
+
+
+    const taskCards =
+        document.querySelectorAll(
+            '.project-kanban-task'
+        );
+
+    const columns =
+        document.querySelectorAll(
+            '.project-kanban-column'
+        );
+
+
+    /*
+     * ==========================================================
+     * NAVEGAÇÃO
+     * ==========================================================
+     */
+
+    toggleButton.addEventListener('click', function () {
+
+        navigation.classList.toggle('collapsed');
+
+        const collapsed =
+            navigation.classList.contains('collapsed');
+
+        toggleButton.textContent =
+            collapsed ? '↑' : '↓';
+
+        toggleButton.title =
+            collapsed
+                ? 'Abrir barra'
+                : 'Minimizar barra';
+
+        toggleButton.setAttribute(
+            'aria-label',
+            collapsed
+                ? 'Abrir barra'
+                : 'Minimizar barra'
+        );
+
+    });
+
+
+    /*
+     * ==========================================================
+     * PESQUISA
+     * ==========================================================
+     */
+
+    searchButton.addEventListener('click', function () {
+
+        search.classList.toggle('open');
+
+        if (search.classList.contains('open')) {
+
+            searchInput.focus();
+
+        } else {
+
+            searchInput.value = '';
+
+            taskCards.forEach(function (task) {
+                task.style.display = '';
+            });
+
+        }
+
+    });
+
+
+    searchInput.addEventListener('input', function () {
+
+        const query =
+            searchInput.value
+                .trim()
+                .toLowerCase();
+
+
+        taskCards.forEach(function (task) {
+
+            const title =
+                task.querySelector('h4')
+                    ?.textContent
+                    .trim()
+                    .toLowerCase() || '';
+
+
+            if (
+                !query ||
+                title.includes(query)
+            ) {
+
+                task.style.display = '';
+
+            } else {
+
+                task.style.display = 'none';
+
+            }
+
+        });
+
+    });
+
+
+    /*
+     * ==========================================================
+     * MOVER TAREFA
+     * ==========================================================
+     */
+
+    function moveTask(taskId, newStatus) {
+
+        if (!taskId || !newStatus) {
+            return;
+        }
+
+
+        fetch(
+            `/tarefas/${taskId}/status/`,
+            {
+                method: 'POST',
+
+                headers: {
+                    'Content-Type':
+                        'application/x-www-form-urlencoded; charset=UTF-8',
+
+                    'X-CSRFToken':
+                        csrfToken,
+
+                    'X-Requested-With':
+                        'XMLHttpRequest'
+                },
+
+                body: new URLSearchParams({
+                    status: newStatus
+                })
+            }
+        )
+
+        .then(function (response) {
+            return response.json();
+        })
+
+        .then(function (data) {
+
+            if (!data.success) {
+
+                console.error(
+                    data.error ||
+                    'Erro ao mover tarefa.'
+                );
+
+                return;
+            }
+
+
+            location.reload();
+
+        })
+
+        .catch(function (error) {
+
+            console.error(
+                'Erro ao mover tarefa:',
+                error
+            );
+
+        });
+
+    }
+
+
+    /*
+     * ==========================================================
+     * DRAG AND DROP
+     * ==========================================================
+     */
+
+    taskCards.forEach(function (taskCard) {
+
+        taskCard.addEventListener(
+            'dragstart',
+            function () {
+
+                taskCard.classList.add(
+                    'dragging'
+                );
+
+                taskCard.setAttribute(
+                    'data-dragging',
+                    'true'
+                );
+
+            }
+        );
+
+
+        taskCard.addEventListener(
+            'dragend',
+            function () {
+
+                taskCard.classList.remove(
+                    'dragging'
+                );
+
+                taskCard.removeAttribute(
+                    'data-dragging'
+                );
+
+            }
+        );
+
+    });
+
+
+    columns.forEach(function (column) {
+
+        column.addEventListener(
+            'dragover',
+            function (event) {
+
+                event.preventDefault();
+
+                column.classList.add(
+                    'drag-over'
+                );
+
+            }
+        );
+
+
+        column.addEventListener(
+            'dragleave',
+            function () {
+
+                column.classList.remove(
+                    'drag-over'
+                );
+
+            }
+        );
+
+
+        column.addEventListener(
+            'drop',
+            function (event) {
+
+                event.preventDefault();
+
+                column.classList.remove(
+                    'drag-over'
+                );
+
+
+                const draggedTask =
+                    document.querySelector(
+                        '.project-kanban-task[data-dragging="true"]'
+                    );
+
+
+                if (!draggedTask) {
+                    return;
+                }
+
+
+                const taskId =
+                    draggedTask.dataset.taskId;
+
+
+                const newStatus =
+                    column.dataset.status;
+
+
+                if (!taskId || !newStatus) {
+                    return;
+                }
+
+
+                const tasksContainer =
+                    column.querySelector(
+                        '.project-kanban-tasks'
+                    );
+
+
+                tasksContainer.appendChild(
+                    draggedTask
+                );
+
+
+                moveTask(
+                    taskId,
+                    newStatus
+                );
+
+            }
+        );
+
+    });
+
+});
+
+
+</script>
+
+{% endblock %}

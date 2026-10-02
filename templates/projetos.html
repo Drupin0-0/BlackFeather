@@ -193,7 +193,7 @@
             </div>
 
             <!-- Link real: definido via JS antes de aparecer. Clique = navegação normal
-                 para a página de chat de verdade (/chat/projetos/<code>/). -->
+                para a página de chat de verdade (/chat/projetos/<code>/). -->
             <a id="ppChatMaximize" href="#" class="ppc-icon-btn" title="Abrir em tela cheia">⤢</a>
 
             <button type="button" class="ppc-icon-btn" id="ppCloseFromChat" title="Fechar">✕</button>
@@ -401,7 +401,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 openPanel(row);
             }
         });
+document.querySelectorAll('.project-row').forEach(function (row) {
+    row.addEventListener('click', function () {
+        window.location.href = `/projects/${row.dataset.id}/`;
     });
+});
 
     openChatBtn.addEventListener('click', showChatView);
     chatBackBtn.addEventListener('click', showDetailsView);
