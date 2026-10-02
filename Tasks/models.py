@@ -50,7 +50,6 @@ class Project(models.Model):
     def __str__(self):
         return self.title
 
-#a
 class Task(models.Model):
     project = models.ForeignKey(
         Project,
