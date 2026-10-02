@@ -451,7 +451,7 @@ body {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 40px;
+    min-height: 20px;
     line-height: 1.2;
     white-space: nowrap;
     transition: opacity 0.15s ease, transform 0.1s ease;
@@ -1582,6 +1582,273 @@ line-height: 1;
 
 }
 
+/* ======================================================================
+   ACABAMENTO VISUAL E RESPONSIVIDADE GLOBAL
+   ====================================================================== */
+:root {
+    color-scheme: dark;
+    --surface-1: #0b0d10;
+    --surface-2: #101318;
+    --surface-3: #151a20;
+    --line-soft: rgba(255, 255, 255, 0.09);
+    --text-muted: #a1a8b3;
+    --accent: #a3c7ff;
+}
+
+html { min-width: 320px; scroll-behavior: smooth; }
+body { overflow-x: hidden; }
+
+.dashboard-wrapper {
+    background:
+        radial-gradient(ellipse at 78% 0%, rgba(41, 62, 91, 0.12), transparent 42%),
+        #08090b;
+}
+
+.dashboard-sidebar {
+    background: rgba(10, 12, 15, 0.96);
+    border-color: var(--line-soft);
+}
+
+.sidebar-brand { margin-bottom: 26px; }
+.sidebar-logo { box-shadow: 0 6px 20px rgba(255, 255, 255, 0.12); }
+.menu-item { border-radius: 8px; font-size: 12px; letter-spacing: 0.35px; }
+.menu-item.active { box-shadow: 0 4px 16px rgba(255, 255, 255, 0.12); }
+
+.dashboard-main {
+    min-width: 0;
+    padding: 30px clamp(20px, 3vw, 44px);
+}
+
+.main-header { gap: 16px; }
+.main-header h1 { font-size: clamp(21px, 2vw, 26px); }
+.header-actions { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.user-profile {
+    max-width: min(42vw, 420px);
+    overflow-wrap: anywhere;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.stat-card, .summary-item, .project-card, .kanban-column, .kanban-task,
+.data-card, .projects-table-wrapper, .agenda-empty-state, .task-agenda-card {
+    border-color: var(--line-soft);
+    border-radius: 10px;
+}
+
+.stat-card, .summary-item, .data-card { background: linear-gradient(145deg, #111419, #0b0d10); }
+.stat-label, .summary-item label { font-size: 11px; color: var(--text-muted); }
+.stat-card strong { font-size: 30px; }
+.project-card { background: linear-gradient(145deg, #111419, #0b0d10); padding: 20px; }
+.project-card:hover { border-color: rgba(163, 199, 255, 0.4); transform: translateY(-3px); }
+.project-card-body h3 { overflow-wrap: anywhere; }
+.project-card-body p { color: #a1a8b3; }
+
+.btn-primary, .btn-secondary-action, .logout-btn, .project-panel-close,
+.task-modal-close, .notification-button {
+    border-radius: 8px;
+    transition: transform 0.18s ease, background-color 0.18s ease,
+        border-color 0.18s ease, color 0.18s ease, opacity 0.18s ease;
+}
+
+.btn-primary { min-height: 40px; }
+.btn-primary:hover, .btn-secondary-action:hover { transform: translateY(-1px); }
+.btn-secondary-action { border-color: #343b45; }
+.btn-secondary-action:hover { border-color: #66758a; background: #151a21; }
+
+.kanban-column { background: rgba(13, 16, 20, 0.86); padding: 14px; }
+.kanban-task { background: #11151a; padding: 14px; }
+.task-project, .task-meta { color: #a1a8b3; }
+.task-priority { border-radius: 999px; padding: 4px 9px; }
+
+.projects-table-wrapper { overflow-x: auto; }
+.projects-table { min-width: 720px; }
+.projects-table thead th { position: sticky; top: 0; z-index: 1; }
+.projects-table tbody tr:hover { background: rgba(163, 199, 255, 0.06); }
+.project-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.task-modal { overflow-y: auto; padding: 16px 0; }
+.task-modal-panel {
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    margin: 0 auto;
+    border-radius: 14px;
+    border-color: #2a3039;
+    background: linear-gradient(145deg, #111419, #090b0e);
+}
+.task-field input, .task-field select, .task-field textarea,
+.ppc-form input, .projects-table-wrapper { border-radius: 8px; }
+
+.project-panel {
+    height: 100dvh;
+    max-height: 100dvh;
+    border-color: #2a3039;
+    background: linear-gradient(160deg, #111419, #080a0d);
+}
+
+.task-agenda-card { background: linear-gradient(120deg, #11151a, #0d1014); }
+.task-agenda-card:hover { border-color: #3b4654; }
+.task-agenda-check input:focus-visible + .task-agenda-checkmark {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.project-create-main {
+    width: min(100%, 900px);
+    max-width: 900px;
+    margin: 24px auto;
+}
+
+.project-create-card {
+    padding: clamp(20px, 4vw, 38px);
+    border: 1px solid var(--line-soft);
+    border-radius: 16px;
+    background: linear-gradient(145deg, #111419, #090b0e);
+    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
+}
+
+.project-create-header { margin-bottom: 30px; }
+.project-create-header h1 { margin: 0 0 8px; font-size: clamp(24px, 4vw, 32px); letter-spacing: -0.8px; }
+.project-create-header p { max-width: 600px; color: var(--text-muted); font-size: 14px; line-height: 1.6; }
+.project-create-field { margin-bottom: 22px; }
+.project-create-field label, .project-create-label {
+    display: block;
+    margin-bottom: 8px;
+    color: #d4dae2;
+    font-size: 13px;
+    font-weight: 600;
+}
+.project-create-field label span { color: #929ba7; font-size: 12px; font-weight: 400; }
+.project-create-field input, .project-create-field textarea {
+    width: 100%;
+    min-height: 46px;
+    padding: 12px 14px;
+    color: #f5f7fa;
+    background: #090c10;
+    border: 1px solid #2a3039;
+    border-radius: 9px;
+    font: inherit;
+}
+.project-create-field textarea { min-height: 120px; resize: vertical; }
+.project-create-field input:focus, .project-create-field textarea:focus { border-color: #7186a3; box-shadow: 0 0 0 3px rgba(163, 199, 255, 0.1); }
+.selected-project-members, .project-suggestion-box {
+    min-height: 48px;
+    padding: 12px;
+    background: #0b0e12;
+    border: 1px solid #2a3039;
+    border-radius: 9px;
+}
+.selected-project-members { display: flex; flex-wrap: wrap; gap: 8px; }
+.project-member-results, .project-suggestion-results { display: flex; flex-direction: column; gap: 9px; margin-top: 10px; }
+.project-ai-actions { margin: 0 0 18px; }
+.project-ai-actions button { width: 100%; }
+.project-suggestion-box { display: none; margin-bottom: 20px; color: #dce2ea; }
+.project-suggestion-heading { margin-bottom: 10px; }
+.ai-option { display: flex; align-items: flex-start; gap: 10px; margin: 18px 0 24px; color: #d4dae2; font-size: 13px; line-height: 1.5; cursor: pointer; }
+.ai-option input { flex: 0 0 auto; margin-top: 3px; accent-color: #a3c7ff; }
+.project-create-actions { display: flex; justify-content: flex-end; gap: 12px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
+.project-create-actions > * { min-width: 132px; text-align: center; }
+
+@media (max-width: 1000px) {
+    .dashboard-sidebar { width: 205px; }
+    .dashboard-main { padding: 26px 24px; }
+    .stats-grid { gap: 10px; }
+    .stat-card { padding: 15px; }
+}
+
+@media (max-width: 760px) {
+    .dashboard-wrapper {
+        position: relative;
+        top: auto;
+        left: auto;
+        width: 100%;
+        min-height: 100dvh;
+        height: auto;
+        flex-direction: column;
+    }
+
+    .dashboard-sidebar {
+        width: 100%;
+        padding: 12px 16px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line-soft);
+    }
+
+    .sidebar-brand {
+        margin: 0 0 10px;
+        padding: 4px 2px 12px;
+    }
+
+    .sidebar-menu {
+        flex-direction: row;
+        gap: 6px;
+        overflow-x: auto;
+        padding: 1px 1px 5px;
+        scrollbar-width: thin;
+    }
+
+    .menu-item { flex: 0 0 auto; padding: 10px 12px; }
+    .sidebar-footer { padding-top: 10px; }
+    .logout-btn { display: inline-block; padding: 8px 16px; }
+
+    .dashboard-main { width: 100%; overflow: visible; padding: 24px 18px; }
+    .main-header { align-items: flex-start; flex-wrap: wrap; }
+    .header-actions { flex-wrap: wrap; }
+    .user-profile { max-width: 100%; }
+
+    .kanban-board {
+        grid-template-columns: repeat(3, minmax(240px, 1fr));
+        overflow-x: auto;
+        padding-bottom: 10px;
+        overscroll-behavior-x: contain;
+    }
+
+    .projects-toolbar, .workspace-toolbar { align-items: flex-start; flex-wrap: wrap; }
+    .projects-toolbar { gap: 14px; }
+    .projects-toolbar .btn-primary { white-space: nowrap; }
+    .quick-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .project-panel { width: min(420px, 100vw); max-width: 100vw; padding: 22px 18px; }
+}
+
+@media (max-width: 540px) {
+    .dashboard-main { padding: 20px 14px 28px; }
+    .main-header { flex-direction: column; margin-bottom: 22px; }
+    .header-actions { width: 100%; }
+    .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stat-card { padding: 13px; }
+    .stat-card strong { font-size: 25px; }
+    .workspace-toolbar { flex-direction: column; }
+    .toolbar-actions { width: 100%; flex-wrap: wrap; }
+    .toolbar-actions > * { flex: 1 1 140px; }
+    .kanban-board { grid-template-columns: minmax(0, 1fr); overflow: visible; }
+    .kanban-column { min-width: 0; }
+    .projects-grid { grid-template-columns: minmax(0, 1fr); }
+    .quick-summary { grid-template-columns: minmax(0, 1fr); }
+    .task-form-grid { grid-template-columns: minmax(0, 1fr); }
+    .task-form-actions { flex-wrap: wrap; }
+    .task-form-actions > * { flex: 1 1 130px; }
+    .projects-toolbar { flex-direction: column; }
+    .projects-toolbar .btn-primary { width: 100%; }
+    .project-panel { padding: 18px 14px; }
+    .project-create-main { margin: 0 auto; padding: 18px 14px; }
+    .project-create-actions { flex-direction: column-reverse; }
+    .project-create-actions > * { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Cantos mais retos em toda a interface; círculos funcionais são preservados. */
+* { border-radius: 2px !important; }
+.sidebar-logo,
+.notification-unread-dot,
+.notification-type-icon,
+.empty-icon { border-radius: 50% !important; }
 /* ==========================================================
    PÁGINA INTERNA DO PROJETO
    ========================================================== */

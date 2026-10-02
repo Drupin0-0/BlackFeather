@@ -1,7 +1,9 @@
 .mailbox-page {
     min-height: 100vh;
     padding: 28px 32px 40px;
-    background: #0a0a0a;
+    background:
+        radial-gradient(ellipse at 80% 0%, rgba(38, 61, 91, 0.13), transparent 42%),
+        #0a0c0f;
     color: #ffffff;
 }
 
@@ -311,11 +313,16 @@
 .notification-select input {
     position: absolute;
     opacity: 0;
-    pointer-events: none;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+    z-index: 1;
 }
 
 .custom-checkbox {
-    display: inline-block;
+    display: inline-flex;
 
     width: 18px;
     height: 18px;
@@ -327,6 +334,7 @@
     transition:
         background 0.15s ease,
         border-color 0.15s ease;
+    flex: 0 0 18px;
 }
 
 .select-all input:checked + .custom-checkbox,
@@ -427,6 +435,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.select-all input:focus-visible + .custom-checkbox,
+.notification-select input:focus-visible + .custom-checkbox {
+    outline: 2px solid #a3c7ff;
+    outline-offset: 3px;
 }
 
 .notification-select .custom-checkbox {
@@ -559,7 +576,8 @@
 }
 
 .notification-mark-read {
-    display: none;
+    display: inline-flex;
+    align-items: center;
 
     padding: 5px 8px;
 
@@ -570,10 +588,6 @@
 
     font-size: 10px;
     cursor: pointer;
-}
-
-.notification-row:hover .notification-mark-read {
-    display: block;
 }
 
 .notification-mark-read:hover {
@@ -665,9 +679,7 @@
         min-width: 100px;
     }
 
-    .notification-mark-read {
-        display: none !important;
-    }
+    .notification-mark-read { display: inline-flex; }
 }
 
 
@@ -723,4 +735,18 @@
     .notification-title-row h2 {
         white-space: normal;
     }
+
+    .notification-meta { flex-wrap: wrap; align-items: center; }
+    .notification-mark-read { font-size: 11px; }
+}
+
+@media (max-width: 420px) {
+    .mailbox-heading h1 { font-size: 24px; }
+    .mailbox-header-info { flex-wrap: wrap; }
+    .mailbox-filters { overflow-x: auto; }
+    .mailbox-filter { padding: 0 12px; white-space: nowrap; }
+    .notification-row { grid-template-columns: 24px 8px minmax(0, 1fr); gap: 9px; }
+    .notification-type-icon { display: none; }
+    .notification-content, .notification-meta { grid-column: 3; }
+    .notification-meta { justify-content: flex-start; }
 }

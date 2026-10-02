@@ -1,30 +1,56 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Excluir conta - Sincrow</title>
+
+    <!-- Use o mesmo caminho do CSS que o login.html já usa -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <style>
+        /* Único estilo novo: variação "perigo" do .login-btn */
+        .danger-btn {
+            background-color: #ff5252;
+            border-color: #ff5252;
+            color: #000000;
+        }
+
+        .danger-btn:hover {
+            opacity: 0.9;
+        }
+
+        .danger-list {
+            margin: 10px 0 0 18px;
+            padding: 0;
+            font-weight: 400;
+            line-height: 1.7;
+        }
+    </style>
 </head>
 
 <body>
 
-    <h1>Excluir conta</h1>
+    <div class="login-container">
+        <h2>Excluir conta</h2>
+        <p class="subtitle">Tem certeza que deseja excluir sua conta?</p>
 
-    <p>Tem certeza que deseja excluir sua conta?</p>
+        <div class="error-msg">
+            <strong>Essa ação não poderá ser desfeita.</strong>
+            <ul class="danger-list">
+                <li>Seu perfil e suas skills serão apagados.</li>
+                <li>Seu acesso ao Sincrow será encerrado imediatamente.</li>
+            </ul>
+        </div>
 
-    <p>Essa ação não poderá ser desfeita.</p>
+        <form method="POST" action="{% url 'accounts:delete_account' %}">
+            {% csrf_token %}
+            <button type="submit" class="login-btn danger-btn">Sim, excluir minha conta</button>
+        </form>
 
-    <form method="POST" action="{% url 'accounts:delete_account' %}">
-        {% csrf_token %}
-
-        <button type="submit">
-            Sim, excluir minha conta
-        </button>
-    </form>
-
-    <a href="{% url 'accounts:dashboard' %}">
-        Cancelar
-    </a>
+        <a href="{% url 'accounts:dashboard' %}" class="secondary-btn">Cancelar</a>
+    </div>
 
 </body>
 </html>

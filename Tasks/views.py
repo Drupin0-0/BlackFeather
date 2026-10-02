@@ -9,6 +9,8 @@ from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from Tasks.ai_service import gerar_tarefas_para_projeto
 from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
@@ -19,6 +21,14 @@ from .serializers import ProjectSerializer, TaskSerializer
 from accounts.models import UserProfile, Technology
 
 User = get_user_model()
+
+
+def _n8n_headers():
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+    secret = os.getenv('N8N_WEBHOOK_SECRET')
+    if secret:
+        headers['X-Webhook-Secret'] = secret
+    return headers
 
 
 class ProjectViewSet(viewsets.ModelViewSet):
@@ -133,6 +143,13 @@ def create_project_view(request):
                 members = User.objects.filter(pk__in=selected_user_ids).exclude(pk=request.user.pk)
                 project.members.add(*members)
 
+            if request.POST.get('generate_tasks_ai') == 'on':
+                criadas = gerar_tarefas_para_projeto(project)
+                if criadas:
+                    messages.success(request, f'{criadas} tarefas geradas pela IA.')
+                else:
+                    messages.warning(request, 'Projeto criado, mas a IA não conseguiu gerar tarefas.')
+
             return redirect('accounts:dashboard')
 
     return render(request, 'Project_add.html')
@@ -182,7 +199,7 @@ def suggest_project_ai_view(request):
 
     if n8n_url:
         try:
-            req = Request(n8n_url, data=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, method='POST')
+            req = Request(n8n_url, data=json.dumps(payload).encode('utf-8'), headers=_n8n_headers(), method='POST')
             with urlopen(req, timeout=30) as response:
                 n8n_response = json.loads(response.read().decode('utf-8'))
                 if isinstance(n8n_response, dict):
@@ -253,6 +270,7 @@ def suggest_task_distribution_view(request, project_id):
             'description': project.description or '',
         },
         'tasks': tasks_payload,
+        'context': {'request_type': 'task_distribution'},
         'available_members': [
             {
                 'id': user.pk,
@@ -272,11 +290,7 @@ def suggest_task_distribution_view(request, project_id):
             req = Request(
                 n8n_url,
                 data=json.dumps(payload).encode('utf-8'),
-                headers={
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-Webhook-Secret': n8n_secret or '',
-                },
+                headers=_n8n_headers(),
                 method='POST'
             )
             with urlopen(req, timeout=45) as response:

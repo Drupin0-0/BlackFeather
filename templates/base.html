@@ -12,14 +12,11 @@
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
 
     <!-- Tipografia Profissional Inter -->
-    <link rel="preconnect" href="https://googleapis.com">
-    <link rel="preconnect" href="https://gstatic.com" crossorigin>
-    <link href="https://googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
 
-    <!-- Script Oficial e Estável do Lottie Player -->
-    <script src="https://unpkg.com"></script>
-    
     <!-- Estilização Direta e Robusta -->
     <style>
         * {
@@ -32,12 +29,8 @@
         body {
             background-color: #000000;
             color: #ffffff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            min-height: 100dvh;
+            overflow-x: hidden;
         }
 
         /* Container Principal do Card */
@@ -52,7 +45,7 @@
             text-align: center;
         }
 
-        h2 {
+        .auth-card h2 {
             font-size: 22px;
             font-weight: 600;
             letter-spacing: -0.5px;
@@ -60,14 +53,14 @@
             color: #ffffff;
         }
 
-        .subtitle {
+        .auth-card .subtitle {
             font-size: 13px;
             color: #737373;
             margin-bottom: 24px;
         }
 
         /* Inputs e Grupos de Formulário */
-        .form-group {
+        .auth-card .form-group {
             margin-bottom: 20px;
             text-align: left;
             display: flex;
@@ -75,13 +68,13 @@
             gap: 6px;
         }
 
-        .label-row {
+        .auth-card .label-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        label {
+        .auth-card label {
             font-size: 12px;
             font-weight: 500;
             color: #a3a3a3;
@@ -89,9 +82,9 @@
             letter-spacing: 0.5px;
         }
 
-        input[type="text"],
-        input[type="email"],
-        input[type="password"] {
+        .auth-card input[type="text"],
+        .auth-card input[type="email"],
+        .auth-card input[type="password"] {
             width: 100%;
             padding: 12px 14px;
             background-color: #000000;
@@ -103,29 +96,29 @@
             transition: all 0.2s ease;
         }
 
-        input:focus {
+        .auth-card input:focus {
             border-color: #ffffff;
         }
 
         /* Links */
-        a {
+        .auth-card a {
             color: #ffffff;
             text-decoration: none;
             font-size: 13px;
             transition: opacity 0.2s ease;
         }
 
-        a:hover {
+        .auth-card a:hover {
             text-decoration: underline;
         }
 
-        .forgot-link {
+        .auth-card .forgot-link {
             font-size: 12px;
             color: #737373;
         }
 
         /* Botões Estilo SaaS Minimalista */
-        .btn-primary {
+        .auth-card .btn-primary {
             width: 100%;
             background-color: #ffffff;
             color: #000000;
@@ -139,11 +132,11 @@
             transition: background-color 0.2s ease;
         }
 
-        .btn-primary:hover {
+        .auth-card .btn-primary:hover {
             background-color: #e5e5e5;
         }
 
-        .btn-secondary {
+        .auth-card .btn-secondary {
             width: 100%;
             background-color: #000000;
             color: #ffffff;
@@ -158,13 +151,13 @@
             transition: all 0.2s ease;
         }
 
-        .btn-secondary:hover {
+        .auth-card .btn-secondary:hover {
             background-color: #121212;
             border-color: #404040;
         }
 
         /* Divisória */
-        .divider {
+        .auth-card .divider {
             display: flex;
             align-items: center;
             margin: 20px 0;
@@ -175,17 +168,17 @@
             letter-spacing: 1px;
         }
 
-        .divider::before, .divider::after {
+        .auth-card .divider::before, .auth-card .divider::after {
             content: "";
             flex: 1;
             border-bottom: 1px solid #1f1f1f;
         }
 
-        .divider:not(:empty)::before { margin-right: 12px; }
-        .divider:not(:empty)::after { margin-left: 12px; }
+        .auth-card .divider:not(:empty)::before { margin-right: 12px; }
+        .auth-card .divider:not(:empty)::after { margin-left: 12px; }
 
         /* Rodapés */
-        .card-footer {
+        .auth-card .card-footer {
             margin-top: 24px;
             font-size: 13px;
             color: #737373;
@@ -207,7 +200,7 @@
         }
 
         /* Erros */
-        .error-msg {
+        .auth-card .error-msg {
             font-size: 13px;
             color: #f87171;
             background-color: rgba(248, 113, 113, 0.1);
@@ -219,18 +212,30 @@
         }
         
         /* Ajuste para encapsular o loop do formulário do Django */
-        .django-form-styled p {
+        .auth-card .django-form-styled p {
             display: flex;
             flex-direction: column;
             gap: 6px;
             margin-bottom: 16px;
         }
-        .django-form-styled p label {
+        .auth-card .django-form-styled p label {
             font-size: 12px;
             font-weight: 500;
             color: #a3a3a3;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+        }
+    </style>
+    <style>
+        :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+            outline: 2px solid #a3c7ff;
+            outline-offset: 3px;
+        }
+
+        @media (max-width: 520px) {
+            body { padding: 14px; }
+            .auth-card { padding: 28px 22px; }
+            .external-footer { flex-wrap: wrap; justify-content: center; }
         }
     </style>
 </head>
