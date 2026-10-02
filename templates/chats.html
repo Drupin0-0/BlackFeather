@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Chats - Sincrow{% endblock %}
+
+{% block content %}
+
+<div class="dashboard-wrapper">
+
+    <!-- BARRA LATERAL (SIDEBAR) -->
+    <aside class="dashboard-sidebar">
+
+        <div class="sidebar-brand">
+            <div class="sidebar-logo">SC</div>
+            <span>Sincrow</span>
+        </div>
+
+        <nav class="sidebar-menu">
+
+            <a href="{% url 'accounts:dashboard' %}" class="menu-item">
+                Painel
+            </a>
+
+            <a href="{% url 'project_list' %}" class="menu-item">
+                Projetos
+            </a>
+
+            <a href="{% url 'my_tasks' %}" class="menu-item">
+                Minhas Tarefas
+            </a>
+
+            <a href="{% url 'accounts:settings' %}" class="menu-item">
+                Configurações
+            </a>
+
+            <a href="{% url 'chat_list' %}" class="menu-item active">
+                Chats
+            </a>
+
+            <a href="{% url 'accounts:view_profile' %}" class="menu-item">
+                Meu Perfil
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="{% url 'accounts:logout' %}" class="logout-btn">
+                Sair
+            </a>
+        </div>
+
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="dashboard-main">
+
+        <header class="main-header">
+            <h1>Chats</h1>
+
+            <div class="user-profile">
+                Logado como <strong>{{ user.profile.name|default:user.email }}</strong>
+            </div>
+        </header>
+
+        {% if projects %}
+
+            <div class="projects-grid">
+
+                {% for project in projects %}
+                    <article class="project-card">
+
+                        <div class="project-card-header">
+                            <span class="project-label">Chat do projeto</span>
+                            <span class="code-badge">{{ project.code }}</span>
+                        </div>
+
+                        <div class="project-card-body">
+                            <h3>{{ project.title }}</h3>
+                            <p>{{ project.description|default:"Sem descrição"|truncatechars:90 }}</p>
+
+                            <div class="chat-members-list">
+                                <span class="chat-members-label">
+                                    {{ project.members.all|length }} membro(s)
+                                </span>
+
+                                <div class="chat-members-chips">
+                                    {% for member in project.members.all %}
+                                        <span class="chat-member-chip">
+                                            {{ member.profile.name|default:member.email }}
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="project-card-footer">
+                            <div class="project-meta">
+                                <span>Líder</span>
+                                <strong>{{ project.owner.profile.name|default:project.owner.email }}</strong>
+                            </div>
+
+                            <a
+                                href="{% url 'project_chat' project.code %}"
+                                class="btn-secondary-action"
+                                style="text-decoration:none;"
+                            >
+                                Abrir chat
+                            </a>
+                        </div>
+
+                    </article>
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="projects-empty-cell">
+                Você ainda não faz parte de nenhum projeto, então não há chats pra mostrar.
+                <br>
+                <a href="{% url 'project_create' %}" class="btn-primary" style="text-decoration:none; display:inline-flex; margin-top:16px;">
+                    + Criar Projeto
+                </a>
+            </div>
+
+        {% endif %}
+
+    </main>
+
+</div>
+
+{% endblock %}

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% load static %}
 
@@ -32,6 +32,10 @@
 
             <a href="{% url 'accounts:settings' %}" class="menu-item">
                 Configurações
+            </a>
+
+            <a href="{% url 'chat_list' %}" class="menu-item">
+                Chats
             </a>
 
             <a href="{% url 'accounts:view_profile' %}" class="menu-item">
@@ -1666,4 +1670,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
 </script>
 
-{% endblock %}
+{% endblock %}  

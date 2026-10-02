@@ -2436,3 +2436,35 @@ body { overflow-x: hidden; }
         min-width: 220px;
     }
 }
+
+/* ==========================================================
+   PÁGINA "CHATS" — membros do chat de cada projeto
+   ========================================================== */
+
+.chat-members-list {
+    margin-top: 14px;
+}
+
+.chat-members-label {
+    display: block;
+    font-size: 10px;
+    color: #777777;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
+}
+
+.chat-members-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chat-member-chip {
+    background: #141414;
+    border: 1px solid #262626;
+    color: #d4d4d4;
+    font-size: 11px;
+    padding: 4px 9px;
+    border-radius: 20px;
+}
