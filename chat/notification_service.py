@@ -27,10 +27,16 @@ def create_notification(
                 "id": notification.pk,
                 "title": notification.title,
                 "description": notification.description,
+                "message": notification.description,
                 "is_read": notification.is_read,
                 "created_at": notification.created_at.isoformat(),
                 "join_request_id": (
                     notification.join_request_id
+                    if notification.join_request_id
+                    else None
+                ),
+                "join_request_type": (
+                    notification.join_request.request_type
                     if notification.join_request_id
                     else None
                 ),

@@ -344,12 +344,12 @@
 
                 {% for project in projects %}
 
-                    <article class="project-card">
+                    <article class="project-card" style="--project-accent: {{ project.accent_color }}" data-category="{{ project.category }}">
 
                         <div class="project-card-header">
 
-                            <span class="project-label">
-                                Workspace
+                            <span class="project-label project-category-label" data-category="{{ project.category }}">
+                                {{ project.get_category_display }}
                             </span>
 
                             <span class="project-status">

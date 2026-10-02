@@ -1,1071 +1,331 @@
 document.addEventListener("DOMContentLoaded", function () {
-    const notificationList =
-        document.getElementById("notification-list");
+    const notificationList = document.getElementById("notification-list");
+    if (!notificationList) {
+        return;
+    }
 
-    const searchInput =
-        document.getElementById("notification-search");
-
-    const filterButtons =
-        document.querySelectorAll(".mailbox-filter");
-
-    const selectAll =
-        document.getElementById("select-all-notifications");
-
-    const markAllButton =
-        document.getElementById("mark-all-read");
-
+    const searchInput = document.getElementById("notification-search");
+    const filterButtons = document.querySelectorAll(".mailbox-filter");
+    const selectAll = document.getElementById("select-all-notifications");
+    const markAllButton = document.getElementById("mark-all-read");
     let currentFilter = "all";
 
-
-    /*
-     * ==========================================================
-     * CSRF
-     * ==========================================================
-     */
-
     function getCsrfToken() {
-        const cookies = document.cookie.split(";");
-
-        for (const cookie of cookies) {
-            const value = cookie.trim();
-
-            if (value.startsWith("csrftoken=")) {
-                return decodeURIComponent(
-                    value.substring("csrftoken=".length)
-                );
-            }
-        }
-
-        return "";
+        const token = document.cookie
+            .split(";")
+            .map(cookie => cookie.trim())
+            .find(cookie => cookie.startsWith("csrftoken="));
+        return token ? decodeURIComponent(token.slice("csrftoken=".length)) : "";
     }
 
+    function updateCounts() {
+        const unreadCount = document.querySelectorAll(".notification-row.is-unread").length;
+        const totalCount = document.querySelectorAll(".notification-row").length;
+        const unreadLabel = document.querySelector(".mailbox-unread-total");
+        const filterCount = document.querySelector(".filter-count");
+        const totalLabel = document.querySelector(".mailbox-total");
 
-    /*
-     * ==========================================================
-     * CONTAGEM DE NÃO LIDAS
-     * ==========================================================
-     */
-
-    function updateUnreadCount() {
-        const unreadNotifications =
-            document.querySelectorAll(
-                ".notification-row.is-unread"
-            );
-
-        const unreadCount = unreadNotifications.length;
-
-        updateUnreadIndicators(unreadCount);
-
-        return unreadCount;
-    }
-
-
-    function updateUnreadIndicators(count) {
-        const headerCount =
-            document.querySelector(".mailbox-unread-total");
-
-        const filterCount =
-            document.querySelector(".filter-count");
-
-        const markAll =
-            document.getElementById("mark-all-read");
-
-        /*
-         * Cabeçalho
-         */
-
-        if (headerCount) {
-            if (count > 0) {
-                headerCount.textContent =
-                    `${count} não lida${count === 1 ? "" : "s"}`;
-
-                headerCount.style.display = "inline-flex";
-            } else {
-                headerCount.style.display = "none";
-            }
+        if (unreadLabel) {
+            unreadLabel.textContent = `${unreadCount} não lida${unreadCount === 1 ? "" : "s"}`;
+            unreadLabel.style.display = unreadCount ? "inline-flex" : "none";
         }
-
-
-        /*
-         * Contador do filtro "Não lidas"
-         */
-
         if (filterCount) {
-            filterCount.textContent = count;
-
-            filterCount.style.display =
-                count > 0 ? "inline-flex" : "none";
+            filterCount.textContent = unreadCount;
+            filterCount.style.display = unreadCount ? "inline-flex" : "none";
         }
-
-
-        /*
-         * Botão "Marcar todas como lidas"
-         */
-
-        if (markAll) {
-            markAll.style.display =
-                count > 0 ? "inline-block" : "none";
+        if (markAllButton) {
+            markAllButton.style.display = unreadCount ? "inline-block" : "none";
+        }
+        if (totalLabel) {
+            totalLabel.textContent = `${totalCount} notificaç${totalCount === 1 ? "ão" : "ões"}`;
         }
     }
-
-
-    /*
-     * ==========================================================
-     * ESTADO VAZIO
-     * ==========================================================
-     */
-
-    function updateEmptyState() {
-        const rows =
-            document.querySelectorAll(".notification-row");
-
-        let emptyElement =
-            document.getElementById("empty-mailbox");
-
-        if (rows.length === 0) {
-            if (!emptyElement) {
-                emptyElement =
-                    createEmptyState();
-
-                notificationList.appendChild(
-                    emptyElement
-                );
-            }
-
-            return;
-        }
-
-        if (emptyElement) {
-            emptyElement.remove();
-        }
-    }
-
-
-    function createEmptyState() {
-        const element =
-            document.createElement("div");
-
-        element.className =
-            "notification-empty";
-
-        element.id =
-            "empty-mailbox";
-
-        element.innerHTML = `
-            <div class="empty-icon">
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden="true"
-                >
-                    <path
-                        d="M18 8C18 4.686 15.314 2 12 2C8.686 2 6 4.686 6 8C6 15 3 16 3 18H21C21 16 18 15 18 8Z"
-                        stroke="currentColor"
-                        stroke-width="1.7"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    />
-
-                    <path
-                        d="M10 21H14"
-                        stroke="currentColor"
-                        stroke-width="1.7"
-                        stroke-linecap="round"
-                    />
-                </svg>
-            </div>
-
-            <h2>Nenhuma notificação</h2>
-
-            <p>
-                Quando houver alguma atividade na sua conta,
-                ela aparecerá aqui.
-            </p>
-        `;
-
-        return element;
-    }
-
-
-    /*
-     * ==========================================================
-     * FILTROS
-     * ==========================================================
-     */
-
-    filterButtons.forEach(function (button) {
-        button.addEventListener(
-            "click",
-            function () {
-                filterButtons.forEach(
-                    function (item) {
-                        item.classList.remove("active");
-                    }
-                );
-
-                button.classList.add("active");
-
-                currentFilter =
-                    button.dataset.filter || "all";
-
-                applyFilters();
-            }
-        );
-    });
-
 
     function applyFilters() {
-        const search =
-            searchInput
-                ? searchInput.value
-                    .trim()
-                    .toLowerCase()
-                : "";
-
-        const rows =
-            document.querySelectorAll(
-                ".notification-row"
-            );
-
-        rows.forEach(function (row) {
-            const title =
-                row.dataset.title || "";
-
-            const message =
-                row.dataset.message || "";
-
-            const isUnread =
-                row.classList.contains("is-unread");
-
-
-            /*
-             * Filtro de leitura
-             */
-
-            const matchesFilter =
-                currentFilter === "all" ||
-                (
-                    currentFilter === "unread" &&
-                    isUnread
-                );
-
-
-            /*
-             * Pesquisa
-             */
-
-            const matchesSearch =
-                !search ||
-                title.includes(search) ||
-                message.includes(search);
-
-
-            row.style.display =
-                matchesFilter && matchesSearch
-                    ? "grid"
-                    : "none";
+        const search = searchInput ? searchInput.value.trim().toLowerCase() : "";
+        document.querySelectorAll(".notification-row").forEach(row => {
+            const matchesRead = currentFilter !== "unread" || row.classList.contains("is-unread");
+            const matchesSearch = !search ||
+                (row.dataset.title || "").includes(search) ||
+                (row.dataset.message || "").includes(search);
+            row.style.display = matchesRead && matchesSearch ? "grid" : "none";
         });
+        updateSelectAllState();
     }
 
-
-    if (searchInput) {
-        searchInput.addEventListener(
-            "input",
-            applyFilters
-        );
-    }
-
-
-    /*
-     * ==========================================================
-     * SELECIONAR TODAS
-     * ==========================================================
-     */
-
-    if (selectAll) {
-        selectAll.addEventListener(
-            "change",
-            function () {
-                const rows =
-                    document.querySelectorAll(
-                        ".notification-row"
-                    );
-
-                rows.forEach(function (row) {
-                    if (row.style.display === "none") {
-                        return;
-                    }
-
-                    const checkbox =
-                        row.querySelector(
-                            ".notification-checkbox"
-                        );
-
-                    if (checkbox) {
-                        checkbox.checked =
-                            selectAll.checked;
-                    }
-                });
-            }
-        );
-    }
-
-
-    /*
-     * ==========================================================
-     * ATUALIZAR CHECKBOX PRINCIPAL
-     * ==========================================================
-     */
-
-    function updateSelectAllState() {
-        if (!selectAll) {
-            return;
+    function updateEmptyState() {
+        const existing = document.getElementById("empty-mailbox");
+        const hasRows = document.querySelectorAll(".notification-row").length > 0;
+        if (!hasRows && !existing) {
+            const empty = document.createElement("div");
+            empty.id = "empty-mailbox";
+            empty.className = "notification-empty";
+            empty.innerHTML = '<h2>Nenhuma notificação</h2><p>Quando houver alguma atividade na sua conta, ela aparecerá aqui.</p>';
+            notificationList.appendChild(empty);
+        } else if (hasRows && existing) {
+            existing.remove();
         }
-
-        const visibleCheckboxes =
-            Array.from(
-                document.querySelectorAll(
-                    ".notification-row"
-                )
-            )
-            .filter(function (row) {
-                return row.style.display !== "none";
-            })
-            .map(function (row) {
-                return row.querySelector(
-                    ".notification-checkbox"
-                );
-            })
-            .filter(Boolean);
-
-
-        if (!visibleCheckboxes.length) {
-            selectAll.checked = false;
-            selectAll.indeterminate = false;
-            return;
-        }
-
-
-        const checkedCount =
-            visibleCheckboxes.filter(
-                function (checkbox) {
-                    return checkbox.checked;
-                }
-            ).length;
-
-
-        selectAll.checked =
-            checkedCount === visibleCheckboxes.length;
-
-        selectAll.indeterminate =
-            checkedCount > 0 &&
-            checkedCount < visibleCheckboxes.length;
     }
-
-
-    document.addEventListener(
-        "change",
-        function (event) {
-            if (
-                event.target.classList.contains(
-                    "notification-checkbox"
-                )
-            ) {
-                updateSelectAllState();
-            }
-        }
-    );
-
-
-    /*
-     * ==========================================================
-     * MARCAR UMA NOTIFICAÇÃO COMO LIDA
-     * ==========================================================
-     */
 
     async function markAsRead(notificationId) {
         if (!notificationId) {
             return false;
         }
-
         try {
-            const response =
-                await fetch(
-                    `/mailbox/notification/${notificationId}/read/`,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "X-CSRFToken":
-                                getCsrfToken(),
-
-                            "X-Requested-With":
-                                "XMLHttpRequest"
-                        }
-                    }
-                );
-
-
+            const response = await fetch(`/mailbox/notification/${notificationId}/read/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCsrfToken(),
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
             if (!response.ok) {
                 return false;
             }
-
-
-            const row =
-                document.querySelector(
-                    `.notification-row[data-notification-id="${notificationId}"]`
-                );
-
-
+            const row = document.querySelector(`.notification-row[data-notification-id="${notificationId}"]`);
             if (!row) {
                 return true;
             }
-
-
             row.classList.remove("is-unread");
-
             row.dataset.read = "true";
-
-
-            /*
-             * Remove indicador azul
-             */
-
-            const unreadDot =
-                row.querySelector(
-                    ".notification-unread-dot"
-                );
-
-            if (unreadDot) {
-                unreadDot.classList.add("hidden");
-            }
-
-
-            /*
-             * Remove etiqueta "Nova"
-             */
-
-            const newBadge =
-                row.querySelector(
-                    ".notification-new"
-                );
-
-            if (newBadge) {
-                newBadge.remove();
-            }
-
-
-            /*
-             * Remove botão de marcar como lida
-             */
-
-            const markReadButton =
-                row.querySelector(
-                    ".notification-mark-read"
-                );
-
-            if (markReadButton) {
-                markReadButton.remove();
-            }
-
-
-            updateUnreadCount();
-
+            row.querySelector(".notification-unread-dot")?.classList.add("hidden");
+            row.querySelector(".notification-new")?.remove();
+            row.querySelector(".notification-mark-read")?.remove();
+            updateCounts();
             applyFilters();
-            updateSelectAllState();
-
             return true;
-
         } catch (error) {
-            console.error(
-                "Erro ao marcar notificação como lida:",
-                error
-            );
-
+            console.error("Erro ao marcar notificação como lida:", error);
             return false;
         }
     }
 
-
-    /*
-     * ==========================================================
-     * CLIQUE EM "MARCAR COMO LIDA"
-     * ==========================================================
-     */
-
-    document.addEventListener(
-        "click",
-        async function (event) {
-            const button =
-                event.target.closest(
-                    ".notification-mark-read"
-                );
-
-            if (!button) {
-                return;
-            }
-
-            event.preventDefault();
-
-            const notificationId =
-                button.dataset.notificationId;
-
-            button.disabled = true;
-
-            const success =
-                await markAsRead(
-                    notificationId
-                );
-
-            if (!success) {
-                button.disabled = false;
-            }
-        }
-    );
-
-
-    /*
-     * ==========================================================
-     * MARCAR TODAS COMO LIDAS
-     * ==========================================================
-     */
-
-    if (markAllButton) {
-        markAllButton.addEventListener(
-            "click",
-            async function () {
-                markAllButton.disabled = true;
-
-                try {
-                    const response =
-                        await fetch(
-                            "/mailbox/mark-all-read/",
-                            {
-                                method: "POST",
-
-                                headers: {
-                                    "X-CSRFToken":
-                                        getCsrfToken(),
-
-                                    "X-Requested-With":
-                                        "XMLHttpRequest"
-                                }
-                            }
-                        );
-
-
-                    if (!response.ok) {
-                        throw new Error(
-                            "Falha ao marcar notificações."
-                        );
-                    }
-
-
-                    document
-                        .querySelectorAll(
-                            ".notification-row.is-unread"
-                        )
-                        .forEach(function (row) {
-                            row.classList.remove(
-                                "is-unread"
-                            );
-
-                            row.dataset.read =
-                                "true";
-
-
-                            const dot =
-                                row.querySelector(
-                                    ".notification-unread-dot"
-                                );
-
-                            if (dot) {
-                                dot.classList.add(
-                                    "hidden"
-                                );
-                            }
-
-
-                            const badge =
-                                row.querySelector(
-                                    ".notification-new"
-                                );
-
-                            if (badge) {
-                                badge.remove();
-                            }
-
-
-                            const button =
-                                row.querySelector(
-                                    ".notification-mark-read"
-                                );
-
-                            if (button) {
-                                button.remove();
-                            }
-                        });
-
-
-                    updateUnreadCount();
-
-                    applyFilters();
-
-                    updateSelectAllState();
-
-                } catch (error) {
-                    console.error(
-                        "Erro ao marcar todas as notificações:",
-                        error
-                    );
-                } finally {
-                    markAllButton.disabled = false;
-                }
-            }
-        );
-    }
-
-
-    /*
-     * ==========================================================
-     * CRIAR UMA NOTIFICAÇÃO RECEBIDA PELO WEBSOCKET
-     * ==========================================================
-     */
-
-    function addNotification(notification) {
-        if (!notification || !notification.id) {
+    function updateSelectAllState() {
+        if (!selectAll) {
             return;
         }
-
-
-        /*
-         * Evita duplicação caso a mesma notificação
-         * seja recebida novamente.
-         */
-
-        const existing =
-            document.querySelector(
-                `.notification-row[data-notification-id="${notification.id}"]`
-            );
-
-        if (existing) {
-            return;
-        }
-
-
-        const row =
-            createNotificationElement(
-                notification
-            );
-
-
-        const emptyMailbox =
-            document.getElementById(
-                "empty-mailbox"
-            );
-
-        if (emptyMailbox) {
-            emptyMailbox.remove();
-        }
-
-
-        notificationList.prepend(row);
-
-
-        updateUnreadCount();
-
-        applyFilters();
-
-        updateSelectAllState();
+        const checkboxes = Array.from(document.querySelectorAll(".notification-row"))
+            .filter(row => row.style.display !== "none")
+            .map(row => row.querySelector(".notification-checkbox"))
+            .filter(Boolean);
+        const checkedCount = checkboxes.filter(checkbox => checkbox.checked).length;
+        selectAll.checked = checkboxes.length > 0 && checkedCount === checkboxes.length;
+        selectAll.indeterminate = checkedCount > 0 && checkedCount < checkboxes.length;
     }
 
+    function createNotificationElement(notification) {
+        const row = document.createElement("article");
+        const isRead = Boolean(notification.is_read);
+        const description = notification.description || notification.message || "";
+        row.className = `notification-row${isRead ? "" : " is-unread"}`;
+        row.dataset.notificationId = notification.id;
+        row.dataset.read = isRead ? "true" : "false";
+        row.dataset.title = String(notification.title || "Notificação").toLowerCase();
+        row.dataset.message = String(description).toLowerCase();
 
-    /*
-     * ==========================================================
-     * CONSTRUIR LINHA DE NOTIFICAÇÃO
-     * ==========================================================
-     */
-
-    function createNotificationElement(
-        notification
-    ) {
-        const row =
-            document.createElement("article");
-
-        const isRead =
-            Boolean(notification.is_read);
-
-
-        row.className =
-            "notification-row";
-
-        if (!isRead) {
-            row.classList.add("is-unread");
-        }
-
-
-        row.dataset.notificationId =
-            notification.id;
-
-        row.dataset.read =
-            isRead ? "true" : "false";
-
-        row.dataset.title =
-            String(
-                notification.title || ""
-            ).toLowerCase();
-
-        row.dataset.message =
-            String(
-                notification.message || ""
-            ).toLowerCase();
-
-
-        /*
-         * Seleção
-         */
-
-        const selectContainer =
-            document.createElement("div");
-
-        selectContainer.className =
-            "notification-select";
-
-
-        const checkbox =
-            document.createElement("input");
-
+        const select = document.createElement("label");
+        select.className = "notification-select";
+        const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
+        checkbox.className = "notification-checkbox";
+        checkbox.setAttribute("aria-label", "Selecionar notificação");
+        const checkboxVisual = document.createElement("span");
+        checkboxVisual.className = "custom-checkbox";
+        select.append(checkbox, checkboxVisual);
 
-        checkbox.className =
-            "notification-checkbox";
+        const dot = document.createElement("span");
+        dot.className = `notification-unread-dot${isRead ? " hidden" : ""}`;
 
-        checkbox.setAttribute(
-            "aria-label",
-            "Selecionar notificação"
-        );
-
-
-        const checkboxVisual =
-            document.createElement("span");
-
-        checkboxVisual.className =
-            "custom-checkbox";
-
-
-        selectContainer.appendChild(
-            checkbox
-        );
-
-        selectContainer.appendChild(
-            checkboxVisual
-        );
-
-
-        /*
-         * Indicador de não lida
-         */
-
-        const unreadDot =
-            document.createElement("span");
-
-        unreadDot.className =
-            "notification-unread-dot";
-
-
-        if (isRead) {
-            unreadDot.classList.add(
-                "hidden"
-            );
-        }
-
-
-        /*
-         * Ícone
-         */
-
-        const icon =
-            document.createElement("div");
-
-        icon.className =
-            "notification-type-icon";
-
+        const icon = document.createElement("div");
+        icon.className = "notification-type-icon";
         icon.innerHTML = `
-            <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden="true"
-            >
-                <path
-                    d="M18 8C18 4.686 15.314 2 12 2C8.686 2 6 4.686 6 8C6 15 3 16 3 18H21C21 16 18 15 18 8Z"
-                    stroke="currentColor"
-                    stroke-width="1.7"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                />
-
-                <path
-                    d="M10 21H14"
-                    stroke="currentColor"
-                    stroke-width="1.7"
-                    stroke-linecap="round"
-                />
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M18 8C18 4.686 15.314 2 12 2C8.686 2 6 4.686 6 8C6 15 3 16 3 18H21C21 16 18 15 18 8Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M10 21H14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
             </svg>
         `;
 
-
-        /*
-         * Conteúdo
-         */
-
-        const content =
-            document.createElement("div");
-
-        content.className =
-            "notification-content";
-
-
-        const titleRow =
-            document.createElement("div");
-
-        titleRow.className =
-            "notification-title-row";
-
-
-        const title =
-            document.createElement("h2");
-
-        title.textContent =
-            notification.title || "Notificação";
-
-
+        const content = document.createElement("div");
+        content.className = "notification-content";
+        const titleRow = document.createElement("div");
+        titleRow.className = "notification-title-row";
+        const title = document.createElement("h2");
+        title.textContent = notification.title || "Notificação";
         titleRow.appendChild(title);
-
-
         if (!isRead) {
-            const newBadge =
-                document.createElement("span");
-
-            newBadge.className =
-                "notification-new";
-
-            newBadge.textContent =
-                "Nova";
-
-            titleRow.appendChild(
-                newBadge
-            );
+            const badge = document.createElement("span");
+            badge.className = "notification-new";
+            badge.textContent = "Nova";
+            titleRow.appendChild(badge);
         }
+        const message = document.createElement("p");
+        message.className = "notification-message";
+        message.textContent = description;
+        content.append(titleRow, message);
 
-
-        const message =
-            document.createElement("p");
-
-        message.className =
-            "notification-message";
-
-        message.textContent =
-            notification.message || "";
-
-
-        content.appendChild(
-            titleRow
-        );
-
-        content.appendChild(
-            message
-        );
-
-
-        /*
-         * Meta
-         */
-
-        const meta =
-            document.createElement("div");
-
-        meta.className =
-            "notification-meta";
-
-
-        const time =
-            document.createElement("time");
-
-        const date =
-            new Date(
-                notification.created_at
-            );
-
-
+        const meta = document.createElement("div");
+        meta.className = "notification-meta";
+        const time = document.createElement("time");
+        const date = new Date(notification.created_at);
+        time.textContent = Number.isNaN(date.getTime()) ? "Agora" : formatDate(date);
         if (!Number.isNaN(date.getTime())) {
-            time.dateTime =
-                date.toISOString();
-
-            time.textContent =
-                formatDate(date);
-        } else {
-            time.textContent =
-                "Agora";
+            time.dateTime = date.toISOString();
         }
-
-
         meta.appendChild(time);
 
-
-        if (!isRead) {
-            const markRead =
-                document.createElement("button");
-
-            markRead.type = "button";
-
-            markRead.className =
-                "notification-mark-read";
-
-            markRead.dataset.notificationId =
-                notification.id;
-
-            markRead.textContent =
-                "Marcar como lida";
-
-            meta.appendChild(
-                markRead
-            );
+        if (notification.join_request_id) {
+            [
+                { action: "accept", text: "Aceitar", reject: false },
+                { action: "reject", text: "Recusar", reject: true }
+            ].forEach(item => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = `notification-join-action${item.reject ? " is-reject" : ""}`;
+                button.dataset.requestId = notification.join_request_id;
+                button.dataset.action = item.action;
+                button.textContent = item.text;
+                meta.appendChild(button);
+            });
         }
-
-
-        /*
-         * Montagem final
-         */
-
-        row.appendChild(
-            selectContainer
-        );
-
-        row.appendChild(
-            unreadDot
-        );
-
-        row.appendChild(
-            icon
-        );
-
-        row.appendChild(
-            content
-        );
-
-        row.appendChild(
-            meta
-        );
-
-
+        if (!isRead) {
+            const markRead = document.createElement("button");
+            markRead.type = "button";
+            markRead.className = "notification-mark-read";
+            markRead.dataset.notificationId = notification.id;
+            markRead.textContent = "Marcar como lida";
+            meta.appendChild(markRead);
+        }
+        row.append(select, dot, icon, content, meta);
         return row;
     }
 
-
-    /*
-     * ==========================================================
-     * DATA
-     * ==========================================================
-     */
-
     function formatDate(date) {
-        return date.toLocaleString(
-            "pt-BR",
-            {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit"
-            }
-        );
+        return date.toLocaleString("pt-BR", {
+            day: "2-digit", month: "2-digit", year: "numeric",
+            hour: "2-digit", minute: "2-digit"
+        });
     }
 
+    function addNotification(notification) {
+        if (!notification || !notification.id || document.querySelector(
+            `.notification-row[data-notification-id="${notification.id}"]`
+        )) {
+            return;
+        }
+        document.getElementById("empty-mailbox")?.remove();
+        notificationList.prepend(createNotificationElement(notification));
+        updateCounts();
+        applyFilters();
+    }
 
-    /*
-     * ==========================================================
-     * WEBSOCKET
-     * ==========================================================
-     */
+    filterButtons.forEach(button => {
+        button.addEventListener("click", function () {
+            filterButtons.forEach(item => item.classList.remove("active"));
+            button.classList.add("active");
+            currentFilter = button.dataset.filter || "all";
+            applyFilters();
+        });
+    });
+    searchInput?.addEventListener("input", applyFilters);
 
-    const protocol =
-        window.location.protocol === "https:"
-            ? "wss"
-            : "ws";
-
-
-    let socket = null;
-
-
-    function connectWebSocket() {
-        socket =
-            new WebSocket(
-                `${protocol}://${window.location.host}/ws/notifications/`
-            );
-
-
-        socket.onopen = function () {
-            console.log(
-                "WebSocket de notificações conectado."
-            );
-        };
-
-
-        socket.onmessage = function (event) {
-            try {
-                const data =
-                    JSON.parse(event.data);
-
-
-                if (
-                    data.type !==
-                    "notification"
-                ) {
-                    return;
+    selectAll?.addEventListener("change", function () {
+        document.querySelectorAll(".notification-row").forEach(row => {
+            if (row.style.display !== "none") {
+                const checkbox = row.querySelector(".notification-checkbox");
+                if (checkbox) {
+                    checkbox.checked = selectAll.checked;
                 }
-
-
-                addNotification(
-                    data.notification
-                );
-
-            } catch (error) {
-                console.error(
-                    "Erro ao processar notificação:",
-                    error
-                );
             }
-        };
+        });
+        updateSelectAllState();
+    });
+    notificationList.addEventListener("change", function (event) {
+        if (event.target.matches(".notification-checkbox")) {
+            updateSelectAllState();
+        }
+    });
 
+    document.addEventListener("click", async function (event) {
+        const markButton = event.target.closest(".notification-mark-read");
+        if (markButton) {
+            markButton.disabled = true;
+            if (!(await markAsRead(markButton.dataset.notificationId))) {
+                markButton.disabled = false;
+            }
+            return;
+        }
 
-        socket.onerror = function (error) {
-            console.error(
-                "Erro no WebSocket de notificações:",
-                error
+        const actionButton = event.target.closest(".notification-join-action");
+        if (!actionButton) {
+            return;
+        }
+        actionButton.disabled = true;
+        try {
+            const response = await fetch(
+                `/mailbox/join-request/${actionButton.dataset.requestId}/respond/`,
+                {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCsrfToken(),
+                        "X-Requested-With": "XMLHttpRequest",
+                        "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"
+                    },
+                    body: new URLSearchParams({ action: actionButton.dataset.action })
+                }
             );
-        };
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || "Não foi possível responder ao convite.");
+            }
+            const row = actionButton.closest(".notification-row");
+            row.querySelectorAll(".notification-join-action").forEach(button => button.remove());
+            const message = row.querySelector(".notification-message");
+            if (message) {
+                message.textContent = result.message;
+                row.dataset.message = result.message.toLowerCase();
+            }
+            await markAsRead(row.dataset.notificationId);
+        } catch (error) {
+            console.error("Erro ao responder ao convite:", error);
+            actionButton.disabled = false;
+            window.alert(error.message);
+        }
+    });
 
+    markAllButton?.addEventListener("click", async function () {
+        markAllButton.disabled = true;
+        try {
+            const response = await fetch("/mailbox/mark-all-read/", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCsrfToken(),
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            });
+            if (!response.ok) {
+                throw new Error("Falha ao marcar notificações como lidas.");
+            }
+            document.querySelectorAll(".notification-row.is-unread").forEach(row => {
+                row.classList.remove("is-unread");
+                row.dataset.read = "true";
+                row.querySelector(".notification-unread-dot")?.classList.add("hidden");
+                row.querySelector(".notification-new")?.remove();
+                row.querySelector(".notification-mark-read")?.remove();
+            });
+            updateCounts();
+            applyFilters();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            markAllButton.disabled = false;
+        }
+    });
 
-        socket.onclose = function () {
-            console.log(
-                "WebSocket de notificações encerrado."
-            );
-        };
-    }
+    document.addEventListener("sincrow:notification", event => {
+        addNotification(event.detail);
+    });
 
-
-    connectWebSocket();
-
-
-    /*
-     * ==========================================================
-     * ESTADO INICIAL
-     * ==========================================================
-     */
-
-    updateUnreadCount();
-
-    updateSelectAllState();
-
+    updateCounts();
+    updateEmptyState();
     applyFilters();
 });

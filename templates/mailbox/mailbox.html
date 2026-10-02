@@ -185,7 +185,7 @@
                         data-notification-id="{{ notification.id }}"
                         data-read="{{ notification.is_read|yesno:'true,false' }}"
                         data-title="{{ notification.title|lower }}"
-                        data-message="{{ notification.message|lower }}"
+                        data-message="{{ notification.description|lower }}"
                     >
 
                         <label class="notification-select">
@@ -250,7 +250,7 @@
 
 
                             <p class="notification-message">
-                                {{ notification.message }}
+                                {{ notification.description }}
                             </p>
 
                         </div>
@@ -263,6 +263,21 @@
                             >
                                 {{ notification.created_at|date:"d/m/Y H:i" }}
                             </time>
+
+                            {% if notification.join_request_id and notification.join_request.status == "pending" %}
+                                <button
+                                    type="button"
+                                    class="notification-join-action"
+                                    data-request-id="{{ notification.join_request_id }}"
+                                    data-action="accept"
+                                >Aceitar</button>
+                                <button
+                                    type="button"
+                                    class="notification-join-action is-reject"
+                                    data-request-id="{{ notification.join_request_id }}"
+                                    data-action="reject"
+                                >Recusar</button>
+                            {% endif %}
 
 
                             {% if not notification.is_read %}

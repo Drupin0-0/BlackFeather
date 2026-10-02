@@ -244,5 +244,12 @@
     {% block content %}
     {% endblock %}
 
+    {% if user.is_authenticated %}
+        <script
+            src="{% static 'js/notification-sound.js' %}"
+            data-sound-url="{% static 'sounds/audio.ogg' %}"
+        ></script>
+    {% endif %}
+
 </body>
 </html>

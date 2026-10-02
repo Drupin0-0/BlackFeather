@@ -63,6 +63,37 @@
             </div>
         </header>
 
+        {% if messages %}
+            <div class="project-request-messages" aria-live="polite">
+                {% for message in messages %}
+                    <p class="{{ message.tags }}">{{ message }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <section class="join-project-card" aria-labelledby="join-project-title">
+            <div>
+                <h2 id="join-project-title">Entrar em um projeto</h2>
+                <p>Tem o código? Envie um pedido ao responsável e aguarde a aprovação.</p>
+            </div>
+            <form method="post" action="{% url 'request_project_join' %}" class="join-project-form">
+                {% csrf_token %}
+                <label class="visually-hidden" for="project-code">Código do projeto</label>
+                <input
+                    type="text"
+                    id="project-code"
+                    name="project_code"
+                    placeholder="Ex.: A1B2C3"
+                    maxlength="6"
+                    minlength="6"
+                    pattern="[A-Za-z0-9]{6}"
+                    autocomplete="off"
+                    required
+                >
+                <button type="submit" class="btn-primary">Pedir para entrar</button>
+            </form>
+        </section>
+
         <div class="projects-toolbar">
             <span style="color:#8c8c8c; font-size:13px;">
                 {{ projects|length }} projeto(s) vinculado(s) à sua conta
@@ -92,6 +123,8 @@
                         {% for project in projects %}
                             <tr
                                 class="project-row"
+                                data-category="{{ project.category }}"
+                                style="--project-accent: {{ project.accent_color }}"
                                 tabindex="0"
                                 role="link"
                                 aria-label="Abrir o projeto {{ project.title|escape }}"
@@ -99,7 +132,7 @@
                             >
                                 <td class="project-name-cell">
                                     <strong>{{ project.title }}</strong>
-                                    <small>{{ project.description|default:"Sem descrição"|truncatechars:60 }}</small>
+                                    <small><span class="project-category-tag" data-category="{{ project.category }}">{{ project.get_category_display }}</span> {{ project.description|default:"Sem descrição"|truncatechars:60 }}</small>
                                 </td>
                                 <td><span class="code-badge">{{ project.code }}</span></td>
                                 <td>{{ project.owner.profile.name|default:project.owner.email }}</td>
