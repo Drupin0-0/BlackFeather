@@ -1,7 +1,7 @@
-
 from django.shortcuts import get_object_or_404, render
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from .models import Notification, JoinRequest
 from .notification_service import create_notification
@@ -13,6 +13,19 @@ from .models import Notification
 
 
 from Tasks.models import Project
+
+
+@login_required
+def chat_list_view(request):
+    projects = Project.objects.filter(
+        Q(owner=request.user) | Q(members=request.user)
+    ).select_related(
+        'owner__profile'
+    ).prefetch_related(
+        'members__profile'
+    ).distinct().order_by('title')
+
+    return render(request, 'chats.html', {'projects': projects})
 
 
 def test_chat(request, project_code):
