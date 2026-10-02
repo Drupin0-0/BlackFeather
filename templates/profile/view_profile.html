@@ -30,6 +30,14 @@
 
         .profile-form { display: flex; flex-direction: column; gap: 14px; }
 
+        .profile-back-link {
+            display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+            margin-bottom: 14px; color: #a3a3a3; text-decoration: none;
+            font-size: 12px; font-weight: 600; transition: color .2s;
+        }
+        .profile-back-link:hover { color: #fff; }
+        .profile-back-link:focus-visible { outline: 2px solid #a3c7ff; outline-offset: 4px; }
+
         .error-msg {
             background: rgba(220,38,38,.12); border: 1px solid #7f1d1d; color: #fca5a5;
             border-radius: 8px; padding: 10px 14px; font-size: 13px;
@@ -182,6 +190,10 @@
 <body>
 
     <div class="profile-card">
+        <a href="{% url 'accounts:dashboard' %}" class="profile-back-link" aria-label="Voltar ao painel">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            <span>Voltar ao painel</span>
+        </a>
         <form method="POST" action="" enctype="multipart/form-data" class="profile-form" id="profileForm">
             {% csrf_token %}
 
