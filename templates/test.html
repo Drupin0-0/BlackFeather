@@ -32,7 +32,8 @@
             display: flex;
             flex-direction: column;
             background: rgba(12, 15, 19, 0.92);
-            border: 1px solid #252b34;
+            border: 1px solid color-mix(in srgb, var(--project-accent, #a3c7ff) 45%, #252b34);
+            border-top: 3px solid var(--project-accent, #a3c7ff);
             border-radius: 16px;
             box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
             animation: smoothFadeIn 0.3s ease-out forwards;
@@ -48,7 +49,7 @@
         }
 
         .chat-header h1 {
-            color: #ffffff;
+            color: var(--project-accent, #ffffff);
             font-size: clamp(20px, 4vw, 28px);
             font-weight: 700;
             letter-spacing: -0.5px;
@@ -97,7 +98,6 @@
         .chat-box::-webkit-scrollbar {
             width: 5px;
         }
-
 
         .chat-box::-webkit-scrollbar-track {
             background: #090909;
@@ -191,15 +191,20 @@
         }
 
         .chat-input:focus {
-            border-color: #444444;
-            box-shadow: 0 0 0 1px #444444;
+            border-color: var(--project-accent, #444444);
+            box-shadow: 0 0 0 1px var(--project-accent, #444444);
+        }
+
+        .chat-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .chat-send {
-            background: #ffffff;
+            background: var(--project-accent, #ffffff);
             color: #000000;
 
-            border: 1px solid #ffffff;
+            border: 1px solid var(--project-accent, #ffffff);
 
             padding: 12px 18px;
 
@@ -289,13 +294,15 @@
             }
         }
 
+        /* Atenção: esta regra sobrescreve TODOS os border-radius acima.
+           Remova se não for intencional. */
         * { border-radius: 2px !important; }
     </style>
 </head>
 
 <body>
 
-<div class="chat-container">
+    <div class="chat-container" style="--project-accent: {{ project.accent_color }}">
 
     <div class="chat-header">
 
@@ -325,6 +332,7 @@
 
     <form id="messageForm" class="chat-form">
 
+        <!-- Começa desabilitado; o JS habilita quando o WebSocket conectar -->
         <input
             type="text"
             id="messageInput"
@@ -332,7 +340,7 @@
             placeholder="Digite uma mensagem..."
             autocomplete="off"
             maxlength="2000"
-                disabled
+            disabled
         >
 
         <button
@@ -386,6 +394,15 @@
 
 
     /*
+     * Habilita/desabilita o input e o botão juntos.
+     */
+    function setChatEnabled(enabled) {
+        messageInput.disabled = !enabled;
+        sendButton.disabled = !enabled;
+    }
+
+
+    /*
      * Escolhe ws:// ou wss:// automaticamente.
      *
      * HTTP  -> ws://
@@ -404,15 +421,16 @@
     /*
      * Quando o WebSocket conectar
      */
-
     socket.onopen = function () {
 
         console.log("WebSocket conectado!");
 
         chatStatus.textContent = "Conectado";
+        chatStatus.classList.remove("disconnected");
         chatStatus.classList.add("connected");
 
-        sendButton.disabled = false;
+        // CORREÇÃO: habilita o input (antes só o botão era habilitado)
+        setChatEnabled(true);
 
         messageInput.focus();
     };
@@ -421,7 +439,6 @@
     /*
      * Mensagens recebidas do servidor
      */
-
     socket.onmessage = function (event) {
 
         const data = JSON.parse(event.data);
@@ -430,7 +447,6 @@
         /*
          * Histórico enviado quando o chat abre
          */
-
         if (data.type === "history") {
 
             chat.innerHTML = "";
@@ -443,11 +459,8 @@
             }
 
             data.messages.forEach(function (message) {
-
                 addMessage(message);
-
             });
-
 
             scrollToBottom();
 
@@ -458,7 +471,6 @@
         /*
          * Nova mensagem recebida
          */
-
         if (data.type === "message") {
 
             addMessage(data);
@@ -473,7 +485,6 @@
     /*
      * WebSocket fechado
      */
-
     socket.onclose = function () {
 
         console.log("WebSocket fechado.");
@@ -482,7 +493,7 @@
         chatStatus.classList.remove("connected");
         chatStatus.classList.add("disconnected");
 
-        sendButton.disabled = true;
+        setChatEnabled(false);
 
     };
 
@@ -490,14 +501,13 @@
     /*
      * Erro no WebSocket
      */
-
     socket.onerror = function (error) {
 
         console.log("Erro no WebSocket:", error);
 
         chatStatus.textContent = "Erro na conexão";
 
-        sendButton.disabled = true;
+        setChatEnabled(false);
 
     };
 
@@ -505,11 +515,9 @@
     /*
      * Envio da mensagem
      */
-
     messageForm.addEventListener("submit", function (event) {
 
         event.preventDefault();
-
 
         const content = messageInput.value.trim();
 
@@ -517,7 +525,6 @@
         /*
          * Não envia mensagem vazia
          */
-
         if (!content) {
             return;
         }
@@ -526,12 +533,9 @@
         /*
          * Verifica se o WebSocket está conectado
          */
-
         if (socket.readyState !== WebSocket.OPEN) {
 
-            console.log(
-                "WebSocket não está conectado."
-            );
+            console.log("WebSocket não está conectado.");
 
             return;
         }
@@ -540,7 +544,6 @@
         /*
          * Envia para o Django Channels
          */
-
         socket.send(
             JSON.stringify({
                 message: content
@@ -551,7 +554,6 @@
         /*
          * Limpa o input
          */
-
         messageInput.value = "";
 
         messageInput.focus();
@@ -562,16 +564,12 @@
     /*
      * Adiciona uma mensagem ao chat
      */
-
     function addMessage(message) {
 
         /*
          * Remove "Carregando mensagens..."
          */
-
-        const emptyMessage =
-            chat.querySelector(".chat-empty");
-
+        const emptyMessage = chat.querySelector(".chat-empty");
 
         if (emptyMessage) {
             emptyMessage.remove();
@@ -581,119 +579,57 @@
         /*
          * Container da mensagem
          */
-
-        const messageElement =
-            document.createElement("div");
-
-        messageElement.classList.add(
-            "chat-message"
-        );
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("chat-message");
 
 
         /*
          * Cabeçalho
          */
-
-        const headerElement =
-            document.createElement("div");
-
-        headerElement.classList.add(
-            "chat-message-header"
-        );
+        const headerElement = document.createElement("div");
+        headerElement.classList.add("chat-message-header");
 
 
         /*
          * Nome do usuário
          */
-
-        const usernameElement =
-            document.createElement("span");
-
-        usernameElement.classList.add(
-            "chat-username"
-        );
-
-        usernameElement.textContent =
-            message.username;
+        const usernameElement = document.createElement("span");
+        usernameElement.classList.add("chat-username");
+        usernameElement.textContent = message.username;
 
 
         /*
          * Horário
          */
+        const timeElement = document.createElement("span");
+        timeElement.classList.add("chat-time");
 
-        const timeElement =
-            document.createElement("span");
-
-        timeElement.classList.add(
-            "chat-time"
-        );
-
-
-        const date =
-            new Date(message.created_at);
-
-
-        timeElement.textContent =
-            date.toLocaleString("pt-BR");
+        const date = new Date(message.created_at);
+        timeElement.textContent = date.toLocaleString("pt-BR");
 
 
         /*
          * Conteúdo
-         */
-
-        const contentElement =
-            document.createElement("div");
-
-        contentElement.classList.add(
-            "chat-content"
-        );
-
-
-        /*
-         * IMPORTANTE:
          *
-         * textContent é usado em vez de innerHTML
-         * para impedir que uma mensagem contendo
-         * HTML/JavaScript seja executada.
+         * IMPORTANTE: textContent é usado em vez de innerHTML
+         * para impedir que uma mensagem contendo HTML/JavaScript
+         * seja executada.
          */
-
-        contentElement.textContent =
-            message.message;
-
-
-        /*
-         * Monta o cabeçalho
-         */
-
-        headerElement.appendChild(
-            usernameElement
-        );
-
-        headerElement.appendChild(
-            timeElement
-        );
+        const contentElement = document.createElement("div");
+        contentElement.classList.add("chat-content");
+        contentElement.textContent = message.message;
 
 
         /*
          * Monta a mensagem
          */
+        headerElement.appendChild(usernameElement);
+        headerElement.appendChild(timeElement);
 
-        messageElement.appendChild(
-            headerElement
-        );
+        messageElement.appendChild(headerElement);
+        messageElement.appendChild(contentElement);
 
-        messageElement.appendChild(
-            contentElement
-        );
-
-
-        /*
-         * Adiciona ao chat
-         */
-
-        chat.appendChild(
-            messageElement
-        );
+        chat.appendChild(messageElement);
 
     }
 
@@ -701,11 +637,9 @@
     /*
      * Scroll automático para a última mensagem
      */
-
     function scrollToBottom() {
 
-        chat.scrollTop =
-            chat.scrollHeight;
+        chat.scrollTop = chat.scrollHeight;
 
     }
 

@@ -23,7 +23,26 @@ def code_generator():
 
 
 class Project(models.Model):
+    CATEGORY_CHOICES = [
+        ("general", "Geral"),
+        ("sales", "Vendas"),
+        ("personal", "Projeto pessoal"),
+        ("mobile", "Mobile"),
+        ("marketing", "Marketing"),
+    ]
+
     title = models.CharField(max_length=100)
+
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default="general",
+    )
+
+    accent_color = models.CharField(
+        max_length=7,
+        default="#a3c7ff",
+    )
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -99,6 +118,3 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
-    
-def validate_future_date(   ):
-    pass

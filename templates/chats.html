@@ -55,76 +55,1397 @@
     <!-- CONTEÚDO PRINCIPAL -->
     <main class="dashboard-main">
 
-        <header class="main-header">
+<style>
+    /* ==========================================================
+       CHATS — layout estilo Teams (lista à esquerda, conversa à direita)
+       ========================================================== */
+
+    /* A página ocupa toda a área, sem padding nem scroll externo */
+    .dashboard-main:has(.tc-layout) {
+        padding: 0;
+        overflow: hidden;
+    }
+
+    .tc-layout {
+        flex: 1;
+        min-height: 0;
+        width: 100%;
+        display: flex;
+        background: #08090b;
+    }
+
+    /* Círculos e balões (sobrescreve o `* { border-radius: 2px !important }` global) */
+    .tc-avatar { border-radius: 50% !important; }
+    .tc-bubble { border-radius: 8px !important; }
+    .tc-search input { border-radius: 6px !important; }
+    .tc-composer-box { border-radius: 8px !important; }
+
+    /* ---------- Coluna esquerda: lista de chats ---------- */
+
+    .tc-list-pane {
+        width: 340px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        background: #0b0d10;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .tc-list-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 18px 12px;
+    }
+
+    .tc-list-header h1 {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.4px;
+        color: #ffffff;
+    }
+
+    .tc-list-header a {
+        color: #8c8c8c;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        text-decoration: none;
+        border: 1px solid #262626;
+        padding: 6px 10px;
+    }
+
+    .tc-list-header a:hover {
+        color: #ffffff;
+        border-color: #444444;
+    }
+
+    .tc-search {
+        padding: 0 18px 12px;
+    }
+
+    .tc-search input {
+        width: 100%;
+        background: #090c10;
+        border: 1px solid #2a3039;
+        color: #ffffff;
+        padding: 9px 12px;
+        font-size: 12px;
+        font-family: inherit;
+        outline: none;
+    }
+
+    .tc-search input::placeholder { color: #555555; }
+    .tc-search input:focus { border-color: #5c6f8a; }
+
+    .tc-section-label {
+        padding: 6px 18px;
+        font-size: 10px;
+        font-weight: 700;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .tc-items {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 0 8px 12px;
+    }
+
+    .tc-items::-webkit-scrollbar { width: 5px; }
+    .tc-items::-webkit-scrollbar-thumb { background: #2a2a2a; }
+
+    .tc-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 2px;
+        background: transparent;
+        border: 0;
+        border-left: 3px solid transparent;
+        color: inherit;
+        text-align: left;
+        font-family: inherit;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+
+    .tc-item:hover { background: rgba(255, 255, 255, 0.04); }
+
+    .tc-item.active {
+        background: color-mix(in srgb, var(--project-accent, #a3c7ff) 14%, transparent);
+        border-left-color: var(--project-accent, #a3c7ff);
+    }
+
+    .tc-item:focus-visible {
+        outline: 2px solid #a3c7ff;
+        outline-offset: -2px;
+    }
+
+    .tc-avatar {
+        width: 40px;
+        height: 40px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: 700;
+        color: #ffffff;
+        background: color-mix(in srgb, var(--project-accent, #3b4a6b) 35%, #101318);
+        user-select: none;
+    }
+
+    .tc-item-text { min-width: 0; flex: 1; }
+
+    .tc-item-title {
+        display: block;
+        color: #ffffff;
+        font-size: 13px;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tc-item-sub {
+        display: block;
+        margin-top: 3px;
+        color: #8a919c;
+        font-size: 11px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tc-item-code {
+        font-family: 'Courier New', monospace;
+        font-size: 10px;
+        letter-spacing: 1px;
+        color: #6b7280;
+        flex-shrink: 0;
+    }
+
+    .tc-no-results {
+        display: none;
+        padding: 24px 18px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 12px;
+    }
+
+    /* ---------- Coluna direita: conversa ---------- */
+
+    .tc-chat-pane {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        background:
+            radial-gradient(ellipse at 78% 0%, rgba(41, 62, 91, 0.12), transparent 42%),
+            #08090b;
+    }
+
+    .tc-empty-state {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        color: #6b7280;
+        text-align: center;
+        padding: 20px;
+    }
+
+    .tc-empty-state strong {
+        color: #d4d4d4;
+        font-size: 16px;
+    }
+
+    .tc-empty-state span { font-size: 13px; }
+
+    .tc-conversation {
+        flex: 1;
+        min-height: 0;
+        display: none;
+        flex-direction: column;
+    }
+
+    .tc-chat-pane.has-chat .tc-empty-state { display: none; }
+    .tc-chat-pane.has-chat .tc-conversation { display: flex; }
+
+    .tc-chat-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 24px;
+        background: rgba(11, 13, 16, 0.9);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        flex-shrink: 0;
+    }
+
+    .tc-back {
+        display: none;
+        width: 32px;
+        height: 32px;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: 1px solid #262626;
+        color: #a0a0a0;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .tc-chat-title { min-width: 0; flex: 1; }
+
+    .tc-chat-title h2 {
+        font-size: 16px;
+        font-weight: 700;
+        color: #ffffff;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tc-chat-title p {
+        margin-top: 2px;
+        font-size: 11px;
+        color: #8a919c;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tc-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+        color: #6b7280;
+        flex-shrink: 0;
+    }
+
+    .tc-status::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50% !important;
+        background: #6b7280;
+    }
+
+    .tc-status.connected { color: #7bd88f; }
+    .tc-status.connected::before { background: #7bd88f; }
+
+    .tc-open-full {
+        color: #8c8c8c;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        text-decoration: none;
+        border: 1px solid #262626;
+        padding: 6px 10px;
+        flex-shrink: 0;
+    }
+
+    .tc-open-full:hover { color: #ffffff; border-color: #444444; }
+
+    .tc-messages {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 18px 24px;
+    }
+
+    .tc-messages::-webkit-scrollbar { width: 5px; }
+    .tc-messages::-webkit-scrollbar-thumb { background: #2a2a2a; }
+
+    .tc-placeholder {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #555555;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        text-align: center;
+    }
+
+    .tc-day {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 18px 0 10px;
+        color: #6b7280;
+        font-size: 11px;
+        text-transform: capitalize;
+    }
+
+    .tc-day::before,
+    .tc-day::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .tc-msg {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        margin-top: 10px;
+        max-width: 100%;
+    }
+
+    .tc-msg.grouped { margin-top: 3px; }
+
+    .tc-msg .tc-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 11px;
+    }
+
+    .tc-avatar-spacer { width: 32px; flex-shrink: 0; }
+
+    .tc-msg-body { min-width: 0; max-width: min(70%, 620px); }
+
+    .tc-msg-meta {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 4px;
+        font-size: 11px;
+        color: #8a919c;
+    }
+
+    .tc-msg-meta strong { color: #d4d4d4; font-weight: 600; }
+
+    .tc-bubble {
+        display: inline-block;
+        padding: 9px 13px;
+        background: #1a1f27;
+        color: #e5e7eb;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-word;
+        text-align: left;
+    }
+
+    /* Mensagens do próprio usuário: à direita, com cor de destaque */
+    .tc-msg.own { flex-direction: row-reverse; }
+    .tc-msg.own .tc-msg-body { text-align: right; }
+    .tc-msg.own .tc-msg-meta { justify-content: flex-end; }
+    .tc-msg.own .tc-bubble { background: #2b3a63; color: #ffffff; }
+
+    /* ---------- Campo de digitação ---------- */
+
+    .tc-composer {
+        flex-shrink: 0;
+        padding: 12px 24px 18px;
+    }
+
+    .tc-composer-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 6px 6px 14px;
+        background: #0d1015;
+        border: 1px solid #2a3039;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .tc-composer-box:focus-within {
+        border-color: #7186a3;
+        box-shadow: 0 0 0 3px rgba(163, 199, 255, 0.10);
+    }
+
+    .tc-composer input {
+        flex: 1;
+        min-width: 0;
+        background: transparent;
+        border: 0;
+        outline: none;
+        color: #ffffff;
+        font-size: 13px;
+        font-family: inherit;
+        padding: 8px 0;
+    }
+
+    .tc-composer input::placeholder { color: #555555; }
+    .tc-composer input:disabled { cursor: not-allowed; opacity: 0.5; }
+
+    .tc-send {
+        background: #ffffff;
+        color: #000000;
+        border: 0;
+        padding: 9px 16px;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        transition: opacity 0.2s ease;
+    }
+
+    .tc-send:hover { opacity: 0.9; }
+    .tc-send:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ---------- Botão "Membros" + menu (estilo Teams) ---------- */
+
+    .tc-members-wrap { position: relative; flex-shrink: 0; }
+
+    .tc-members-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: transparent;
+        border: 1px solid #262626;
+        color: #a0a0a0;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        transition: color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .tc-members-btn:hover,
+    .tc-members-btn[aria-expanded="true"] { color: #ffffff; border-color: #444444; }
+
+    .tc-members-btn svg { width: 16px; height: 16px; }
+
+    .tc-members-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 8px);
+        width: 300px;
+        max-width: calc(100vw - 32px);
+        display: flex;
+        flex-direction: column;
+        background: #14181e;
+        border: 1px solid #2a3039;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+        border-radius: 10px !important;
+        overflow: hidden;
+        z-index: 30;
+    }
+
+    .tc-members-menu[hidden] { display: none; }
+
+    .tc-members-title {
+        padding: 12px 14px 8px;
+        font-size: 11px;
+        color: #8a919c;
+    }
+
+    .tc-members-list {
+        max-height: 340px;
+        overflow-y: auto;
+        padding: 0 6px 8px;
+    }
+
+    .tc-members-list::-webkit-scrollbar { width: 5px; }
+    .tc-members-list::-webkit-scrollbar-thumb { background: #2a2a2a; }
+
+    .tc-member-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+        padding: 8px;
+        background: transparent;
+        border: 0;
+        color: inherit;
+        text-align: left;
+        font-family: inherit;
+        cursor: pointer;
+    }
+
+    .tc-member-row:hover:not(:disabled) { background: rgba(255, 255, 255, 0.06); }
+    .tc-member-row:disabled { cursor: default; }
+    .tc-member-row:focus-visible { outline: 2px solid #a3c7ff; outline-offset: -2px; }
+
+    .tc-member-row .tc-avatar { width: 34px; height: 34px; font-size: 12px; }
+
+    .tc-member-text { min-width: 0; flex: 1; }
+
+    .tc-member-name,
+    .tc-member-sub {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .tc-member-name { font-size: 13px; color: #ffffff; }
+    .tc-member-sub { margin-top: 2px; font-size: 11px; color: #8a919c; }
+
+    .tc-member-action {
+        flex-shrink: 0;
+        font-size: 10px;
+        color: #a3c7ff;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+    }
+
+    .tc-member-row:hover .tc-member-action,
+    .tc-member-row:focus-visible .tc-member-action { opacity: 1; }
+
+    .tc-member-data { display: none; }
+
+    /* ---------- Responsivo: no celular mostra uma coluna por vez ---------- */
+
+    @media (max-width: 760px) {
+        .tc-layout {
+            flex: none;
+            height: calc(100dvh - 150px);
+            min-height: 460px;
+        }
+
+        .tc-list-pane { width: 100%; border-right: 0; }
+        .tc-chat-pane { display: none; }
+
+        .tc-layout.show-conversation .tc-list-pane { display: none; }
+        .tc-layout.show-conversation .tc-chat-pane { display: flex; }
+
+        .tc-back { display: inline-flex; }
+        .tc-chat-header { padding: 12px 14px; }
+        .tc-messages { padding: 14px; }
+        .tc-composer { padding: 10px 14px 14px; }
+        .tc-msg-body { max-width: 82%; }
+        .tc-open-full { display: none; }
+    }
+</style>
+
+{% if projects %}
+
+<div class="tc-layout" id="tcLayout">
+
+    {% csrf_token %}
+
+    <!-- ========== LISTA DE CHATS ========== -->
+    <section class="tc-list-pane">
+
+        <div class="tc-list-header">
             <h1>Chats</h1>
+            <a href="{% url 'project_create' %}">+ Projeto</a>
+        </div>
 
-            <div class="user-profile">
-                Logado como <strong>{{ user.profile.name|default:user.email }}</strong>
-            </div>
-        </header>
+        <div class="tc-search">
+            <input
+                type="search"
+                id="tcSearch"
+                placeholder="Pesquisar chats..."
+                autocomplete="off"
+                aria-label="Pesquisar chats"
+            >
+        </div>
 
-        {% if projects %}
+        <div class="tc-items" id="tcItems">
 
-            <div class="projects-grid">
-
-                {% for project in projects %}
-                    <article class="project-card">
-
-                        <div class="project-card-header">
-                            <span class="project-label">Chat do projeto</span>
-                            <span class="code-badge">{{ project.code }}</span>
-                        </div>
-
-                        <div class="project-card-body">
-                            <h3>{{ project.title }}</h3>
-                            <p>{{ project.description|default:"Sem descrição"|truncatechars:90 }}</p>
-
-                            <div class="chat-members-list">
-                                <span class="chat-members-label">
-                                    {{ project.members.all|length }} membro(s)
-                                </span>
-
-                                <div class="chat-members-chips">
-                                    {% for member in project.members.all %}
-                                        <span class="chat-member-chip">
-                                            {{ member.profile.name|default:member.email }}
-                                        </span>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="project-card-footer">
-                            <div class="project-meta">
-                                <span>Líder</span>
-                                <strong>{{ project.owner.profile.name|default:project.owner.email }}</strong>
-                            </div>
-
-                            <a
-                                href="{% url 'project_chat' project.code %}"
-                                class="btn-secondary-action"
-                                style="text-decoration:none;"
-                            >
-                                Abrir chat
-                            </a>
-                        </div>
-
-                    </article>
-                {% endfor %}
-
+            <!-- Conversas privadas (preenchidas via JS) -->
+            <div id="tcDmSection" hidden>
+                <div class="tc-section-label" style="padding-left: 10px;">Conversas privadas</div>
+                <div id="tcDmItems"></div>
             </div>
 
-        {% else %}
+            <div class="tc-section-label" style="padding-left: 10px;">Chats dos projetos</div>
 
-            <div class="projects-empty-cell">
-                Você ainda não faz parte de nenhum projeto, então não há chats pra mostrar.
-                <br>
-                <a href="{% url 'project_create' %}" class="btn-primary" style="text-decoration:none; display:inline-flex; margin-top:16px;">
-                    + Criar Projeto
-                </a>
+            {% for project in projects %}
+                <button
+                    type="button"
+                    class="tc-item"
+                    style="--project-accent: {{ project.accent_color }}"
+                    data-code="{{ project.code }}"
+                    data-title="{{ project.title }}"
+                    data-members="{% for member in project.members.all %}{{ member.profile.name|default:member.email }}{% if not forloop.last %}, {% endif %}{% endfor %}"
+                    data-count="{{ project.members.all|length }}"
+                    data-url="{% url 'project_chat' project.code %}"
+                >
+                    <span class="tc-avatar" aria-hidden="true"></span>
+
+                    <span class="tc-item-text">
+                        <span class="tc-item-title">{{ project.title }}</span>
+                        <span class="tc-item-sub">
+                            {{ project.get_category_display }} · {{ project.members.all|length }} membro(s) · Líder: {{ project.owner.profile.name|default:project.owner.email }}
+                        </span>
+                    </span>
+
+                    <span class="tc-item-code">{{ project.code }}</span>
+                    {% for member in project.members.all %}<span class="tc-member-data" hidden data-id="{{ member.id }}" data-name="{{ member.profile.name|default:member.email }}" data-email="{{ member.email }}"></span>{% endfor %}
+                </button>
+            {% endfor %}
+
+            <div class="tc-no-results" id="tcNoResults">Nenhum chat encontrado.</div>
+
+        </div>
+
+    </section>
+
+    <!-- ========== CONVERSA ========== -->
+    <section class="tc-chat-pane" id="tcChatPane">
+
+        <div class="tc-empty-state">
+            <strong>Selecione um chat</strong>
+            <span>Escolha um projeto na lista para conversar com a equipe.</span>
+        </div>
+
+        <div class="tc-conversation">
+
+            <header class="tc-chat-header">
+                <button type="button" class="tc-back" id="tcBack" aria-label="Voltar para a lista">←</button>
+
+                <span class="tc-avatar" id="tcHeaderAvatar" aria-hidden="true"></span>
+
+                <div class="tc-chat-title">
+                    <h2 id="tcTitle"></h2>
+                    <p id="tcMembers"></p>
+                </div>
+
+                <span class="tc-status" id="tcStatus">Conectando...</span>
+
+                <div class="tc-members-wrap" id="tcMembersWrap">
+                    <button
+                        type="button"
+                        class="tc-members-btn"
+                        id="tcMembersBtn"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                        aria-controls="tcMembersMenu"
+                        title="Ver membros"
+                    >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="9" cy="8" r="3.2"></circle>
+                            <path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"></path>
+                            <circle cx="17" cy="9" r="2.4"></circle>
+                            <path d="M17 14.2c2.4 0 4 1.8 4 4.3"></path>
+                        </svg>
+                        <span id="tcMembersCount">0</span>
+                    </button>
+
+                    <div class="tc-members-menu" id="tcMembersMenu" role="menu" hidden>
+                        <div class="tc-members-title" id="tcMembersTitle">Pessoas</div>
+                        <div class="tc-members-list" id="tcMembersList"></div>
+                    </div>
+                </div>
+
+                <a href="#" class="tc-open-full" id="tcOpenFull">Tela cheia</a>
+            </header>
+
+            <div class="tc-messages" id="tcMessages">
+                <div class="tc-placeholder">Carregando mensagens...</div>
             </div>
 
-        {% endif %}
+            <form class="tc-composer" id="tcForm">
+                <div class="tc-composer-box">
+                    <!-- Começa desabilitado; o JS habilita quando o WebSocket conecta -->
+                    <input
+                        type="text"
+                        id="tcInput"
+                        placeholder="Digite uma mensagem"
+                        autocomplete="off"
+                        maxlength="2000"
+                        disabled
+                    >
+                    <button type="submit" class="tc-send" id="tcSend" disabled>Enviar</button>
+                </div>
+            </form>
+
+        </div>
+
+    </section>
+
+</div>
+
+<script>
+(function () {
+
+    /* ------------------------------------------------------------
+     * Elementos
+     * ---------------------------------------------------------- */
+    const layout     = document.getElementById("tcLayout");
+    const chatPane   = document.getElementById("tcChatPane");
+    const itemsBox   = document.getElementById("tcItems");
+    const searchBox  = document.getElementById("tcSearch");
+    const noResults  = document.getElementById("tcNoResults");
+
+    const dmSection  = document.getElementById("tcDmSection");
+    const dmItemsBox = document.getElementById("tcDmItems");
+
+    const titleEl    = document.getElementById("tcTitle");
+    const subtitleEl = document.getElementById("tcMembers");
+    const headerAv   = document.getElementById("tcHeaderAvatar");
+    const statusEl   = document.getElementById("tcStatus");
+    const openFull   = document.getElementById("tcOpenFull");
+    const backBtn    = document.getElementById("tcBack");
+
+    const membersWrap  = document.getElementById("tcMembersWrap");
+    const membersBtn   = document.getElementById("tcMembersBtn");
+    const membersMenu  = document.getElementById("tcMembersMenu");
+    const membersTitle = document.getElementById("tcMembersTitle");
+    const membersList  = document.getElementById("tcMembersList");
+    const membersCount = document.getElementById("tcMembersCount");
+
+    const messagesEl = document.getElementById("tcMessages");
+    const form       = document.getElementById("tcForm");
+    const input      = document.getElementById("tcInput");
+    const sendBtn    = document.getElementById("tcSend");
+
+
+    /* ------------------------------------------------------------
+     * Configuração vinda do Django
+     * ---------------------------------------------------------- */
+    const MY_ID = {{ user.id }};
+    const DIRECT_LIST_URL = "{% url 'direct_list' %}";
+    const DIRECT_OPEN_TEMPLATE = "{% url 'direct_open' 0 %}";   // .../abrir/0/
+
+    const csrfInput = document.querySelector("[name=csrfmiddlewaretoken]");
+    const csrfToken = csrfInput ? csrfInput.value : "";
+
+    // Fallback para mensagens de projeto cujo payload não traz sender_id
+    const myNames = [
+        "{{ user.email|escapejs }}",
+        "{{ user.profile.name|escapejs }}"
+    ].filter(Boolean).map(function (n) { return n.trim().toLowerCase(); });
+
+    function isMine(message) {
+        if (message.sender_id !== undefined && message.sender_id !== null) {
+            return Number(message.sender_id) === MY_ID;
+        }
+        return myNames.indexOf(String(message.username || "").trim().toLowerCase()) !== -1;
+    }
+
+
+    /* ------------------------------------------------------------
+     * Avatares com iniciais e cor estável por nome
+     * ---------------------------------------------------------- */
+    const palette = ["#3b4a6b", "#4a3b6b", "#2f5d5a", "#6b4a3b", "#5a2f4d", "#3b5f3b", "#6b3b45", "#445a7a"];
+
+    function initials(name) {
+        const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
+        if (!parts.length) return "?";
+        if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function colorFor(name) {
+        let hash = 0;
+        const s = String(name || "");
+        for (let i = 0; i < s.length; i++) {
+            hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+        }
+        return palette[hash % palette.length];
+    }
+
+    function paintAvatar(el, name) {
+        el.textContent = initials(name);
+        el.style.background = colorFor(name);
+    }
+
+    const projectItems = Array.from(itemsBox.querySelectorAll(".tc-item[data-code]"));
+
+    projectItems.forEach(function (item) {
+        paintAvatar(item.querySelector(".tc-avatar"), item.dataset.title);
+    });
+
+    function readMembers(item) {
+        return Array.from(item.querySelectorAll(".tc-member-data")).map(function (el) {
+            return {
+                id: Number(el.dataset.id),
+                name: el.dataset.name,
+                email: el.dataset.email
+            };
+        });
+    }
+
+
+    /* ------------------------------------------------------------
+     * Estado da conversa aberta
+     * ---------------------------------------------------------- */
+    let socket = null;
+    let current = null;          // configuração do canal aberto
+    let reconnectTimer = null;
+    let last = { username: null, time: 0, day: "" };
+
+    function setEnabled(enabled) {
+        input.disabled = !enabled;
+        sendBtn.disabled = !enabled;
+    }
+
+    function setStatus(text, connected) {
+        statusEl.textContent = text;
+        statusEl.classList.toggle("connected", !!connected);
+    }
+
+    function resetMessages(placeholderText) {
+        messagesEl.innerHTML = "";
+        last = { username: null, time: 0, day: "" };
+
+        if (placeholderText) {
+            const ph = document.createElement("div");
+            ph.className = "tc-placeholder";
+            ph.textContent = placeholderText;
+            messagesEl.appendChild(ph);
+        }
+    }
+
+    function scrollToBottom() {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function markActive(kind, key) {
+        document.querySelectorAll(".tc-item").forEach(function (el) {
+            const match = kind === "dm"
+                ? el.dataset.dmId === String(key)
+                : el.dataset.code === String(key);
+            el.classList.toggle("active", match);
+        });
+    }
+
+    function closeSocket() {
+        if (!socket) return;
+        socket.onopen = null;
+        socket.onclose = null;
+        socket.onerror = null;
+        socket.onmessage = null;
+        socket.close();
+        socket = null;
+    }
+
+
+    /* ------------------------------------------------------------
+     * Abrir um canal (chat de projeto OU conversa privada)
+     * ---------------------------------------------------------- */
+    function openChannel(cfg) {
+
+        clearTimeout(reconnectTimer);
+        closeSocket();
+
+        current = cfg;
+
+        markActive(cfg.kind, cfg.key);
+
+        titleEl.textContent = cfg.title;
+        subtitleEl.textContent = cfg.subtitle;
+        paintAvatar(headerAv, cfg.title);
+
+        if (cfg.fullUrl) {
+            openFull.href = cfg.fullUrl;
+            openFull.style.display = "";
+        } else {
+            openFull.style.display = "none";
+        }
+
+        renderMembersMenu(cfg);
+        closeMembersMenu();
+
+        chatPane.classList.add("has-chat");
+        layout.classList.add("show-conversation");
+
+        history.replaceState(null, "", "#" + cfg.hash);
+
+        resetMessages("Carregando mensagens...");
+        setEnabled(false);
+        setStatus("Conectando...", false);
+
+        connect(cfg);
+    }
+
+    function openProject(code) {
+        const item = projectItems.find(function (i) { return i.dataset.code === code; });
+        if (!item) return;
+
+        openChannel({
+            kind: "project",
+            key: code,
+            hash: code,
+            title: item.dataset.title,
+            subtitle: item.dataset.members
+                ? item.dataset.count + " membro(s): " + item.dataset.members
+                : item.dataset.count + " membro(s)",
+            wsPath: "/ws/projetos/" + encodeURIComponent(code) + "/chat/",
+            fullUrl: item.dataset.url,
+            members: readMembers(item)
+        });
+    }
+
+    function openDm(conv) {
+        openChannel({
+            kind: "dm",
+            key: conv.id,
+            hash: "dm-" + conv.id,
+            title: conv.name,
+            subtitle: "Conversa privada",
+            wsPath: "/ws/privado/" + conv.id + "/",
+            fullUrl: null,
+            members: null
+        });
+    }
+
+    function connect(cfg) {
+
+        const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const ws = new WebSocket(protocol + "//" + window.location.host + cfg.wsPath);
+
+        socket = ws;
+
+        ws.onopen = function () {
+            if (ws !== socket) return;
+
+            setStatus("Conectado", true);
+            setEnabled(true);
+            input.focus();
+        };
+
+        ws.onmessage = function (event) {
+            if (ws !== socket) return;
+
+            let data;
+            try {
+                data = JSON.parse(event.data);
+            } catch (e) {
+                return;
+            }
+
+            if (data.type === "history") {
+                resetMessages(null);
+
+                if (!data.messages.length) {
+                    resetMessages(
+                        cfg.kind === "dm"
+                            ? "Nenhuma mensagem ainda. Diga olá!"
+                            : "Ainda não há mensagens. Comece a conversa da equipe."
+                    );
+                    return;
+                }
+
+                data.messages.forEach(addMessage);
+                scrollToBottom();
+                return;
+            }
+
+            if (data.type === "message") {
+                const nearBottom =
+                    messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 120;
+
+                addMessage(data);
+
+                if (nearBottom || isMine(data)) {
+                    scrollToBottom();
+                }
+
+                if (cfg.kind === "dm") {
+                    touchDm(cfg.key, data.message);
+                }
+            }
+        };
+
+        ws.onclose = function () {
+            if (ws !== socket) return;
+
+            setStatus("Desconectado", false);
+            setEnabled(false);
+
+            // Reconecta sozinho enquanto este canal continuar aberto
+            reconnectTimer = setTimeout(function () {
+                if (current === cfg && socket === ws) {
+                    setStatus("Reconectando...", false);
+                    connect(cfg);
+                }
+            }, 3000);
+        };
+
+        ws.onerror = function () {
+            if (ws !== socket) return;
+
+            setStatus("Erro na conexão", false);
+            setEnabled(false);
+        };
+    }
+
+
+    /* ------------------------------------------------------------
+     * Renderização de mensagens
+     * ---------------------------------------------------------- */
+    function addMessage(message) {
+
+        const placeholder = messagesEl.querySelector(".tc-placeholder");
+        if (placeholder) placeholder.remove();
+
+        const date = new Date(message.created_at);
+        const validDate = !isNaN(date.getTime());
+        const dayKey = validDate ? date.toDateString() : "";
+        const mine = isMine(message);
+
+        // Separador de dia
+        if (validDate && dayKey !== last.day) {
+            const sep = document.createElement("div");
+            sep.className = "tc-day";
+            sep.textContent = date.toLocaleDateString("pt-BR", {
+                weekday: "long", day: "numeric", month: "long"
+            });
+            messagesEl.appendChild(sep);
+            last = { username: null, time: 0, day: dayKey };
+        }
+
+        // Agrupa mensagens seguidas da mesma pessoa (até 5 min)
+        const ts = validDate ? date.getTime() : 0;
+        const grouped =
+            last.username === message.username &&
+            ts && last.time && (ts - last.time) < 5 * 60 * 1000;
+
+        const row = document.createElement("div");
+        row.className = "tc-msg" + (mine ? " own" : "") + (grouped ? " grouped" : "");
+
+        if (!mine) {
+            if (grouped) {
+                const spacer = document.createElement("span");
+                spacer.className = "tc-avatar-spacer";
+                row.appendChild(spacer);
+            } else {
+                const av = document.createElement("span");
+                av.className = "tc-avatar";
+                paintAvatar(av, message.username);
+                row.appendChild(av);
+            }
+        }
+
+        const body = document.createElement("div");
+        body.className = "tc-msg-body";
+
+        if (!grouped) {
+            const meta = document.createElement("div");
+            meta.className = "tc-msg-meta";
+
+            if (!mine) {
+                const name = document.createElement("strong");
+                name.textContent = message.username;
+                meta.appendChild(name);
+            }
+
+            const time = document.createElement("span");
+            time.textContent = validDate
+                ? date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                : "";
+            meta.appendChild(time);
+
+            body.appendChild(meta);
+        }
+
+        // textContent (e não innerHTML) impede execução de HTML/JS vindo das mensagens
+        const bubble = document.createElement("div");
+        bubble.className = "tc-bubble";
+        bubble.textContent = message.message;
+        body.appendChild(bubble);
+
+        row.appendChild(body);
+        messagesEl.appendChild(row);
+
+        last.username = message.username;
+        last.time = ts;
+        last.day = dayKey || last.day;
+    }
+
+
+    /* ------------------------------------------------------------
+     * Envio
+     * ---------------------------------------------------------- */
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const content = input.value.trim();
+        if (!content) return;
+
+        if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
+        socket.send(JSON.stringify({ message: content }));
+
+        input.value = "";
+        input.focus();
+    });
+
+
+    /* ------------------------------------------------------------
+     * Menu de membros (estilo Teams) — clicar abre conversa privada
+     * ---------------------------------------------------------- */
+    function closeMembersMenu() {
+        membersMenu.hidden = true;
+        membersBtn.setAttribute("aria-expanded", "false");
+    }
+
+    function renderMembersMenu(cfg) {
+
+        if (cfg.kind !== "project" || !cfg.members) {
+            membersWrap.style.display = "none";
+            return;
+        }
+
+        membersWrap.style.display = "";
+        membersCount.textContent = cfg.members.length;
+        membersTitle.textContent = "Pessoas (" + cfg.members.length + ")";
+        membersList.innerHTML = "";
+
+        cfg.members.forEach(function (member) {
+
+            const mine = member.id === MY_ID;
+
+            const row = document.createElement("button");
+            row.type = "button";
+            row.className = "tc-member-row";
+            row.disabled = mine;
+            row.setAttribute("role", "menuitem");
+
+            const av = document.createElement("span");
+            av.className = "tc-avatar";
+            av.setAttribute("aria-hidden", "true");
+            paintAvatar(av, member.name);
+
+            const text = document.createElement("span");
+            text.className = "tc-member-text";
+
+            const name = document.createElement("span");
+            name.className = "tc-member-name";
+            name.textContent = member.name;
+
+            const sub = document.createElement("span");
+            sub.className = "tc-member-sub";
+            sub.textContent = mine ? "Você" : member.email;
+
+            text.appendChild(name);
+            text.appendChild(sub);
+
+            row.appendChild(av);
+            row.appendChild(text);
+
+            if (!mine) {
+                const action = document.createElement("span");
+                action.className = "tc-member-action";
+                action.textContent = "Conversar";
+                row.appendChild(action);
+
+                row.title = "Iniciar conversa privada com " + member.name;
+                row.addEventListener("click", function () {
+                    startDirect(member);
+                });
+            }
+
+            membersList.appendChild(row);
+        });
+    }
+
+    membersBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+
+        const willOpen = membersMenu.hidden;
+        membersMenu.hidden = !willOpen;
+        membersBtn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    });
+
+    document.addEventListener("click", function (event) {
+        if (!membersWrap.contains(event.target)) closeMembersMenu();
+    });
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeMembersMenu();
+    });
+
+
+    /* ------------------------------------------------------------
+     * Conversas privadas: criar/abrir e listar
+     * ---------------------------------------------------------- */
+    function startDirect(member) {
+
+        closeMembersMenu();
+
+        fetch(DIRECT_OPEN_TEMPLATE.replace("/0/", "/" + member.id + "/"), {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "X-CSRFToken": csrfToken }
+        })
+            .then(function (res) {
+                return res.json().then(function (data) {
+                    return { ok: res.ok, data: data };
+                });
+            })
+            .then(function (result) {
+                if (!result.ok) {
+                    setStatus(result.data.error || "Não foi possível abrir a conversa", false);
+                    return;
+                }
+
+                const el = upsertDm(result.data);
+                dmItemsBox.prepend(el);
+                openDm(result.data);
+            })
+            .catch(function () {
+                setStatus("Erro ao abrir a conversa", false);
+            });
+    }
+
+    function upsertDm(conv) {
+
+        let el = dmItemsBox.querySelector('[data-dm-id="' + conv.id + '"]');
+
+        if (!el) {
+            el = document.createElement("button");
+            el.type = "button";
+            el.className = "tc-item";
+            el.dataset.dmId = String(conv.id);
+
+            const av = document.createElement("span");
+            av.className = "tc-avatar";
+            av.setAttribute("aria-hidden", "true");
+
+            const text = document.createElement("span");
+            text.className = "tc-item-text";
+
+            const title = document.createElement("span");
+            title.className = "tc-item-title";
+
+            const sub = document.createElement("span");
+            sub.className = "tc-item-sub";
+
+            text.appendChild(title);
+            text.appendChild(sub);
+            el.appendChild(av);
+            el.appendChild(text);
+
+            el.addEventListener("click", function () {
+                openDm({ id: el.dataset.dmId, name: el.dataset.title });
+            });
+
+            dmItemsBox.appendChild(el);
+        }
+
+        el.dataset.title = conv.name;
+        el.dataset.members = "";
+        el.dataset.code = "";
+
+        el.querySelector(".tc-item-title").textContent = conv.name;
+        el.querySelector(".tc-item-sub").textContent = conv.last_message || "Conversa privada";
+        paintAvatar(el.querySelector(".tc-avatar"), conv.name);
+
+        dmSection.hidden = false;
+
+        return el;
+    }
+
+    function touchDm(id, text) {
+        const el = dmItemsBox.querySelector('[data-dm-id="' + id + '"]');
+        if (!el) return;
+
+        el.querySelector(".tc-item-sub").textContent = String(text || "").slice(0, 80);
+        dmItemsBox.prepend(el);
+    }
+
+    function loadDms() {
+        return fetch(DIRECT_LIST_URL, { credentials: "same-origin" })
+            .then(function (res) { return res.ok ? res.json() : { conversations: [] }; })
+            .then(function (data) {
+                (data.conversations || []).forEach(upsertDm);
+            })
+            .catch(function () { /* sem conversas privadas: segue normalmente */ });
+    }
+
+
+    /* ------------------------------------------------------------
+     * Lista: clique, pesquisa e botão voltar (celular)
+     * ---------------------------------------------------------- */
+    projectItems.forEach(function (item) {
+        item.addEventListener("click", function () {
+            openProject(item.dataset.code);
+        });
+    });
+
+    searchBox.addEventListener("input", function () {
+        const term = searchBox.value.trim().toLowerCase();
+        let visible = 0;
+
+        document.querySelectorAll(".tc-item").forEach(function (item) {
+            const haystack = (
+                (item.dataset.title || "") + " " +
+                (item.dataset.code || "") + " " +
+                (item.dataset.members || "")
+            ).toLowerCase();
+
+            const show = !term || haystack.indexOf(term) !== -1;
+            item.style.display = show ? "" : "none";
+            if (show) visible++;
+        });
+
+        noResults.style.display = visible ? "none" : "block";
+    });
+
+    backBtn.addEventListener("click", function () {
+        layout.classList.remove("show-conversation");
+    });
+
+
+    /* ------------------------------------------------------------
+     * Abertura inicial: #CODIGO, #dm-ID, ou o primeiro chat no desktop
+     * ---------------------------------------------------------- */
+    const fromHash = decodeURIComponent(window.location.hash.replace("#", ""));
+    const isDesktop = window.matchMedia("(min-width: 761px)").matches;
+
+    loadDms().then(function () {
+
+        if (/^dm-\d+$/.test(fromHash)) {
+            const el = dmItemsBox.querySelector('[data-dm-id="' + fromHash.slice(3) + '"]');
+            if (el) {
+                el.click();
+                return;
+            }
+        }
+
+        if (fromHash && projectItems.some(function (i) { return i.dataset.code === fromHash; })) {
+            openProject(fromHash);
+            return;
+        }
+
+        if (isDesktop && projectItems.length) {
+            openProject(projectItems[0].dataset.code);
+        }
+    });
+
+})();
+</script>
+
+{% else %}
+
+<div>
+
+    <header class="main-header">
+        <h1>Chats</h1>
+
+        <div class="user-profile">
+            Logado como <strong>{{ user.profile.name|default:user.email }}</strong>
+        </div>
+    </header>
+
+    <div class="projects-empty-cell">
+        Você ainda não faz parte de nenhum projeto, então não há chats pra mostrar.
+        <br>
+        <a href="{% url 'project_create' %}" class="btn-primary" style="text-decoration:none; display:inline-flex; margin-top:16px;">
+            + Criar Projeto
+        </a>
+    </div>
+
+</div>
+
+{% endif %}
 
     </main>
 

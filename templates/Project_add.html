@@ -13,51 +13,75 @@
                 <p>Defina o espaço de trabalho e convide as pessoas que vão construir com você.</p>
             </header>
 
-            <form method="POST" action="{% url 'project_create' %}" id="projectForm">
+            <form method="POST" action="{% url 'project_create' %}" id="projectForm" class="project-create-form">
                 {% csrf_token %}
 
-                <div class="input-group project-create-field">
+                <div class="input-group project-create-field project-field-title">
                     <label for="title">Nome do projeto <span>*</span></label>
                     <input type="text" id="title" name="title" placeholder="Ex.: Sincrow Core" required maxlength="100">
                 </div>
 
-                <div class="input-group project-create-field">
+                <div class="input-group project-create-field project-field-description">
                     <label for="description">Descrição <span>(opcional)</span></label>
                     <textarea id="description" name="description" placeholder="Descreva os objetivos deste projeto..."></textarea>
                 </div>
 
-                <div class="input-group project-create-field">
-                    <label for="memberSearch">Adicionar membros</label>
-                    <input type="search" id="memberSearch" placeholder="Buscar por nome ou e-mail" autocomplete="off">
-                    <div id="memberSearchResults" class="project-member-results"></div>
+                <div class="input-group project-create-field project-field-category">
+                    <label for="category">Categoria do projeto</label>
+                    <div class="project-category-picker">
+                        <select id="category" name="category" class="project-create-select">
+                            {% for value, label in category_choices %}
+                                <option value="{{ value }}" data-category="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="project-category-preview" id="categoryPreview" data-category="general">
+                            <span class="category-dot"></span>
+                            <span id="categoryPreviewLabel">Geral</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="input-group project-create-field">
+                <div class="input-group project-create-field project-field-color">
+                    <label for="accentColor">Cor do projeto</label>
+                    <div class="project-color-picker-row">
+                        <input type="color" id="accentColor" name="accent_color" value="#a3c7ff" aria-label="Escolher cor de destaque">
+                        <span>Use essa cor nos cartões, no quadro e nos chats do projeto.</span>
+                    </div>
+                    <div class="project-color-options">
+                        <label class="project-default-color-option">
+                            <input type="checkbox" name="use_default_color" id="useDefaultColor" checked>
+                            <span>Usar cor padrão</span>
+                        </label>
+                        <div class="project-appearance-preview" id="appearancePreview">
+                            <span class="preview-accent"></span>
+                            <strong>Prévia</strong>
+                            <span id="appearancePreviewCategory">Geral</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input-group project-create-field project-field-invite">
+                    <label for="memberSearch">Convidar por e-mail</label>
+                    <div class="project-member-invite-field">
+                        <input type="email" id="memberSearch" placeholder="Digite o e-mail completo" autocomplete="off">
+                        <button type="button" id="inviteMemberBtn" class="btn-secondary-action">Convidar</button>
+                    </div>
+                    <div id="memberSearchResults" class="project-member-results" role="status" aria-live="polite"></div>
+                </div>
+
+                <div class="input-group project-create-field project-field-members">
                     <span class="project-create-label">Membros selecionados</span>
                     <div id="selectedMembers" class="selected-project-members">
                         <span style="color: #777; font-size: 14px;">Nenhum membro selecionado.</span>
                     </div>
                 </div>
 
-                <div class="project-ai-actions">
-                    <button type="button" id="suggestMembersBtn" class="btn-secondary-action">
-                        Sugerir membros com IA
-                    </button>
-                </div>
-
-                <div id="suggestionBox" class="project-suggestion-box">
-                    <div class="project-suggestion-heading">
-                        <strong>Sugestão de alocação por IA</strong>
-                    </div>
-                    <div id="suggestionResults" class="project-suggestion-results"></div>
-                </div>
-
-                <label class="ai-option">
+                <label class="ai-option project-create-generate-option">
                     <input type="checkbox" name="generate_tasks_ai" checked>
                     <span>Gerar tarefas automaticamente com IA e distribuir entre os membros</span>
                 </label>
 
-                <div class="project-create-actions">
+                <div class="project-create-actions project-create-form-actions">
                     <a href="{% url 'accounts:dashboard' %}" class="btn-secondary-action">Cancelar</a>
                     <button type="submit" class="btn-primary">Criar projeto</button>
                 </div>
@@ -71,10 +95,30 @@
     const memberSearchResults = document.getElementById('memberSearchResults');
     const selectedMembersBox = document.getElementById('selectedMembers');
     const projectForm = document.getElementById('projectForm');
-    const suggestionBox = document.getElementById('suggestionBox');
-    const suggestionResults = document.getElementById('suggestionResults');
-    const suggestMembersBtn = document.getElementById('suggestMembersBtn');
+    const categorySelect = document.getElementById('category');
+    const categoryPreview = document.getElementById('categoryPreview');
+    const categoryPreviewLabel = document.getElementById('categoryPreviewLabel');
+    const appearancePreviewCategory = document.getElementById('appearancePreviewCategory');
+    const accentColorInput = document.getElementById('accentColor');
+    const useDefaultColor = document.getElementById('useDefaultColor');
+    const appearancePreview = document.getElementById('appearancePreview');
     const selectedMembers = new Map();
+
+    function updateAppearancePreview() {
+        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+        const categoryValue = selectedOption.value;
+        const categoryLabel = selectedOption.textContent;
+        const accent = useDefaultColor.checked ? '#a3c7ff' : accentColorInput.value;
+        categoryPreview.dataset.category = categoryValue;
+        categoryPreviewLabel.textContent = categoryLabel;
+        appearancePreviewCategory.textContent = categoryLabel;
+        appearancePreview.style.setProperty('--project-accent', accent);
+        accentColorInput.disabled = useDefaultColor.checked;
+    }
+
+    categorySelect.addEventListener('change', updateAppearancePreview);
+    accentColorInput.addEventListener('input', updateAppearancePreview);
+    useDefaultColor.addEventListener('change', updateAppearancePreview);
 
     function addHiddenMemberInputs() {
         projectForm.querySelectorAll('input[name="members"]').forEach(input => input.remove());
@@ -109,7 +153,7 @@
             chip.style.color = '#fff';
             chip.style.fontSize = '13px';
 
-            const label = document.createTextNode(member.name || 'Nome não informado');
+            const label = document.createTextNode(member.email || member.name || 'Usuário');
             const removeBtn = document.createElement('button');
 
             removeBtn.type = 'button';
@@ -133,167 +177,62 @@
         addHiddenMemberInputs();
     }
 
-    function renderUserResults(users) {
-        memberSearchResults.innerHTML = '';
-
-        if (!users.length) {
-            memberSearchResults.innerHTML = '<div style="color: #777; font-size: 14px;">Nenhum usuário encontrado.</div>';
-            return;
-        }
-
-        users.forEach(user => {
-            const card = document.createElement('div');
-            card.style.display = 'flex';
-            card.style.justifyContent = 'space-between';
-            card.style.alignItems = 'center';
-            card.style.gap = '10px';
-            card.style.padding = '10px 12px';
-            card.style.border = '1px solid #222';
-            card.style.borderRadius = '8px';
-            card.style.background = '#121212';
-
-            const info = document.createElement('div');
-            info.style.minWidth = '0';
-
-            const name = document.createElement('div');
-            name.textContent = user.name || 'Nome não informado';
-            name.style.color = '#fff';
-            name.style.fontWeight = '600';
-
-            const email = document.createElement('div');
-            email.textContent = user.email;
-            email.style.color = '#b0b0b0';
-            email.style.fontSize = '12px';
-
-            const skills = document.createElement('div');
-            skills.textContent = (user.skills || []).slice(0, 3).join(', ') || 'Sem skills cadastradas';
-            skills.style.color = '#888';
-            skills.style.fontSize = '12px';
-
-            info.appendChild(name);
-            info.appendChild(email);
-            info.appendChild(skills);
-
-            const addBtn = document.createElement('button');
-            const alreadySelected = selectedMembers.has(user.id);
-
-            addBtn.type = 'button';
-            addBtn.textContent = alreadySelected ? 'Adicionado' : 'Adicionar';
-            addBtn.disabled = alreadySelected;
-            addBtn.style.padding = '8px 12px';
-            addBtn.style.borderRadius = '6px';
-            addBtn.style.border = 'none';
-            addBtn.style.background = alreadySelected ? '#333' : '#fff';
-            addBtn.style.color = alreadySelected ? '#ddd' : '#111';
-            addBtn.style.cursor = alreadySelected ? 'default' : 'pointer';
-
-            addBtn.addEventListener('click', function() {
-                if (!selectedMembers.has(user.id)) {
-                    selectedMembers.set(user.id, user);
-                    renderSelectedMembers();
-                    renderUserResults([]);
-                }
-            });
-
-            card.appendChild(info);
-            card.appendChild(addBtn);
-            memberSearchResults.appendChild(card);
-        });
+    function setInviteMessage(message, isError = false) {
+        memberSearchResults.textContent = message;
+        memberSearchResults.style.color = isError ? '#ff9999' : '#9da5ae';
     }
 
-    memberSearch.addEventListener('input', function() {
+    function inviteMember() {
         const query = memberSearch.value.trim();
 
-        if (!query) {
-            memberSearchResults.innerHTML = '';
+        if (!memberSearch.checkValidity() || !query) {
+            memberSearch.reportValidity();
             return;
         }
+
+        const inviteButton = document.getElementById('inviteMemberBtn');
+        inviteButton.disabled = true;
+        setInviteMessage('Verificando o e-mail...');
 
         fetch(`/accounts/buscar-usuarios/?q=${encodeURIComponent(query)}`)
             .then(response => {
                 if (!response.ok) throw new Error();
                 return response.json();
             })
-            .then(data => renderUserResults(data.results || []))
+            .then(data => {
+                const user = (data.results || [])[0];
+                if (!user) {
+                    setInviteMessage('Não encontramos uma conta com esse e-mail.', true);
+                    return;
+                }
+
+                if (selectedMembers.has(user.id)) {
+                    setInviteMessage('Esse usuário já está na lista de convidados.');
+                    return;
+                }
+
+                selectedMembers.set(user.id, user);
+                renderSelectedMembers();
+                memberSearch.value = '';
+                setInviteMessage('Convite preparado. O acesso será liberado quando o projeto for criado.');
+            })
             .catch(() => {
-                memberSearchResults.innerHTML = '<div style="color: #ff9999;">Erro ao buscar usuários.</div>';
+                setInviteMessage('Erro ao verificar o e-mail. Tente novamente.', true);
+            })
+            .finally(() => {
+                inviteButton.disabled = false;
             });
+    }
+
+    document.getElementById('inviteMemberBtn').addEventListener('click', inviteMember);
+    memberSearch.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            inviteMember();
+        }
     });
 
-    suggestMembersBtn.addEventListener('click', function() {
-        const title = document.getElementById('title').value.trim();
-        const description = document.getElementById('description').value.trim();
-        const members = Array.from(selectedMembers.keys());
-
-        suggestionBox.style.display = 'block';
-        suggestionResults.innerHTML = '<div style="color: #aaa;">Analisando membros e projeto...</div>';
-        suggestMembersBtn.disabled = true;
-        suggestMembersBtn.textContent = 'Analisando...';
-
-        if (!title) {
-            suggestionResults.innerHTML = '<div style="color: #ff9999;">Preencha o nome do projeto antes de sugerir.</div>';
-            suggestMembersBtn.disabled = false;
-            suggestMembersBtn.textContent = '✨ Sugerir membros com IA';
-            return;
-        }
-
-        if (!members.length) {
-            suggestionResults.innerHTML = '<div style="color: #ff9999;">Selecione pelo menos um membro para a sugestão.</div>';
-            suggestMembersBtn.disabled = false;
-            suggestMembersBtn.textContent = '✨ Sugerir membros com IA';
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('description', description);
-        members.forEach(memberId => formData.append('members', memberId));
-
-        fetch('{% url "project_suggest_ai" %}', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-            },
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) throw new Error();
-            return response.json();
-        })
-        .then(data => {
-            if (!data.suggestions || !data.suggestions.length) {
-                suggestionResults.innerHTML = '<div style="color: #ff9999;">Não foi possível gerar sugestão com os dados atuais.</div>';
-                return;
-            }
-
-            suggestionResults.innerHTML = data.suggestions.map(item => {
-                const skills = (item.skills || []).slice(0, 4).join(', ') || 'Sem skills cadastradas';
-                const matches = (item.matched_skills || []).length
-                    ? `Corresponde a: ${item.matched_skills.join(', ')}`
-                    : 'Sem correspondência direta';
-
-                return `
-                    <div style="padding: 12px; border: 1px solid #222; border-radius: 8px; background: #111;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px;">
-                            <strong style="color: #fff;">${item.name || 'Nome não informado'}</strong>
-                            <span style="color: #8be3a1; font-size: 12px;">Score ${item.score || 0}</span>
-                        </div>
-                        <div style="color: #aaa; font-size: 12px; margin-bottom: 4px;">${item.email}</div>
-                        <div style="color: #c9c9c9; font-size: 12px;">${skills}</div>
-                        <div style="color: #89d0ff; font-size: 12px; margin-top: 6px;">${matches}</div>
-                    </div>
-                `;
-            }).join('');
-        })
-        .catch(() => {
-            suggestionResults.innerHTML = '<div style="color: #ff9999;">Erro ao gerar sugestão com a IA.</div>';
-        })
-        .finally(() => {
-            suggestMembersBtn.disabled = false;
-            suggestMembersBtn.textContent = '✨ Sugerir membros com IA';
-        });
-    });
-
+    updateAppearancePreview();
     renderSelectedMembers();
 </script>
 {% endblock %}

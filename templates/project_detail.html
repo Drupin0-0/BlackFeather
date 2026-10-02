@@ -6,7 +6,7 @@
 {% block content %}
 
 
-<div class="project-page">
+<div class="project-page" style="--project-accent: {{ project.accent_color }}">
 
     <header class="project-header">
 
@@ -21,7 +21,7 @@
             </a>
 
             <div class="project-title-wrapper">
-                <span>Projeto</span>
+                <span class="project-category-heading" data-category="{{ project.category }}">{{ project.get_category_display }}</span>
                 <h1>{{ project.title }}</h1>
             </div>
 

@@ -595,6 +595,22 @@
     background: #252c34;
 }
 
+.notification-join-action {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 9px;
+    color: #dce2ea;
+    background: #1b2229;
+    border: 1px solid #30363d;
+    border-radius: 5px;
+    font-size: 11px;
+    cursor: pointer;
+}
+
+.notification-join-action:hover { color: #fff; background: #252c34; }
+.notification-join-action.is-reject { color: #ffb4b4; }
+.notification-meta .notification-join-action { align-self: center; }
+
 
 /* ==========================================================
    ESTADO VAZIO

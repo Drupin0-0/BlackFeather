@@ -1,7 +1,10 @@
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages as django_messages
 from django.http import JsonResponse
 from django.db.models import Q
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 from django.shortcuts import get_object_or_404, render
 from .models import Notification, JoinRequest
 from .notification_service import create_notification
@@ -62,13 +65,8 @@ def mailbox(request):
 
 
 @login_required
+@require_POST
 def mark_notification_read(request, notification_id):
-    if request.method != "POST":
-        return JsonResponse(
-            {"error": "Método não permitido."},
-            status=405,
-        )
-
     notification = get_object_or_404(
         Notification,
         pk=notification_id,
@@ -82,13 +80,8 @@ def mark_notification_read(request, notification_id):
 
 
 @login_required
+@require_POST
 def mark_all_notifications_read(request):
-    if request.method != "POST":
-        return JsonResponse(
-            {"error": "Método não permitido."},
-            status=405,
-        )
-
     request.user.notifications.filter(
         is_read=False
     ).update(is_read=True)
@@ -98,14 +91,11 @@ def mark_all_notifications_read(request):
 @login_required
 @require_POST
 def send_join_request(request, project_code):
-    username = request.POST.get("username", "").strip()
+    email = request.POST.get("username", "").strip()
 
-    if username.startswith("@"):
-        username = username[1:].strip()
-
-    if not username:
+    if not email:
         return JsonResponse(
-            {"success": False, "error": "Digite um username."},
+            {"success": False, "error": "Digite o e-mail do usuário."},
             status=400,
         )
 
@@ -125,9 +115,7 @@ def send_join_request(request, project_code):
             status=403,
         )
 
-    recipient = User.objects.filter(
-        username=username
-    ).first()
+    recipient = User.objects.filter(email__iexact=email).first()
 
     if recipient is None:
         return JsonResponse(
@@ -178,15 +166,22 @@ def send_join_request(request, project_code):
         sender=request.user,
         recipient=recipient,
         project=project,
+        request_type="invite",
     )
+
+    sender_name = request.user.email
+    try:
+        sender_name = request.user.profile.name or sender_name
+    except ObjectDoesNotExist:
+        pass
 
     create_notification(
         user=recipient,
         title="Nova solicitação",
         description=(
-            f"@{request.user.username} "
+            f"{sender_name} "
             f"enviou uma solicitação para entrar em "
-            f"'{project.name}'."
+            f"'{project.title}'."
         ),
         join_request=join_request,
     )
@@ -197,6 +192,56 @@ def send_join_request(request, project_code):
             "request_id": join_request.id,
         }
     )
+
+@login_required
+@require_POST
+def request_project_join(request):
+    project_code = (request.POST.get("project_code") or "").strip().upper()
+    if not project_code:
+        django_messages.error(request, "Digite o código do projeto.")
+        return redirect("project_list")
+
+    project = Project.objects.filter(code__iexact=project_code).select_related("owner").first()
+    if project is None:
+        django_messages.error(request, "Não encontramos um projeto com esse código.")
+        return redirect("project_list")
+
+    if project.owner_id == request.user.pk or project.members.filter(pk=request.user.pk).exists():
+        django_messages.info(request, "Você já faz parte desse projeto.")
+        return redirect("project_list")
+
+    pending_request = JoinRequest.objects.filter(
+        sender=request.user,
+        recipient=project.owner,
+        project=project,
+        request_type="join",
+        status="pending",
+    ).exists()
+    if pending_request:
+        django_messages.info(request, "Seu pedido para esse projeto já está aguardando resposta.")
+        return redirect("project_list")
+
+    join_request = JoinRequest.objects.create(
+        sender=request.user,
+        recipient=project.owner,
+        project=project,
+        request_type="join",
+    )
+    requester_name = request.user.email
+    try:
+        requester_name = request.user.profile.name or requester_name
+    except ObjectDoesNotExist:
+        pass
+
+    create_notification(
+        user=project.owner,
+        title="Pedido para entrar no projeto",
+        description=f"{requester_name} quer participar do projeto '{project.title}'.",
+        join_request=join_request,
+    )
+    django_messages.success(request, "Pedido enviado! O responsável pelo projeto foi notificado.")
+    return redirect("project_list")
+
 
 @login_required
 @require_POST
@@ -221,11 +266,14 @@ def respond_join_request(request, request_id):
 
     if action == "accept":
         project = join_request.project
+        accepted_user = (
+            join_request.sender
+            if join_request.request_type == "join"
+            else join_request.recipient
+        )
 
-        if not project.members.filter(
-            id=request.user.id
-        ).exists():
-            project.members.add(request.user)
+        if not project.members.filter(id=accepted_user.id).exists():
+            project.members.add(accepted_user)
 
         join_request.status = "accepted"
 
@@ -236,8 +284,35 @@ def respond_join_request(request, request_id):
 
         message = "Solicitação recusada."
 
-    join_request.save(
-        update_fields=["status"]
+    join_request.responded_at = timezone.now()
+    join_request.save(update_fields=["status", "responded_at"])
+
+    Notification.objects.filter(
+        join_request=join_request,
+        user=request.user,
+    ).update(is_read=True)
+
+    recipient_name = request.user.email
+    try:
+        recipient_name = request.user.profile.name or recipient_name
+    except ObjectDoesNotExist:
+        pass
+
+    if join_request.request_type == "join":
+        response_description = (
+            f"Seu pedido para entrar no projeto '{join_request.project.title}' "
+            f"foi {'aceito' if action == 'accept' else 'recusado'} por {recipient_name}."
+        )
+    else:
+        response_description = (
+            f"{recipient_name} {'aceitou' if action == 'accept' else 'recusou'} "
+            f"seu convite para o projeto '{join_request.project.title}'."
+        )
+
+    create_notification(
+        user=join_request.sender,
+        title="Resposta à solicitação",
+        description=response_description,
     )
 
     return JsonResponse(

@@ -19,6 +19,8 @@ from django.shortcuts import redirect
 from .models import Project, Task
 from .serializers import ProjectSerializer, TaskSerializer
 from accounts.models import UserProfile, Technology
+from chat.models import JoinRequest
+from chat.notification_service import create_notification
 
 User = get_user_model()
 
@@ -130,18 +132,48 @@ def project_list_view(request):
 @login_required
 def create_project_view(request):
     if request.method == 'POST':
-        title = request.POST.get('title')
-        description = request.POST.get('description')
+        title = (request.POST.get('title') or '').strip()
+        description = (request.POST.get('description') or '').strip()
+        category = request.POST.get('category', 'general')
+        allowed_categories = {value for value, _label in Project.CATEGORY_CHOICES}
+        if category not in allowed_categories:
+            category = 'general'
+
+        accent_color = (request.POST.get('accent_color') or '#a3c7ff').strip()
+        if request.POST.get('use_default_color') == 'on' or not re.fullmatch(r'#[0-9a-fA-F]{6}', accent_color):
+            accent_color = '#a3c7ff'
 
         if title:
-            project = Project.objects.create(title=title, description=description, owner=request.user)
+            project = Project.objects.create(
+                title=title,
+                description=description,
+                category=category,
+                accent_color=accent_color.lower(),
+                owner=request.user,
+            )
             project.members.add(request.user)
 
             selected_members = request.POST.getlist('members')
             if selected_members:
                 selected_user_ids = [member_id for member_id in selected_members if member_id]
                 members = User.objects.filter(pk__in=selected_user_ids).exclude(pk=request.user.pk)
-                project.members.add(*members)
+                for member in members:
+                    join_request, created = JoinRequest.objects.get_or_create(
+                        sender=request.user,
+                        recipient=member,
+                        project=project,
+                        status='pending',
+                    )
+                    if created:
+                        create_notification(
+                            user=member,
+                            title="Convite para projeto",
+                            description=(
+                                f"{request.user.email} convidou você para "
+                                f"participar do projeto '{project.title}'."
+                            ),
+                            join_request=join_request,
+                        )
 
             if request.POST.get('generate_tasks_ai') == 'on':
                 criadas = gerar_tarefas_para_projeto(project)
@@ -152,7 +184,9 @@ def create_project_view(request):
 
             return redirect('accounts:dashboard')
 
-    return render(request, 'Project_add.html')
+    return render(request, 'Project_add.html', {
+        'category_choices': Project.CATEGORY_CHOICES,
+    })
 
 
 @login_required

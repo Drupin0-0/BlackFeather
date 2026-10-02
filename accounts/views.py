@@ -77,6 +77,7 @@ def dashboard_view(request):
 
     context = {
         'projects': projects,
+        'unread_count': request.user.notifications.filter(is_read=False).count(),
         'projects_count': projects.count(),
         'tasks_count': tasks.count(),
         'tasks_pending': tasks.filter(status='pending').count(),
@@ -210,15 +211,11 @@ def bio_update(request):
 def search_users(request):
     query = (request.GET.get('q') or '').strip()
 
-    users = User.objects.exclude(pk=request.user.pk).select_related('profile')
-
-    if query:
-        users = users.filter(
-            Q(profile__name__icontains=query) |
-            Q(email__icontains=query)
-        ).distinct()[:10]
-    else:
-        users = users[:10]
+    users = User.objects.none()
+    if '@' in query:
+        users = User.objects.exclude(pk=request.user.pk).filter(
+            email__iexact=query
+        ).select_related('profile')[:1]
 
     results = []
 
