@@ -8,6 +8,13 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+body:has(.project-page) {
+    padding: 0;
+    margin: 0;
+    align-items: stretch;
+    justify-content: flex-start;
+}
+
 body {
     background: #0a0a0a;
     color: #ffffff;
@@ -358,6 +365,14 @@ body {
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    min-height: 0;
+    padding-top: 0;
+}
+
+/* Área interna do projeto ocupa toda a área disponível. */
+.dashboard-main:has(.project-page) {
+    padding: 0;
+    overflow: hidden;
 }
 
 .main-header {
@@ -1575,6 +1590,8 @@ line-height: 1;
     width: 100%;
     height: 100%;
     min-height: 0;
+    margin: 0;
+    padding: 0;
     display: flex;
     flex-direction: column;
     background: #000000;
@@ -1582,13 +1599,12 @@ line-height: 1;
     overflow: hidden;
 }
 
-
-/* ==========================================================
-   HEADER
-   ========================================================== */
+/* HEADER */
 
 .project-header {
+    width: 100%;
     min-height: 70px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1599,57 +1615,89 @@ line-height: 1;
 }
 
 .project-header-left {
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 14px;
+}
+
+.project-title-wrapper {
     min-width: 0;
 }
 
-.project-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-shrink: 0;
+.project-title-wrapper span {
+    display: block;
+    margin-bottom: 3px;
+    color: #666666;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
 }
 
-.project-members-button {
-    width: 36px;
-    height: 36px;
+.project-title-wrapper h1 {
+    margin: 0;
+    color: #ffffff;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-back {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    color: #8c8c8c;
     background: transparent;
     border: 1px solid #222222;
     border-radius: 4px;
-    color: #8c8c8c;
     text-decoration: none;
-    transition: all 0.15s ease;
+    font-size: 18px;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
-.project-members-button:hover {
+.project-back:hover {
     color: #ffffff;
     background: #111111;
     border-color: #333333;
 }
 
-.search-icon {
-    width: 13px;
-    height: 13px;
-    position: relative;
-    display: block;
-    border: 1.5px solid currentColor;
-    border-radius: 50%;
+.project-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
 }
+
+/* ==========================================================
+   PESQUISA
+   ========================================================== */
 
 .project-search {
     display: flex;
     align-items: center;
-    position: relative;
+    gap: 6px;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    transition: width 0.2s ease;
+}
+
+.project-search.open {
+    width: 212px;
 }
 
 .project-search-button {
     width: 36px;
     height: 36px;
+    flex: 0 0 36px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1659,7 +1707,6 @@ line-height: 1;
     border-radius: 4px;
     color: #8c8c8c;
     cursor: pointer;
-    transition: all 0.15s ease;
 }
 
 .project-search-button:hover {
@@ -1671,72 +1718,10 @@ line-height: 1;
 .search-icon {
     width: 12px;
     height: 12px;
+    position: relative;
+    display: block;
     border: 1.5px solid currentColor;
     border-radius: 50%;
-    position: relative;
-}
-
-.search-icon::after {
-    content: "";
-    position: absolute;
-    width: 6px;
-    height: 1.5px;
-    background: currentColor;
-    right: -5px;
-    bottom: -3px;
-    transform: rotate(45deg);
-    transform-origin: left center;
-}
-
-.project-search-input {
-    width: 0;
-    height: 36px;
-    padding: 0;
-    margin-left: 0;
-    opacity: 0;
-    border: 1px solid #222222;
-    border-radius: 4px;
-    outline: none;
-    background: #0d0d0d;
-    color: #ffffff;
-    font-size: 11px;
-    transition:
-        width 0.2s ease,
-        opacity 0.2s ease,
-        margin-left 0.2s ease,
-        padding 0.2s ease;
-}
-
-.project-search.open .project-search-input {
-    width: 170px;
-    padding: 0 10px;
-    margin-left: 6px;
-    opacity: 1;
-}
-
-.project-search-input:focus {
-    border-color: #3a3a3a;
-}
-
-.person-icon {
-    width: 11px;
-    height: 11px;
-    border: 1.5px solid currentColor;
-    border-radius: 50%;
-    position: relative;
-    margin-top: -7px;
-}
-
-.person-icon::after {
-    content: "";
-    position: absolute;
-    width: 17px;
-    height: 9px;
-    left: 50%;
-    bottom: -11px;
-    transform: translateX(-50%);
-    border: 1.5px solid currentColor;
-    border-radius: 9px 9px 5px 5px;
 }
 
 .search-icon::after {
@@ -1752,10 +1737,12 @@ line-height: 1;
 }
 
 .project-search-input {
+    box-sizing: border-box;
     width: 0;
     height: 36px;
+    flex: 0 0 0;
     padding: 0;
-    margin-left: 0;
+    margin: 0;
     opacity: 0;
     border: 1px solid transparent;
     border-radius: 4px;
@@ -1767,15 +1754,15 @@ line-height: 1;
     pointer-events: none;
     transition:
         width 0.2s ease,
-        margin-left 0.2s ease,
-        padding 0.2s ease,
-        opacity 0.2s ease;
+        flex-basis 0.2s ease,
+        opacity 0.2s ease,
+        padding 0.2s ease;
 }
 
 .project-search.open .project-search-input {
     width: 170px;
+    flex-basis: 170px;
     padding: 0 10px;
-    margin-left: 6px;
     opacity: 1;
     border-color: #292929;
     pointer-events: auto;
@@ -1789,10 +1776,7 @@ line-height: 1;
     border-color: #3a3a3a;
 }
 
-
-/* ==========================================================
-   BOTÃO INTEGRANTES
-   ========================================================== */
+/* INTEGRANTES */
 
 .project-members-button {
     width: 36px;
@@ -1806,10 +1790,7 @@ line-height: 1;
     border-radius: 4px;
     color: #8c8c8c;
     text-decoration: none;
-    transition:
-        color 0.15s ease,
-        background 0.15s ease,
-        border-color 0.15s ease;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
 }
 
 .project-members-button:hover {
@@ -1840,10 +1821,7 @@ line-height: 1;
     border-radius: 9px 9px 5px 5px;
 }
 
-
-/* ==========================================================
-   NAVEGAÇÃO
-   ========================================================== */
+/* NAVEGAÇÃO */
 
 .project-navigation {
     width: 100%;
@@ -1855,10 +1833,7 @@ line-height: 1;
     background: #090909;
     border-bottom: 1px solid #1b1b1b;
     overflow: hidden;
-    transition:
-        min-height 0.2s ease,
-        height 0.2s ease,
-        opacity 0.2s ease;
+    transition: min-height 0.2s ease, height 0.2s ease, opacity 0.2s ease;
 }
 
 .project-navigation.collapsed {
@@ -1889,10 +1864,7 @@ line-height: 1;
     transition: color 0.15s ease;
 }
 
-.project-nav-item:hover {
-    color: #ffffff;
-}
-
+.project-nav-item:hover,
 .project-nav-item.active {
     color: #ffffff;
 }
@@ -1907,10 +1879,7 @@ line-height: 1;
     background: #ffffff;
 }
 
-
-/* ==========================================================
-   BOTÃO PARA MINIMIZAR NAVEGAÇÃO
-   ========================================================== */
+/* BOTÃO DA NAVEGAÇÃO */
 
 .project-navigation-toggle {
     width: 30px;
@@ -1931,9 +1900,6 @@ line-height: 1;
     cursor: pointer;
     font-size: 12px;
     line-height: 1;
-    transition:
-        color 0.15s ease,
-        background 0.15s ease;
 }
 
 .project-navigation-toggle:hover {
@@ -1941,16 +1907,13 @@ line-height: 1;
     background: #111111;
 }
 
-
-/* ==========================================================
-   CONTEÚDO
-   ========================================================== */
+/* CONTEÚDO */
 
 .project-content {
     flex: 1;
     min-height: 0;
     width: 100%;
-    padding: 28px 36px;
+    padding: 22px 36px 28px;
     background: #000000;
     overflow: hidden;
 }
@@ -1965,7 +1928,7 @@ line-height: 1;
 
 .project-board-header {
     flex-shrink: 0;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 }
 
 .project-board-header .section-kicker {
@@ -1986,18 +1949,14 @@ line-height: 1;
     font-size: 12px;
 }
 
-
-/* ==========================================================
-   KANBAN
-   ========================================================== */
+/* KANBAN */
 
 .project-kanban-board {
     flex: 1;
     min-height: 0;
     width: 100%;
     display: grid;
-    grid-template-columns:
-        repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
     align-items: stretch;
 }
@@ -2012,20 +1971,12 @@ line-height: 1;
     background: #0b0b0b;
     border: 1px solid #1a1a1a;
     border-radius: 4px;
-    transition:
-        border-color 0.15s ease,
-        background 0.15s ease;
 }
 
 .project-kanban-column.drag-over {
     background: #0e0e0e;
     border-color: #444444;
 }
-
-
-/* ==========================================================
-   CABEÇALHO DA COLUNA
-   ========================================================== */
 
 .project-kanban-column-header {
     flex-shrink: 0;
@@ -2059,11 +2010,6 @@ line-height: 1;
     font-size: 10px;
 }
 
-
-/* ==========================================================
-   ÁREA ROLÁVEL DAS TAREFAS
-   ========================================================== */
-
 .project-kanban-tasks {
     flex: 1;
     min-height: 0;
@@ -2092,11 +2038,6 @@ line-height: 1;
     background: #3a3a3a;
 }
 
-
-/* ==========================================================
-   CARDS DE TAREFA
-   ========================================================== */
-
 .project-kanban-task {
     flex-shrink: 0;
     padding: 12px;
@@ -2104,10 +2045,7 @@ line-height: 1;
     border: 1px solid #1d1d1d;
     border-radius: 3px;
     cursor: grab;
-    transition:
-        background 0.15s ease,
-        border-color 0.15s ease,
-        transform 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
 .project-kanban-task:hover {
@@ -2175,11 +2113,6 @@ line-height: 1;
     white-space: nowrap;
 }
 
-
-/* ==========================================================
-   ESTADO VAZIO
-   ========================================================== */
-
 .project-empty-column {
     min-height: 65px;
     flex-shrink: 0;
@@ -2193,48 +2126,26 @@ line-height: 1;
     letter-spacing: 0.8px;
 }
 
-
-/* ==========================================================
-   RESPONSIVO
-   ========================================================== */
+/* RESPONSIVO */
 
 @media (max-width: 900px) {
-
     .project-content {
-        padding: 24px 20px;
+        padding: 20px;
     }
 
     .project-kanban-board {
-        grid-template-columns:
-            repeat(3, minmax(240px, 1fr));
-
+        grid-template-columns: repeat(3, minmax(240px, 1fr));
         overflow-x: auto;
         overflow-y: hidden;
         padding-bottom: 6px;
     }
 
-    .project-kanban-board::-webkit-scrollbar {
-        height: 5px;
-    }
-
-    .project-kanban-board::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .project-kanban-board::-webkit-scrollbar-thumb {
-        background: #292929;
-        border-radius: 10px;
-    }
-
     .project-kanban-column {
         min-width: 240px;
     }
-
 }
 
-
 @media (max-width: 600px) {
-
     .project-header {
         min-height: 64px;
         padding: 0 16px;
@@ -2245,24 +2156,16 @@ line-height: 1;
         font-size: 17px;
     }
 
-    .project-search.open .project-search-input {
-        position: absolute;
-        right: 44px;
-        width: 150px;
-        margin-left: 0;
-    }
 
     .project-content {
-        padding: 20px 14px;
+        padding: 18px 14px 20px;
     }
 
     .project-kanban-board {
-        grid-template-columns:
-            repeat(3, minmax(220px, 1fr));
+        grid-template-columns: repeat(3, minmax(220px, 1fr));
     }
 
     .project-kanban-column {
         min-width: 220px;
     }
-
 }
