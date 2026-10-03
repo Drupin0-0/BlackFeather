@@ -8,7 +8,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const filterButtons = document.querySelectorAll(".mailbox-filter");
     const selectAll = document.getElementById("select-all-notifications");
     const markAllButton = document.getElementById("mark-all-read");
+    const sortButton = document.getElementById("sort-notifications");
     let currentFilter = "all";
+    let oldestFirst = false;
 
     function getCsrfToken() {
         const token = document.cookie
@@ -67,6 +69,16 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     }
 
+    function sortNotifications() {
+        const rows = Array.from(notificationList.querySelectorAll(".notification-row"));
+        rows.sort((first, second) => {
+            const firstTime = Date.parse(first.dataset.created || "") || 0;
+            const secondTime = Date.parse(second.dataset.created || "") || 0;
+            return oldestFirst ? firstTime - secondTime : secondTime - firstTime;
+        });
+        rows.forEach(row => notificationList.appendChild(row));
+    }
+
     async function markAsRead(notificationId) {
         if (!notificationId) {
             return false;
@@ -120,6 +132,7 @@ document.addEventListener("DOMContentLoaded", function () {
         row.className = `notification-row${isRead ? "" : " is-unread"}`;
         row.dataset.notificationId = notification.id;
         row.dataset.read = isRead ? "true" : "false";
+        row.dataset.created = notification.created_at || new Date().toISOString();
         row.dataset.title = String(notification.title || "Notificação").toLowerCase();
         row.dataset.message = String(description).toLowerCase();
 
@@ -214,6 +227,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
         document.getElementById("empty-mailbox")?.remove();
         notificationList.prepend(createNotificationElement(notification));
+        sortNotifications();
         updateCounts();
         applyFilters();
     }
@@ -227,6 +241,16 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
     searchInput?.addEventListener("input", applyFilters);
+
+    sortButton?.addEventListener("click", function () {
+        oldestFirst = !oldestFirst;
+        const label = sortButton.querySelector("strong");
+        if (label) {
+            label.textContent = oldestFirst ? "Mais antigas" : "Mais recentes";
+        }
+        sortButton.setAttribute("aria-label", `Ordenar por ${oldestFirst ? "mais antigas" : "mais recentes"}`);
+        sortNotifications();
+    });
 
     selectAll?.addEventListener("change", function () {
         document.querySelectorAll(".notification-row").forEach(row => {
@@ -259,7 +283,10 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!actionButton) {
             return;
         }
-        actionButton.disabled = true;
+        const row = actionButton.closest(".notification-row");
+        row.querySelectorAll(".notification-join-action").forEach(button => {
+            button.disabled = true;
+        });
         try {
             const response = await fetch(
                 `/mailbox/join-request/${actionButton.dataset.requestId}/respond/`,
@@ -277,18 +304,28 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!response.ok || !result.success) {
                 throw new Error(result.error || "Não foi possível responder ao convite.");
             }
-            const row = actionButton.closest(".notification-row");
             row.querySelectorAll(".notification-join-action").forEach(button => button.remove());
             const message = row.querySelector(".notification-message");
             if (message) {
                 message.textContent = result.message;
                 row.dataset.message = result.message.toLowerCase();
             }
-            await markAsRead(row.dataset.notificationId);
+            if (!(await markAsRead(row.dataset.notificationId))) {
+                console.warn("Resposta salva, mas não foi possível atualizar o estado de leitura.");
+            }
         } catch (error) {
             console.error("Erro ao responder ao convite:", error);
-            actionButton.disabled = false;
-            window.alert(error.message);
+            row.querySelectorAll(".notification-join-action").forEach(button => {
+                button.disabled = false;
+            });
+            let errorMessage = row.querySelector(".notification-action-error");
+            if (!errorMessage) {
+                errorMessage = document.createElement("span");
+                errorMessage.className = "notification-action-error";
+                errorMessage.setAttribute("role", "alert");
+                row.querySelector(".notification-meta").appendChild(errorMessage);
+            }
+            errorMessage.textContent = error.message;
         }
     });
 
@@ -313,6 +350,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 row.querySelector(".notification-mark-read")?.remove();
             });
             updateCounts();
+            updateEmptyState();
             applyFilters();
         } catch (error) {
             console.error(error);

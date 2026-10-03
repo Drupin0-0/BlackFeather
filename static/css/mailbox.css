@@ -610,6 +610,8 @@
 .notification-join-action:hover { color: #fff; background: #252c34; }
 .notification-join-action.is-reject { color: #ffb4b4; }
 .notification-meta .notification-join-action { align-self: center; }
+.notification-join-action:disabled, .notification-mark-read:disabled { opacity: .55; cursor: wait; }
+.notification-action-error { flex-basis: 100%; color: #ffaaaa; font-size: 11px; text-align: right; }
 
 
 /* ==========================================================

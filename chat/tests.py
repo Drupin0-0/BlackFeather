@@ -37,6 +37,26 @@ class NotificationFlowTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, "Descrição exibida na central")
 
+	def test_pending_join_request_displays_response_buttons_and_sort_control(self):
+		join_request = JoinRequest.objects.create(
+			sender=self.sender,
+			recipient=self.recipient,
+			project=self.project,
+		)
+		Notification.objects.create(
+			user=self.recipient,
+			title="Convite para projeto",
+			description="Convite pendente",
+			join_request=join_request,
+		)
+		self.client.force_login(self.recipient)
+
+		response = self.client.get(reverse("mailbox"))
+
+		self.assertContains(response, "Aceitar")
+		self.assertContains(response, "Recusar")
+		self.assertContains(response, 'id="sort-notifications"')
+
 	def test_join_request_by_email_creates_notification(self):
 		self.client.force_login(self.sender)
 

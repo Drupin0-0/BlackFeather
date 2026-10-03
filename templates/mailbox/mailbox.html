@@ -184,6 +184,7 @@
                         "
                         data-notification-id="{{ notification.id }}"
                         data-read="{{ notification.is_read|yesno:'true,false' }}"
+                        data-created="{{ notification.created_at|date:'c' }}"
                         data-title="{{ notification.title|lower }}"
                         data-message="{{ notification.description|lower }}"
                     >
