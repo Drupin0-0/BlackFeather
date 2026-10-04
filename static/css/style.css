@@ -2338,6 +2338,7 @@ body { overflow-x: hidden; }
     width: 100%;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);   /* adicione esta linha */
     gap: 16px;
     align-items: stretch;
 }
@@ -2349,9 +2350,6 @@ body { overflow-x: hidden; }
     padding: 13px;
     display: flex;
     flex-direction: column;
-    background: #0b0b0b;
-    border: 1px solid #1a1a1a;
-    border-radius: 4px;
 }
 
 .project-kanban-column.drag-over {
@@ -2544,6 +2542,7 @@ body { overflow-x: hidden; }
 
     .project-kanban-board {
         grid-template-columns: repeat(3, minmax(220px, 1fr));
+        min-width: 0;
     }
 
     .project-kanban-column {
@@ -2581,4 +2580,361 @@ body { overflow-x: hidden; }
     font-size: 11px;
     padding: 4px 9px;
     border-radius: 20px;
+}
+
+/* ==========================================================
+   ÁREA DO KANBAN
+   ========================================================== */
+
+.project-kanban-area {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* ==========================================================
+   BOTÃO ADICIONAR TAREFA
+   ========================================================== */
+
+.project-board-actions {
+    position: absolute;
+    top: -38px;
+    right: 0;
+    z-index: 10;
+}
+
+.project-add-task-button {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: #090909;
+    border: 1px solid #222222;
+    color: #8c8c8c;
+    font-size: 20px;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.project-add-task-button:hover {
+    color: #ffffff;
+    background: #111111;
+    border-color: #333333;
+}
+
+/* ==========================================================
+   LISTA DE INTEGRANTES
+   ========================================================== */
+
+.project-header {
+    position: relative;
+    z-index: 20;   /* deixa o dropdown acima da navegação e do quadro */
+}
+
+.project-members {
+    position: relative;
+}
+
+button.project-members-button {
+    padding: 0;
+    cursor: pointer;
+}
+
+.project-members-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    background: #0d0d0d;
+    border: 1px solid #2a2a2a;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+    z-index: 50;
+}
+
+.project-members-dropdown[hidden] {
+    display: none;
+}
+
+/* só esta área rola */
+.project-members-list {
+    list-style: none;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.project-members-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.project-members-list::-webkit-scrollbar-thumb {
+    background: #292929;
+    border-radius: 10px;
+}
+
+.project-member-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+}
+
+.project-member-item:hover {
+    background: #141414;
+}
+
+.project-member-item strong {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.project-member-item span {
+    color: #777777;
+    font-size: 11px;
+}
+
+/* rodapé fixo: fica fora da área que rola */
+.project-members-footer {
+    flex-shrink: 0;
+    border-top: 1px solid #222222;
+    background: #0d0d0d;
+}
+
+.project-members-more {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 18px;
+    color: #a0a0a0;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.project-members-more:hover {
+    color: #ffffff;
+    background: #141414;
+}
+
+/* ==========================================================
+   OPÇÕES DA TAREFA
+   ========================================================== */
+
+.project-task-head {
+    position: relative;
+    min-height: 24px;
+}
+
+/* a tag desliza para a esquerda */
+.project-task-priority {
+    transition: margin-right 0.2s ease;
+}
+
+.project-kanban-task:hover .project-task-priority,
+.project-kanban-task.menu-open .project-task-priority {
+    margin-right: 30px;
+}
+
+/* botão ⋮ (vertical) */
+.project-task-options-button {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #8c8c8c;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%) translateX(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease,
+                color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.project-kanban-task:hover .project-task-options-button,
+.project-kanban-task.menu-open .project-task-options-button {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%) translateX(0);
+}
+
+.project-task-options-button:hover {
+    color: #ffffff;
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+}
+
+/* celular não tem hover: mantém sempre visível */
+@media (hover: none) {
+    .project-task-priority { margin-right: 30px; }
+
+    .project-task-options-button {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(-50%);
+    }
+}
+
+/* popups fixos (não são cortados pela rolagem das colunas) */
+.task-floating {
+    position: fixed;
+    z-index: 1100;
+    background: #0d0d0d;
+    border: 1px solid #2a2a2a;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6);
+}
+
+.task-floating[hidden] {
+    display: none;
+}
+
+/* menu Editar / Excluir */
+.task-menu {
+    width: 130px;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.task-menu-item {
+    padding: 9px 12px;
+    background: transparent;
+    border: 0;
+    color: #e5e5e5;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.task-menu-item:hover {
+    background: #141414;
+}
+
+.task-menu-item.danger {
+    color: #ff5252;
+}
+
+.task-menu-item.danger:hover {
+    background: rgba(255, 82, 82, 0.08);
+}
+
+/* confirmação de exclusão */
+.task-confirm {
+    width: 210px;
+    padding: 12px;
+}
+
+.task-confirm p {
+    margin-bottom: 12px;
+    color: #d4d4d4;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.task-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.task-confirm-btn {
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #e5e5e5;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.task-confirm-btn:hover {
+    background: #141414;
+}
+
+.task-confirm-btn.danger {
+    background: #ff5252;
+    border-color: #ff5252;
+    color: #000000;
+}
+
+.task-confirm-btn.danger:hover {
+    background: #ff6b6b;
+}
+
+.kanban-task .task-head {
+    position: relative;
+}
+
+.kanban-task .task-priority {
+    transition: margin-right 0.2s ease;
+}
+
+.kanban-task:hover .task-priority,
+.kanban-task.menu-open .task-priority {
+    margin-right: 30px;
+}
+
+.task-options-button {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #8c8c8c;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-50%) translateX(6px);
+    transition: opacity 0.2s ease, transform 0.2s ease,
+                color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.kanban-task:hover .task-options-button,
+.kanban-task.menu-open .task-options-button {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(-50%) translateX(0);
+}
+
+.task-options-button:hover {
+    color: #ffffff;
+    background: #1a1a1a;
+    border-color: #2a2a2a;
+}
+
+@media (hover: none) {
+    .kanban-task .task-priority { margin-right: 30px; }
+    .task-options-button {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(-50%);
+    }
 }

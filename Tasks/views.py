@@ -15,6 +15,8 @@ from django.utils import timezone
 from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import redirect
+from django.utils.dateparse import parse_date
+from django.views.decorators.http import require_POST
 
 from .models import Project, Task
 from .serializers import ProjectSerializer, TaskSerializer
@@ -410,6 +412,7 @@ def confirm_task_distribution_view(request, project_id):
         criadas.append(task.pk)
 
     del request.session[session_key]
+    
 
     return JsonResponse({'status': 'success', 'created_task_ids': criadas})
 
@@ -467,6 +470,8 @@ def create_task_view(request):
             deadline=deadline or None,
             task_responsible=project.members.filter(pk=responsible_id).first() if responsible_id else None,
         )
+        if request.POST.get('from_project') == '1':
+                return redirect('project_detail', project_id=project.pk)
 
         return redirect('accounts:dashboard')
 
@@ -576,3 +581,64 @@ def project_detail(request, project_id):
             'kanban_columns': kanban_columns,
         }
     )
+
+def _get_user_task(request, task_id):
+    """Só devolve a tarefa se o usuário for dono ou membro do projeto."""
+    queryset = Task.objects.filter(
+        Q(project__owner=request.user) | Q(project__members=request.user)
+    ).distinct()
+    return get_object_or_404(queryset, pk=task_id)
+
+
+@login_required
+@require_POST
+def delete_task_view(request, task_id):
+    task = _get_user_task(request, task_id)
+    if task.project.owner_id != request.user.id:
+        return JsonResponse({'error': 'Apenas o líder pode excluir.'}, status=403)
+    task.delete()
+    return JsonResponse({'success': True, 'task_id': task_id})
+
+
+@login_required
+@require_POST
+def update_task_view(request, task_id):
+    task = _get_user_task(request, task_id)
+
+    title = request.POST.get('title', '').strip()[:100]
+    if title:
+        task.title = title
+
+    task.description = request.POST.get('description', '').strip() or None
+
+    valid_statuses = {c[0] for c in Task._meta.get_field('status').choices}
+    status = request.POST.get('status')
+    if status in valid_statuses:
+        task.status = status
+
+    valid_priorities = {c[0] for c in Task._meta.get_field('priority').choices}
+    priority = request.POST.get('priority')
+    if priority in valid_priorities:
+        task.priority = priority
+
+    raw_deadline = request.POST.get('deadline', '').strip()
+    if raw_deadline:
+        try:
+            parsed = parse_date(raw_deadline)
+        except ValueError:
+            parsed = None
+        if parsed:
+            task.deadline = parsed
+    else:
+        task.deadline = None
+
+    responsible_id = request.POST.get('task_responsible')
+    task.task_responsible = (
+        task.project.members.filter(pk=responsible_id).first()
+        if responsible_id else None
+    )
+
+    task.save()
+    if request.POST.get('from_dashboard') == '1':
+        return redirect('accounts:dashboard')
+    return redirect('project_detail', project_id=task.project_id)

@@ -12,7 +12,9 @@ from .views import (
     update_task_status_view,
     suggest_project_ai_view,
     suggest_task_distribution_view,      
-    confirm_task_distribution_view,      
+    confirm_task_distribution_view, 
+    update_task_view,
+    delete_task_view   , 
 )
 
 router = DefaultRouter()
@@ -29,5 +31,7 @@ urlpatterns = [
     path('projects/<int:project_id>/', views.project_detail, name='project_detail'),
     path('tarefas/<int:project_id>/sugerir-distribuicao/', suggest_task_distribution_view, name='task_suggest_distribution'),
     path('tarefas/<int:project_id>/confirmar-distribuicao/', confirm_task_distribution_view, name='task_confirm_distribution'),
+    path('tarefas/<int:task_id>/excluir/', delete_task_view, name='task_delete'),
+    path('tarefas/<int:task_id>/editar/',  update_task_view, name='task_update'),
     path('', include(router.urls)),
 ]
