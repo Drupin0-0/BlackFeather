@@ -5,6 +5,7 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Q, Count
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -18,7 +19,7 @@ from django.shortcuts import redirect
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
-from .models import Project, Task
+from .models import Project, ProjectMember, Task
 from .serializers import ProjectSerializer, TaskSerializer
 from accounts.models import UserProfile, Technology
 from chat.models import JoinRequest
@@ -460,6 +461,11 @@ def create_task_view(request):
 
         if project.owner != request.user and request.user not in project.members.all():
             return redirect('accounts:dashboard')
+        if not project.user_can(request.user, 'can_create_tasks'):
+            return JsonResponse(
+                {'error': 'Você não tem permissão para criar tarefas neste projeto.'},
+                status=403,
+            )
 
         Task.objects.create(
             project=project,
@@ -484,6 +490,12 @@ def update_task_status_view(request, task_id):
 
     if task.project.owner != request.user and request.user not in task.project.members.all():
         return JsonResponse({'error': 'Você não tem acesso a esta tarefa.'}, status=403)
+
+    if not task.project.user_can(request.user, 'can_edit_tasks'):
+        return JsonResponse(
+            {'error': 'Você não tem permissão para editar tarefas neste projeto.'},
+            status=403,
+        )
 
     if request.method != 'POST':
         return JsonResponse({'error': 'Método inválido.'}, status=405)
@@ -579,8 +591,278 @@ def project_detail(request, project_id):
         {
             'project': project,
             'kanban_columns': kanban_columns,
+            'can_create': project.user_can(request.user, 'can_create_tasks'),
+            'can_edit': project.user_can(request.user, 'can_edit_tasks'),
+            'can_delete': project.user_can(request.user, 'can_delete_tasks'),
+            'can_manage_settings': project.can_manage_settings(request.user),
         }
     )
+
+
+def _get_user_project(request, project_id):
+    return get_object_or_404(
+        Project.objects.filter(
+            Q(owner=request.user) | Q(members=request.user)
+        ).distinct(),
+        pk=project_id,
+    )
+
+
+def _get_project_member(project, user_id):
+    return get_object_or_404(
+        project.members.exclude(pk=project.owner_id),
+        pk=user_id,
+    )
+
+
+@login_required
+def project_settings_view(request, project_id):
+    project = _get_user_project(request, project_id)
+    if not project.can_manage_settings(request.user):
+        return redirect('project_detail', project_id=project.pk)
+
+    memberships = list(
+        project.memberships
+        .exclude(user_id=project.owner_id)
+        .select_related('user__profile')
+        .order_by('role', 'user__email')
+    )
+    permission_labels = (
+        ('can_create_tasks', 'Permitir criação de tarefas'),
+        ('can_delete_tasks', 'Permitir exclusão de tarefas'),
+        ('can_edit_tasks', 'Permitir edição de tarefas'),
+        ('can_create_boards', 'Criação de novos quadros (em breve, sem efeito por enquanto)'),
+        ('can_invite_members', 'Convidar novos integrantes'),
+    )
+    for membership in memberships:
+        membership.permission_rows = [
+            (permission, label, getattr(membership, permission))
+            for permission, label in permission_labels
+        ]
+    project.default_permission_rows = [
+        (permission, label, getattr(project, f'default_{permission}'))
+        for permission, label in permission_labels
+    ]
+    return render(
+        request,
+        'project_settings.html',
+        {
+            'project': project,
+            'memberships': memberships,
+            'is_boss': project.is_boss(request.user),
+            'role_labels': {
+                'boss': 'Chefe',
+                ProjectMember.Role.LEADER: 'Líder',
+                ProjectMember.Role.MEMBER: 'Integrante',
+            },
+        },
+    )
+
+
+@login_required
+@require_POST
+def update_default_member_permissions_view(request, project_id):
+    project = _get_user_project(request, project_id)
+    if not project.is_boss(request.user):
+        return JsonResponse(
+            {'error': 'Apenas o Chefe pode alterar as permissões padrão deste projeto.'},
+            status=403,
+        )
+
+    permission_values = {}
+    for permission in ProjectMember.PERMISSION_FIELDS:
+        raw_value = request.POST.get(permission)
+        if raw_value not in {'true', 'false', '1', '0', 'on', 'off'}:
+            return JsonResponse(
+                {'error': f'Valor inválido para a permissão {permission}.'},
+                status=400,
+            )
+        permission_values[f'default_{permission}'] = raw_value in {'true', '1', 'on'}
+
+    for permission, value in permission_values.items():
+        setattr(project, permission, value)
+    project.save(update_fields=list(permission_values))
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def remove_member_view(request, project_id, user_id):
+    project = _get_user_project(request, project_id)
+    if not project.is_boss(request.user):
+        return JsonResponse(
+            {'error': 'Apenas o Chefe pode remover integrantes.'},
+            status=403,
+        )
+    if user_id == request.user.pk:
+        return JsonResponse(
+            {'error': 'O Chefe não pode remover a si mesmo.'},
+            status=400,
+        )
+
+    member = _get_project_member(project, user_id)
+    Task.objects.filter(
+        project=project,
+        task_responsible=member,
+    ).update(task_responsible=None)
+    project.members.remove(member)
+    ProjectMember.objects.filter(project=project, user=member).delete()
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def promote_member_view(request, project_id, user_id):
+    project = _get_user_project(request, project_id)
+    if not project.is_boss(request.user):
+        return JsonResponse(
+            {'error': 'Apenas o Chefe pode promover integrantes.'},
+            status=403,
+        )
+
+    member = _get_project_member(project, user_id)
+    membership, _ = ProjectMember.objects.get_or_create(
+        project=project,
+        user=member,
+    )
+    if membership.role == ProjectMember.Role.LEADER:
+        return JsonResponse(
+            {'error': 'Este integrante já é Líder.'},
+            status=400,
+        )
+
+    membership.role = ProjectMember.Role.LEADER
+    membership.save(update_fields=['role'])
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def demote_member_view(request, project_id, user_id):
+    project = _get_user_project(request, project_id)
+    if not project.is_boss(request.user):
+        return JsonResponse(
+            {'error': 'Apenas o Chefe pode rebaixar Líderes.'},
+            status=403,
+        )
+
+    member = _get_project_member(project, user_id)
+    membership = get_object_or_404(
+        ProjectMember,
+        project=project,
+        user=member,
+    )
+    if membership.role != ProjectMember.Role.LEADER:
+        return JsonResponse(
+            {'error': 'Este integrante não é Líder.'},
+            status=400,
+        )
+
+    membership.role = ProjectMember.Role.MEMBER
+    membership.save(update_fields=['role'])
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def update_member_permissions_view(request, project_id, user_id):
+    project = _get_user_project(request, project_id)
+    is_boss = project.is_boss(request.user)
+    if not is_boss and not project.is_leader(request.user):
+        return JsonResponse(
+            {'error': 'Você não pode alterar permissões deste projeto.'},
+            status=403,
+        )
+
+    if user_id == project.owner_id:
+        return JsonResponse(
+            {'error': 'As permissões do Chefe não podem ser alteradas.'},
+            status=403,
+        )
+
+    member = _get_project_member(project, user_id)
+    membership, _ = ProjectMember.objects.get_or_create(
+        project=project,
+        user=member,
+    )
+    if not is_boss and membership.role != ProjectMember.Role.MEMBER:
+        return JsonResponse(
+            {'error': 'Líderes só podem alterar permissões de Integrantes.'},
+            status=403,
+        )
+
+    permission_values = {}
+    for permission in ProjectMember.PERMISSION_FIELDS:
+        raw_value = request.POST.get(permission)
+        if raw_value not in {'true', 'false', '1', '0', 'on', 'off'}:
+            return JsonResponse(
+                {'error': f'Valor inválido para a permissão {permission}.'},
+                status=400,
+            )
+        permission_values[permission] = raw_value in {'true', '1', 'on'}
+
+    for permission, value in permission_values.items():
+        setattr(membership, permission, value)
+    membership.save(update_fields=list(permission_values))
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def transfer_ownership_view(request, project_id):
+    project = _get_user_project(request, project_id)
+    if not project.is_boss(request.user):
+        return JsonResponse(
+            {'error': 'Apenas o Chefe pode transferir a posse do projeto.'},
+            status=403,
+        )
+
+    new_owner_id = request.POST.get('new_owner_id')
+    new_owner = get_object_or_404(
+        project.members.exclude(pk=project.owner_id),
+        pk=new_owner_id,
+    )
+    if request.POST.get('confirmation') != 'on':
+        return JsonResponse(
+            {'error': 'Confirme a transferência de posse.'},
+            status=400,
+        )
+
+    previous_owner = request.user
+    with transaction.atomic():
+        ProjectMember.objects.filter(
+            project=project,
+            user=new_owner,
+        ).delete()
+        project.owner = new_owner
+        project.save(update_fields=['owner'])
+        project.members.add(previous_owner)
+        ProjectMember.objects.update_or_create(
+            project=project,
+            user=previous_owner,
+            defaults={'role': ProjectMember.Role.MEMBER},
+        )
+    return JsonResponse({'success': True})
+
+
+@login_required
+@require_POST
+def delete_project_view(request, project_id):
+    project = _get_user_project(request, project_id)
+    if not project.is_boss(request.user):
+        return JsonResponse(
+            {'error': 'Apenas o Chefe pode excluir o projeto.'},
+            status=403,
+        )
+    if request.POST.get('confirmation') != 'on':
+        return JsonResponse(
+            {'error': 'Confirme a exclusão do projeto.'},
+            status=400,
+        )
+
+    project.delete()
+    return redirect('project_list')
+
 
 def _get_user_task(request, task_id):
     """Só devolve a tarefa se o usuário for dono ou membro do projeto."""
@@ -594,8 +876,11 @@ def _get_user_task(request, task_id):
 @require_POST
 def delete_task_view(request, task_id):
     task = _get_user_task(request, task_id)
-    if task.project.owner_id != request.user.id:
-        return JsonResponse({'error': 'Apenas o líder pode excluir.'}, status=403)
+    if not task.project.user_can(request.user, 'can_delete_tasks'):
+        return JsonResponse(
+            {'error': 'Você não tem permissão para excluir tarefas neste projeto.'},
+            status=403,
+        )
     task.delete()
     return JsonResponse({'success': True, 'task_id': task_id})
 
@@ -604,6 +889,11 @@ def delete_task_view(request, task_id):
 @require_POST
 def update_task_view(request, task_id):
     task = _get_user_task(request, task_id)
+    if not task.project.user_can(request.user, 'can_edit_tasks'):
+        return JsonResponse(
+            {'error': 'Você não tem permissão para editar tarefas neste projeto.'},
+            status=403,
+        )
 
     title = request.POST.get('title', '').strip()[:100]
     if title:

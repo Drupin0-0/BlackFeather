@@ -15,7 +15,7 @@ from .models import Notification
 
 
 
-from Tasks.models import Project
+from Tasks.models import Project, ProjectMember
 
 
 @login_required
@@ -274,6 +274,20 @@ def respond_join_request(request, request_id):
 
         if not project.members.filter(id=accepted_user.id).exists():
             project.members.add(accepted_user)
+
+        if accepted_user.pk != project.owner_id:
+            ProjectMember.objects.get_or_create(
+                project=project,
+                user=accepted_user,
+                defaults={
+                    'role': ProjectMember.Role.MEMBER,
+                    'can_create_tasks': project.default_can_create_tasks,
+                    'can_delete_tasks': project.default_can_delete_tasks,
+                    'can_edit_tasks': project.default_can_edit_tasks,
+                    'can_create_boards': project.default_can_create_boards,
+                    'can_invite_members': project.default_can_invite_members,
+                },
+            )
 
         join_request.status = "accepted"
 

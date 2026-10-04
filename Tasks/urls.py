@@ -33,5 +33,13 @@ urlpatterns = [
     path('tarefas/<int:project_id>/confirmar-distribuicao/', confirm_task_distribution_view, name='task_confirm_distribution'),
     path('tarefas/<int:task_id>/excluir/', delete_task_view, name='task_delete'),
     path('tarefas/<int:task_id>/editar/',  update_task_view, name='task_update'),
+    path('projetos/<int:project_id>/configuracoes/', views.project_settings_view, name='project_settings'),
+    path('projetos/<int:project_id>/membros/<int:user_id>/remover/', views.remove_member_view, name='project_member_remove'),
+    path('projetos/<int:project_id>/membros/<int:user_id>/promover/', views.promote_member_view, name='project_member_promote'),
+    path('projetos/<int:project_id>/membros/<int:user_id>/rebaixar/', views.demote_member_view, name='project_member_demote'),
+    path('projetos/<int:project_id>/membros/<int:user_id>/permissoes/', views.update_member_permissions_view, name='project_member_permissions'),
+    path('projetos/<int:project_id>/permissoes-padrao/', views.update_default_member_permissions_view, name='project_default_member_permissions'),
+    path('projetos/<int:project_id>/transferir-posse/', views.transfer_ownership_view, name='project_transfer_ownership'),
+    path('projetos/<int:project_id>/excluir/', views.delete_project_view, name='project_delete'),
     path('', include(router.urls)),
 ]

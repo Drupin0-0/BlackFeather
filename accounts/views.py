@@ -16,7 +16,7 @@ import secrets
 from .forms import CustomUserCreationForm
 from .services import enviar_email_codigo
 from .models import UserProfile, Technology, CategoryChoices
-from Tasks.models import Project, Task
+from Tasks.models import Project, ProjectMember, Task
 
 User = get_user_model()
 
@@ -55,9 +55,28 @@ class CustomLoginView(LoginView):
 
 @login_required
 def dashboard_view(request):
-    projects = Project.objects.filter(
+    projects = list(Project.objects.filter(
         Q(owner=request.user) | Q(members=request.user)
-    ).select_related('owner__profile').prefetch_related('members__profile').distinct().order_by('-created_at')
+    ).select_related('owner__profile').prefetch_related('members__profile').distinct().order_by('-created_at'))
+    memberships_by_project = {
+        membership.project_id: membership
+        for membership in ProjectMember.objects.filter(
+            project_id__in=[project.pk for project in projects],
+            user=request.user,
+        )
+    }
+    for project in projects:
+        membership = memberships_by_project.get(project.pk)
+        project.can_create_tasks = (
+            project.owner_id == request.user.pk
+            or (
+                membership is not None
+                and (
+                    membership.role == ProjectMember.Role.LEADER
+                    or membership.can_create_tasks
+                )
+            )
+        )
 
     tasks = Task.objects.filter(
         Q(project__owner=request.user) | Q(project__members=request.user)
@@ -66,20 +85,34 @@ def dashboard_view(request):
         'task_responsible',
         'task_responsible__profile'
     ).distinct().order_by('-created_at')
+    task_items = list(tasks)
+    for task in task_items:
+        membership = memberships_by_project.get(task.project_id)
+        is_leader = (
+            membership is not None
+            and membership.role == ProjectMember.Role.LEADER
+        )
+        is_boss = task.project.owner_id == request.user.pk
+        task.can_edit = is_boss or is_leader or (
+            membership is not None and membership.can_edit_tasks
+        )
+        task.can_delete = is_boss or is_leader or (
+            membership is not None and membership.can_delete_tasks
+        )
 
     today = timezone.localdate()
     yesterday = today - timezone.timedelta(days=1)
 
     statuses = [
-        {'key': 'pending', 'label': 'Pendente', 'tasks': tasks.filter(status='pending').order_by('-created_at')},
-        {'key': 'in_progress', 'label': 'Em andamento', 'tasks': tasks.filter(status='in_progress').order_by('-created_at')},
-        {'key': 'completed', 'label': 'Concluída', 'tasks': tasks.filter(status='completed').order_by('-created_at')},
+        {'key': 'pending', 'label': 'Pendente', 'tasks': [task for task in task_items if task.status == 'pending']},
+        {'key': 'in_progress', 'label': 'Em andamento', 'tasks': [task for task in task_items if task.status == 'in_progress']},
+        {'key': 'completed', 'label': 'Concluída', 'tasks': [task for task in task_items if task.status == 'completed']},
     ]
 
     context = {
         'projects': projects,
         'unread_count': request.user.notifications.filter(is_read=False).count(),
-        'projects_count': projects.count(),
+        'projects_count': len(projects),
         'tasks_count': tasks.count(),
         'tasks_pending': tasks.filter(status='pending').count(),
         'tasks_in_progress': tasks.filter(status='in_progress').count(),
@@ -87,6 +120,7 @@ def dashboard_view(request):
         'tasks_today': tasks.filter(created_at__date=today).count(),
         'tasks_yesterday': tasks.filter(created_at__date=yesterday).count(),
         'kanban_columns': statuses,
+        'can_create_any_task': any(project.can_create_tasks for project in projects),
     }
 
     return render(request, 'dashboard.html', context)

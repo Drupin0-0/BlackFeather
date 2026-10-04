@@ -191,6 +191,7 @@
 
                 <div class="toolbar-actions">
 
+                    {% if can_create_any_task %}
                     <button
                         type="button"
                         class="btn-primary btn-small"
@@ -198,6 +199,7 @@
                     >
                         + Nova tarefa
                     </button>
+                    {% endif %}
 
 
                     <a
@@ -238,7 +240,8 @@
                     data-deadline="{{ task.deadline|date:'Y-m-d' }}"
                     data-responsible="{{ task.task_responsible_id|default_if_none:'' }}"
                     data-project-id="{{ task.project_id }}"
-                    data-can-delete="{% if task.project.owner_id == user.pk %}1{% else %}0{% endif %}"
+                    data-can-edit="{% if task.can_edit %}1{% else %}0{% endif %}"
+                    data-can-delete="{% if task.can_delete %}1{% else %}0{% endif %}"
                     draggable="true"
                 >
 
@@ -249,6 +252,7 @@
                             {{ task.get_priority_display }}
                         </span>
 
+                        {% if task.can_edit or task.can_delete %}
                         <button type="button" class="task-options-button"
                                 title="Opções" aria-label="Opções da tarefa" aria-haspopup="true">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -257,6 +261,7 @@
                                 <circle cx="12" cy="19" r="2"></circle>
                             </svg>
                         </button>
+                        {% endif %}
                     </div>
 
                     <h4>{{ task.title }}</h4>
@@ -495,7 +500,7 @@
 </div>
 
 <div class="task-floating task-menu" id="taskMenu" hidden>
-    <button type="button" class="task-menu-item" data-action="edit">Editar</button>
+    <button type="button" class="task-menu-item" id="taskMenuEdit" data-action="edit">Editar</button>
     <button type="button" class="task-menu-item danger" id="taskMenuDelete" data-action="delete">Excluir</button>
 </div>
 
@@ -571,9 +576,11 @@
 
                         {% for project in projects %}
 
+                            {% if project.can_create_tasks %}
                             <option value="{{ project.pk }}">
                                 {{ project.title }}
                             </option>
+                            {% endif %}
 
                         {% endfor %}
 
@@ -1567,18 +1574,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const createAction = taskForm.getAttribute('action');
 
     const taskMenu       = document.getElementById('taskMenu');
+    const taskMenuEdit   = document.getElementById('taskMenuEdit');
     const taskMenuDelete = document.getElementById('taskMenuDelete');
     const taskConfirm    = document.getElementById('taskConfirm');
     let activeCard = null;
 
     // "+ Nova tarefa" sempre volta o modal ao modo de criação
-    openBtn.addEventListener('click', function () {
-        taskForm.reset();
-        taskForm.setAttribute('action', createAction);
-        projectSelect.disabled = false;
-        modalTitle.textContent  = 'Nova tarefa';
-        modalSubmit.textContent = 'Salvar tarefa';
-    });
+    if (openBtn) {
+        openBtn.addEventListener('click', function () {
+            taskForm.reset();
+            taskForm.setAttribute('action', createAction);
+            projectSelect.disabled = false;
+            modalTitle.textContent  = 'Nova tarefa';
+            modalSubmit.textContent = 'Salvar tarefa';
+        });
+    }
 
     function openEditModal(card) {
         taskForm.setAttribute('action', '/tarefas/' + card.dataset.taskId + '/editar/');
@@ -1640,7 +1650,7 @@ document.addEventListener('DOMContentLoaded', function () {
             activeCard = card;
             card.classList.add('menu-open');
 
-            // só o líder vê "Excluir"
+            taskMenuEdit.hidden = card.dataset.canEdit !== '1';
             taskMenuDelete.hidden = card.dataset.canDelete !== '1';
 
             placeBelow(taskMenu, button);

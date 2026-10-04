@@ -104,6 +104,30 @@
 
 </div>
 
+            {% if can_manage_settings %}
+            <a
+                href="{% url 'project_settings' project.pk %}"
+                class="project-members-button"
+                title="Configurações do projeto"
+                aria-label="Configurações do projeto"
+            >
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                >
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-1.7 2.94-.08-.03a1.65 1.65 0 0 0-1.78.33l-.06.06h-3.4l-.02-.09a1.65 1.65 0 0 0-1.2-1.2l-.09-.02-2.94 1.7-.06-.08a1.65 1.65 0 0 0-1.82-.33l-.06.03-2.94-1.7.03-.08a1.65 1.65 0 0 0-.33-1.78l-.06-.06v-3.4l.09-.02a1.65 1.65 0 0 0 1.2-1.2l.02-.09-1.7-2.94.08-.06a1.65 1.65 0 0 0 .33-1.82l-.03-.06 1.7-2.94.08.03a1.65 1.65 0 0 0 1.78-.33l.06-.06h3.4l.02.09a1.65 1.65 0 0 0 1.2 1.2l.09.02 2.94-1.7.06.08a1.65 1.65 0 0 0 1.82.33l.06-.03 2.94 1.7-.03.08a1.65 1.65 0 0 0 .33 1.78l.06.06v3.4l-.09.02a1.65 1.65 0 0 0-1.2 1.2l-.02.09z"></path>
+                </svg>
+            </a>
+            {% endif %}
+
     </header>
 
 
@@ -156,6 +180,7 @@
             <div class="project-kanban-area">
 
                 <div class="project-board-actions">
+                    {% if can_create %}
                     <button
                         type="button"
                         class="project-add-task-button"
@@ -165,6 +190,7 @@
                     >
                         +
                     </button>
+                    {% endif %}
                 </div>
 
                 <div class="project-kanban-board">
@@ -190,6 +216,8 @@
     data-priority="{{ task.priority }}"
     data-deadline="{{ task.deadline|date:'Y-m-d' }}"
     data-responsible="{{ task.task_responsible_id|default_if_none:'' }}"
+    data-can-edit="{% if can_edit %}1{% else %}0{% endif %}"
+    data-can-delete="{% if can_delete %}1{% else %}0{% endif %}"
     draggable="true"
 >
     <div class="project-task-head">
@@ -197,6 +225,7 @@
             {{ task.get_priority_display }}
         </span>
 
+        {% if can_edit or can_delete %}
         <button
             type="button"
             class="project-task-options-button"
@@ -210,6 +239,7 @@
                 <circle cx="12" cy="19" r="2"></circle>
             </svg>
         </button>
+        {% endif %}
     </div>
 
 
@@ -248,8 +278,8 @@
 </div> <!-- fecha .project-page -->
 
 <div class="task-floating task-menu" id="taskMenu" hidden>
-    <button type="button" class="task-menu-item" data-action="edit">Editar</button>
-    <button type="button" class="task-menu-item danger" data-action="delete">Excluir</button>
+    <button type="button" class="task-menu-item" data-action="edit" id="taskMenuEdit">Editar</button>
+    <button type="button" class="task-menu-item danger" data-action="delete" id="taskMenuDelete">Excluir</button>
 </div>
 
 <div class="task-floating task-confirm" id="taskConfirm" hidden>
@@ -571,6 +601,8 @@ document.addEventListener('DOMContentLoaded', function () {
        ========================================================== */
 
     const taskMenu    = document.getElementById('taskMenu');
+    const taskMenuEdit = document.getElementById('taskMenuEdit');
+    const taskMenuDelete = document.getElementById('taskMenuDelete');
     const taskConfirm = document.getElementById('taskConfirm');
     let activeCard = null;
 
@@ -614,6 +646,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             activeCard = card;
             card.classList.add('menu-open');
+            taskMenuEdit.hidden = card.dataset.canEdit !== '1';
+            taskMenuDelete.hidden = card.dataset.canDelete !== '1';
             placeBelow(taskMenu, button);
         });
     });

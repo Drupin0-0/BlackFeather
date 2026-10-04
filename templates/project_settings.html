@@ -1,0 +1,420 @@
+{% extends 'base.html' %}
+
+{% block title %}Configurações de {{ project.title }} - Sincrow{% endblock %}
+
+{% block content %}
+<main class="dashboard-main settings-page project-settings-page">
+        <header class="main-header">
+            <div class="settings-title">
+                <span class="settings-label">PROJETO · {{ project.title }}</span>
+                <h1>Configurações</h1>
+            </div>
+            <a href="{% url 'project_detail' project.pk %}" class="settings-button project-settings-back">Voltar ao projeto</a>
+        </header>
+
+        <div class="settings-content">
+            <p class="project-settings-intro">Gerencie integrantes, cargos e permissões deste projeto.</p>
+
+            <p id="settingsFeedback" role="status" aria-live="polite" hidden></p>
+
+            <section class="settings-group" aria-labelledby="settingsMembersTitle">
+                <div class="settings-group-header">
+                    <span>PROJETO</span>
+                    <h2 id="settingsMembersTitle">Integrantes</h2>
+                </div>
+                <div class="settings-card settings-members-card">
+                    <div class="settings-item project-member-item">
+                        <div class="settings-item-text project-member-identity">
+                            {% if project.owner.profile.avatar %}
+                                <img
+                                    src="{{ project.owner.profile.avatar.url }}"
+                                    alt=""
+                                    width="40"
+                                    height="40"
+                                    style="width: 40px; height: 40px; object-fit: cover; border-radius: 50% !important;"
+                                >
+                            {% else %}
+                                <span aria-hidden="true" style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #343b45; border-radius: 50% !important;">
+                                    {{ project.owner.profile.name|default:project.owner.email|first|upper }}
+                                </span>
+                            {% endif %}
+                            <span class="project-member-copy">
+                                <strong>{{ project.owner.profile.name|default:project.owner.email }}</strong>
+                                <span>{{ role_labels.boss }}</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    {% for membership in memberships %}
+                        <div class="settings-item project-member-item" data-membership-user="{{ membership.user_id }}">
+                            <div class="settings-item-text project-member-identity">
+                                {% if membership.user.profile.avatar %}
+                                    <img
+                                        src="{{ membership.user.profile.avatar.url }}"
+                                        alt=""
+                                        width="40"
+                                        height="40"
+                                        style="width: 40px; height: 40px; object-fit: cover; border-radius: 50% !important;"
+                                    >
+                                {% else %}
+                                    <span aria-hidden="true" style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #343b45; border-radius: 50% !important;">
+                                        {{ membership.user.profile.name|default:membership.user.email|first|upper }}
+                                    </span>
+                                {% endif %}
+                                <span class="project-member-copy">
+                                    <strong>{{ membership.user.profile.name|default:membership.user.email }}</strong>
+                                    <span>{{ membership.get_role_display }}</span>
+                                </span>
+                            </div>
+
+                            {% if is_boss %}
+                                <div class="project-member-actions">
+                                    {% if membership.role == 'member' %}
+                                        <button
+                                            type="button"
+                                            class="settings-button"
+                                            data-member-action
+                                            data-url="{% url 'project_member_promote' project.pk membership.user_id %}"
+                                        >Promover a Líder</button>
+                                    {% else %}
+                                        <button
+                                            type="button"
+                                            class="settings-button"
+                                            data-member-action
+                                            data-url="{% url 'project_member_demote' project.pk membership.user_id %}"
+                                        >Rebaixar</button>
+                                    {% endif %}
+                                    <button
+                                        type="button"
+                                        class="settings-button"
+                                        data-member-action
+                                        data-remove-member
+                                        data-url="{% url 'project_member_remove' project.pk membership.user_id %}"
+                                    >Remover</button>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="settings-group" aria-labelledby="settingsPermissionsTitle">
+                <div class="settings-group-header">
+                    <span>ACESSO</span>
+                    <h2 id="settingsPermissionsTitle">Permissões dos integrantes</h2>
+                    <p>As alterações são salvas automaticamente.</p>
+                </div>
+                <div class="settings-card">
+
+                {% for membership in memberships %}
+                    <div
+                        class="settings-item project-permission-item"
+                        data-permission-row
+                        data-editable="{% if is_boss or membership.role == 'member' %}1{% else %}0{% endif %}"
+                        data-url="{% url 'project_member_permissions' project.pk membership.user_id %}"
+                    >
+                        <div class="project-permission-content">
+                            <div class="settings-item-text">
+                                <h3>{{ membership.user.profile.name|default:membership.user.email }}</h3>
+                                <p>{{ membership.get_role_display }}</p>
+                            </div>
+                            <div class="project-permission-list">
+                                {% for permission, label, enabled in membership.permission_rows %}
+                                    <div class="project-permission-setting">
+                                        <span>{{ label }}</span>
+                                        <button
+                                            type="button"
+                                            class="permission-toggle{% if enabled %} is-active{% endif %}"
+                                            data-permission="{{ permission }}"
+                                            data-enabled="{% if enabled %}true{% else %}false{% endif %}"
+                                            aria-label="{{ label }}"
+                                            aria-pressed="{{ enabled|yesno:'true,false' }}"
+                                            {% if not is_boss and membership.role == 'leader' %}disabled{% endif %}
+                                        >
+                                            <span class="permission-toggle-knob"></span>
+                                        </button>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            <span class="project-permission-feedback" data-row-feedback role="status" aria-live="polite"></span>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div
+                        class="settings-item project-permission-item"
+                        data-permission-row
+                        data-editable="{% if is_boss %}1{% else %}0{% endif %}"
+                        data-url="{% url 'project_default_member_permissions' project.pk %}"
+                        data-empty-permissions
+                    >
+                        <div class="project-permission-content">
+                            <div class="settings-item-text">
+                                <h3>Permissões padrão para novos integrantes</h3>
+                            </div>
+                            <div class="project-permission-list">
+                                {% for permission, label, enabled in project.default_permission_rows %}
+                                    <div class="project-permission-setting">
+                                        <span>{{ label }}</span>
+                                        <button
+                                            type="button"
+                                            class="permission-toggle{% if enabled %} is-active{% endif %}"
+                                            data-permission="{{ permission }}"
+                                            data-enabled="{{ enabled|yesno:'true,false' }}"
+                                            aria-label="{{ label }}"
+                                            aria-pressed="{{ enabled|yesno:'true,false' }}"
+                                            {% if not is_boss %}disabled{% endif %}
+                                        >
+                                            <span class="permission-toggle-knob"></span>
+                                        </button>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <span class="project-permission-feedback" data-row-feedback role="status" aria-live="polite"></span>
+                    </div>
+                {% endfor %}
+                </div>
+            </section>
+
+            {% if is_boss %}
+                <section class="settings-group settings-danger" aria-labelledby="settingsDangerTitle">
+                    <div class="settings-group-header">
+                        <span>ZONA DE PERIGO</span>
+                        <h2 id="settingsDangerTitle">Ações irreversíveis</h2>
+                    </div>
+                    <div class="settings-card settings-danger-card">
+                        <div class="settings-item project-danger-item">
+                            <div class="settings-item-text">
+                                <h3>Transferir posse</h3>
+                                <p>O Chefe atual passará a ser Integrante.</p>
+                            </div>
+                            <form
+                                id="transferOwnershipForm"
+                                data-url="{% url 'project_transfer_ownership' project.pk %}"
+                                data-project-list-url="{% url 'project_list' %}"
+                            >
+                                {% csrf_token %}
+                                <select id="newOwner" name="new_owner_id" required aria-label="Selecione o novo Chefe">
+                                    <option value="">Selecione o novo Chefe</option>
+                                    {% for member in project.members.all %}
+                                        {% if member.pk != project.owner_id %}
+                                            <option value="{{ member.pk }}">{{ member.profile.name|default:member.email }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="settings-button">Transferir posse</button>
+                                <span data-form-feedback role="status" aria-live="polite"></span>
+                            </form>
+                        </div>
+                        <div class="settings-line"></div>
+                        <div class="settings-item project-danger-item">
+                            <div class="settings-item-text">
+                                <h3>Excluir projeto</h3>
+                                <p>Esta ação é permanente e não pode ser desfeita.</p>
+                            </div>
+                            <form
+                                id="deleteProjectForm"
+                                data-url="{% url 'project_delete' project.pk %}"
+                                data-project-list-url="{% url 'project_list' %}"
+                            >
+                                {% csrf_token %}
+                                <button type="submit" class="settings-delete-button">Excluir projeto</button>
+                                <span data-form-feedback role="status" aria-live="polite"></span>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+            {% endif %}
+        </div>
+    </main>
+
+<form id="settingsCsrfForm" hidden>{% csrf_token %}</form>
+
+<div
+    class="project-confirm-overlay"
+    id="deleteProjectDialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="deleteProjectDialogTitle"
+    hidden
+>
+    <div class="project-confirm-dialog">
+        <h2 id="deleteProjectDialogTitle">Excluir projeto</h2>
+        <p>Deseja mesmo excluir o projeto? Esta ação é permanente e não pode ser desfeita.</p>
+        <div class="project-confirm-actions">
+            <button type="button" class="settings-button" id="cancelProjectDeletion">Cancelar</button>
+            <button type="button" class="settings-delete-button" id="confirmProjectDeletion">Excluir projeto</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const csrfToken = document.querySelector(
+        '#settingsCsrfForm [name=csrfmiddlewaretoken]'
+    ).value;
+    const pageFeedback = document.getElementById('settingsFeedback');
+
+    async function postForm(url, data) {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: data,
+            credentials: 'same-origin'
+        });
+
+        const contentType = response.headers.get('content-type') || '';
+        const result = contentType.includes('application/json')
+            ? await response.json()
+            : {};
+        if (!response.ok) {
+            throw new Error(result.error || 'Não foi possível salvar a alteração.');
+        }
+        return {response: response, result: result};
+    }
+
+    document.querySelectorAll('[data-member-action]').forEach(function (button) {
+        button.addEventListener('click', async function () {
+            if (
+                button.hasAttribute('data-remove-member')
+                && !window.confirm('Deseja remover este integrante?')
+            ) {
+                return;
+            }
+            button.disabled = true;
+            try {
+                await postForm(button.dataset.url, new FormData());
+                window.location.reload();
+            } catch (error) {
+                pageFeedback.textContent = error.message;
+                pageFeedback.hidden = false;
+                button.disabled = false;
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-permission-row]').forEach(function (row) {
+        row.querySelectorAll('[data-permission]').forEach(function (toggle) {
+            toggle.addEventListener('click', async function () {
+                if (row.dataset.editable !== '1' || row.dataset.saving === '1') {
+                    return;
+                }
+                row.dataset.saving = '1';
+                const previousValue = toggle.dataset.enabled === 'true';
+                const nextValue = !previousValue;
+                toggle.dataset.enabled = String(nextValue);
+                toggle.setAttribute('aria-pressed', String(nextValue));
+                toggle.classList.toggle('is-active', nextValue);
+                const payload = new FormData();
+                row.querySelectorAll('[data-permission]').forEach(function (permissionToggle) {
+                    const value = permissionToggle === toggle
+                        ? nextValue
+                        : permissionToggle.dataset.enabled === 'true';
+                    payload.set(permissionToggle.dataset.permission, String(value));
+                });
+                const feedback = row.querySelector('[data-row-feedback]');
+                row.querySelectorAll('[data-permission]').forEach(function (toggle) {
+                    toggle.disabled = true;
+                });
+                feedback.textContent = 'Salvando...';
+
+                try {
+                    await postForm(row.dataset.url, payload);
+                    feedback.textContent = 'Permissões salvas.';
+                } catch (error) {
+                    toggle.dataset.enabled = String(previousValue);
+                    toggle.setAttribute('aria-pressed', String(previousValue));
+                    toggle.classList.toggle('is-active', previousValue);
+                    feedback.textContent = error.message;
+                } finally {
+                    row.dataset.saving = '0';
+                    row.querySelectorAll('[data-permission]').forEach(function (toggle) {
+                        toggle.disabled = row.dataset.editable !== '1';
+                    });
+                }
+            });
+        });
+    });
+
+    const transferForm = document.getElementById('transferOwnershipForm');
+    if (transferForm) {
+        transferForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const feedback = transferForm.querySelector('[data-form-feedback]');
+            if (!window.confirm('Deseja transferir a posse deste projeto?')) {
+                return;
+            }
+            const submitButton = transferForm.querySelector('[type=submit]');
+            submitButton.disabled = true;
+            feedback.textContent = 'Transferindo posse...';
+            try {
+                const payload = new FormData(transferForm);
+                payload.set('confirmation', 'on');
+                await postForm(transferForm.dataset.url, payload);
+                window.location.href = transferForm.dataset.projectListUrl;
+            } catch (error) {
+                feedback.textContent = error.message;
+                submitButton.disabled = false;
+            }
+        });
+    }
+
+    const deleteForm = document.getElementById('deleteProjectForm');
+    if (deleteForm) {
+        const deleteDialog = document.getElementById('deleteProjectDialog');
+        const confirmDeleteButton = document.getElementById('confirmProjectDeletion');
+        const cancelDeleteButton = document.getElementById('cancelProjectDeletion');
+
+        deleteForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            deleteDialog.hidden = false;
+            confirmDeleteButton.focus();
+        });
+
+        cancelDeleteButton.addEventListener('click', function () {
+            deleteDialog.hidden = true;
+            deleteForm.querySelector('[type=submit]').focus();
+        });
+
+        deleteDialog.addEventListener('click', function (event) {
+            if (event.target === deleteDialog) {
+                deleteDialog.hidden = true;
+                deleteForm.querySelector('[type=submit]').focus();
+            }
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && !deleteDialog.hidden) {
+                deleteDialog.hidden = true;
+                deleteForm.querySelector('[type=submit]').focus();
+            }
+        });
+
+        confirmDeleteButton.addEventListener('click', async function () {
+            const feedback = deleteForm.querySelector('[data-form-feedback]');
+            const submitButton = deleteForm.querySelector('[type=submit]');
+            submitButton.disabled = true;
+            confirmDeleteButton.disabled = true;
+            feedback.textContent = 'Excluindo projeto...';
+            try {
+                const payload = new FormData(deleteForm);
+                payload.set('confirmation', 'on');
+                const {response: result} = await postForm(
+                    deleteForm.dataset.url,
+                    payload
+                );
+                window.location.href = result.url || deleteForm.dataset.projectListUrl;
+            } catch (error) {
+                feedback.textContent = error.message;
+                submitButton.disabled = false;
+                confirmDeleteButton.disabled = false;
+                deleteDialog.hidden = true;
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

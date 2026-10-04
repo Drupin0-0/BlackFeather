@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from Tasks.models import Project
+from Tasks.models import Project, ProjectMember
 from .models import JoinRequest, Notification
 
 
@@ -96,6 +96,12 @@ class NotificationFlowTests(TestCase):
 		)
 
 	def test_project_owner_acceptance_adds_user_who_requested_by_code(self):
+		self.project.default_can_create_tasks = False
+		self.project.default_can_delete_tasks = True
+		self.project.save(update_fields=[
+			"default_can_create_tasks",
+			"default_can_delete_tasks",
+		])
 		join_request = JoinRequest.objects.create(
 			sender=self.recipient,
 			recipient=self.sender,
@@ -117,6 +123,19 @@ class NotificationFlowTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertTrue(self.project.members.filter(pk=self.recipient.pk).exists())
+		self.assertTrue(
+			ProjectMember.objects.filter(
+				project=self.project,
+				user=self.recipient,
+				role=ProjectMember.Role.MEMBER,
+			).exists()
+		)
+		membership = ProjectMember.objects.get(
+			project=self.project,
+			user=self.recipient,
+		)
+		self.assertFalse(membership.can_create_tasks)
+		self.assertTrue(membership.can_delete_tasks)
 		self.assertTrue(
 			Notification.objects.filter(
 				user=self.recipient,
