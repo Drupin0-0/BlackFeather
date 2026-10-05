@@ -211,3 +211,82 @@ class Task(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class TaskHistory(models.Model):
+    class Action(models.TextChoices):
+        CREATED = 'created', 'Criada'
+        UPDATED = 'updated', 'Atualizada'
+        DELETED = 'deleted', 'Excluída'
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='history',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='task_history',
+    )
+    action = models.CharField(
+        max_length=20,
+        choices=Action.choices,
+        default=Action.UPDATED,
+    )
+    task_title = models.CharField(max_length=100)
+    task_id = models.IntegerField(null=True, blank=True)
+    changes = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [models.Index(fields=['project', '-created_at'])]
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.project.title} - {self.action}'
+
+
+def record_task_history(project, user=None, action='updated', task=None, task_title=None, changes=None, task_id=None):
+    if not project:
+        return None
+
+    if task is not None:
+        project = task.project
+        task_id = task.pk if task_id is None else task_id
+        task_title = task.title if task_title is None else task_title
+
+    if not task_title:
+        task_title = (task.title if task else '')[:100]
+
+    if changes is None:
+        changes = []
+    if not isinstance(changes, list):
+        changes = []
+    if not changes:
+        return None
+
+    normalized = []
+    for change in changes:
+        if not isinstance(change, dict):
+            continue
+        normalized.append({
+            'field': change.get('field') or 'field',
+            'label': change.get('label') or change.get('field') or 'campo',
+            'from': change.get('from'),
+            'to': change.get('to'),
+        })
+
+    if not normalized:
+        return None
+
+    return TaskHistory.objects.create(
+        project=project,
+        user=user,
+        action=action,
+        task_title=task_title[:100],
+        task_id=task_id,
+        changes=normalized,
+    )

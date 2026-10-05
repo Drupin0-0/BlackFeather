@@ -19,7 +19,7 @@ from django.shortcuts import redirect
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
-from .models import Project, ProjectMember, Task
+from .models import Project, ProjectMember, Task, TaskHistory, record_task_history
 from .serializers import ProjectSerializer, TaskSerializer
 from accounts.models import UserProfile, Technology
 from chat.models import JoinRequest
@@ -467,7 +467,7 @@ def create_task_view(request):
                 status=403,
             )
 
-        Task.objects.create(
+        task = Task.objects.create(
             project=project,
             title=title,
             description=description or '',
@@ -475,6 +475,18 @@ def create_task_view(request):
             priority=priority,
             deadline=deadline or None,
             task_responsible=project.members.filter(pk=responsible_id).first() if responsible_id else None,
+        )
+        record_task_history(
+            project=project,
+            user=request.user,
+            action='created',
+            task=task,
+            changes=[{
+                'field': 'title',
+                'label': 'Tarefa',
+                'from': None,
+                'to': title,
+            }],
         )
         if request.POST.get('from_project') == '1':
                 return redirect('project_detail', project_id=project.pk)
@@ -506,8 +518,23 @@ def update_task_status_view(request, task_id):
     if status not in valid_statuses:
         return JsonResponse({'error': 'Status inválido.'}, status=400)
 
+    previous_status = task.status
     task.status = status
     task.save(update_fields=['status', 'updated_at'])
+
+    if previous_status != status:
+        record_task_history(
+            project=task.project,
+            user=request.user,
+            action='updated',
+            task=task,
+            changes=[{
+                'field': 'status',
+                'label': 'Status',
+                'from': previous_status,
+                'to': status,
+            }],
+        )
 
     return JsonResponse({'success': True, 'task_id': task.pk, 'status': task.status})
 
@@ -595,8 +622,148 @@ def project_detail(request, project_id):
             'can_edit': project.user_can(request.user, 'can_edit_tasks'),
             'can_delete': project.user_can(request.user, 'can_delete_tasks'),
             'can_manage_settings': project.can_manage_settings(request.user),
+            'active_tab': 'board',
         }
     )
+
+
+@login_required
+def project_summary_view(request, project_id):
+    project = get_object_or_404(
+        Project.objects.select_related('owner', 'owner__profile'),
+        pk=project_id,
+    )
+    if request.user != project.owner and not project.members.filter(pk=request.user.pk).exists():
+        return redirect('project_list')
+
+    return render(
+        request,
+        'project_summary.html',
+        {
+            'project': project,
+            'can_create': project.user_can(request.user, 'can_create_tasks'),
+            'can_edit': project.user_can(request.user, 'can_edit_tasks'),
+            'can_delete': project.user_can(request.user, 'can_delete_tasks'),
+            'can_manage_settings': project.can_manage_settings(request.user),
+            'active_tab': 'summary',
+            'summary_initial_data': {
+                'projectId': project.pk,
+                'userId': request.user.pk,
+            },
+        },
+    )
+
+
+@login_required
+def project_summary_chart_view(request, project_id):
+    project = _get_user_project(request, project_id)
+    start_raw = request.GET.get('inicio') or request.GET.get('start')
+    end_raw = request.GET.get('fim') or request.GET.get('end')
+    if not start_raw or not end_raw:
+        end_date = timezone.localdate()
+        start_date = end_date - timezone.timedelta(days=29)
+    else:
+        try:
+            start_date = parse_date(start_raw)
+            end_date = parse_date(end_raw)
+        except ValueError:
+            start_date = None
+            end_date = None
+        if start_date is None or end_date is None or start_date > end_date:
+            end_date = timezone.localdate()
+            start_date = end_date - timezone.timedelta(days=29)
+
+    if (end_date - start_date).days > 365:
+        start_date = end_date - timezone.timedelta(days=365)
+
+    tasks = Task.objects.filter(project=project)
+    period_tasks = tasks.filter(
+        created_at__date__gte=start_date,
+        created_at__date__lte=end_date,
+    )
+    created_in_period = period_tasks.count()
+
+    totals = {
+        'pending': period_tasks.filter(status='pending').count(),
+        'in_progress': period_tasks.filter(status='in_progress').count(),
+        'completed': period_tasks.filter(status='completed').count(),
+        'created_in_period': created_in_period,
+    }
+
+    series = []
+    current = start_date
+    while current <= end_date:
+        current_date = current.isoformat()
+        day_tasks = period_tasks.filter(created_at__date=current)
+        series.append({
+            'date': current_date,
+            'pending': day_tasks.filter(status='pending').count(),
+            'in_progress': day_tasks.filter(status='in_progress').count(),
+            'completed': day_tasks.filter(status='completed').count(),
+        })
+        current += timezone.timedelta(days=1)
+
+    return JsonResponse({
+        'success': True,
+        'period': {'start': start_date.isoformat(), 'end': end_date.isoformat()},
+        'totals': totals,
+        'series': series,
+        'first_task_date': tasks.order_by('created_at').values_list('created_at__date', flat=True).first() or start_date.isoformat(),
+    })
+
+
+@login_required
+def project_summary_history_view(request, project_id):
+    project = _get_user_project(request, project_id)
+    offset = int(request.GET.get('offset', '0') or 0)
+    limit = int(request.GET.get('limit', '50') or 50)
+    history = (
+        TaskHistory.objects.filter(project=project)
+        .select_related('user', 'user__profile')
+        .order_by('-created_at')[offset:offset + limit]
+    )
+    payload = []
+    for item in history:
+        payload.append({
+            'id': item.pk,
+            'action': item.action,
+            'task_title': item.task_title,
+            'task_id': item.task_id,
+            'changes': item.changes,
+            'created_at': item.created_at.isoformat(),
+            'user_name': item.user.profile.name if item.user and getattr(item.user, 'profile', None) and item.user.profile.name else (item.user.email if item.user else 'Sistema'),
+        })
+    return JsonResponse({'success': True, 'items': payload})
+
+
+@login_required
+def project_summary_assignment_view(request, project_id):
+    project = _get_user_project(request, project_id)
+    total_tasks = Task.objects.filter(project=project).count()
+    members = list(project.members.select_related('profile').order_by('email'))
+    seen_ids = set()
+    rows = []
+    for member in [project.owner] + members:
+        if member.pk in seen_ids:
+            continue
+        seen_ids.add(member.pk)
+        member_tasks = Task.objects.filter(project=project, task_responsible=member).count()
+        rows.append({
+            'user_id': member.pk,
+            'name': member.profile.name if getattr(member, 'profile', None) and member.profile.name else member.email,
+            'count': member_tasks,
+            'percent': int(round((member_tasks / total_tasks * 100) if total_tasks else 0)),
+        })
+
+    unassigned = Task.objects.filter(project=project, task_responsible__isnull=True).count()
+    rows.sort(key=lambda r: (-r['percent'], r['name']))
+    rows.append({
+        'user_id': None,
+        'name': 'Não atribuídas',
+        'count': unassigned,
+        'percent': int(round((unassigned / total_tasks * 100) if total_tasks else 0)),
+    })
+    return JsonResponse({'success': True, 'rows': rows, 'total': total_tasks})
 
 
 def _get_user_project(request, project_id):
@@ -881,6 +1048,21 @@ def delete_task_view(request, task_id):
             {'error': 'Você não tem permissão para excluir tarefas neste projeto.'},
             status=403,
         )
+
+    task_title = task.title
+    record_task_history(
+        project=task.project,
+        user=request.user,
+        action='deleted',
+        task=task,
+        task_title=task_title,
+        changes=[{
+            'field': 'task',
+            'label': 'Tarefa',
+            'from': task_title,
+            'to': 'Excluída',
+        }],
+    )
     task.delete()
     return JsonResponse({'success': True, 'task_id': task_id})
 
@@ -894,6 +1076,15 @@ def update_task_view(request, task_id):
             {'error': 'Você não tem permissão para editar tarefas neste projeto.'},
             status=403,
         )
+
+    previous_values = {
+        'title': task.title,
+        'description': task.description,
+        'status': task.status,
+        'priority': task.priority,
+        'deadline': task.deadline.isoformat() if task.deadline else None,
+        'task_responsible': task.task_responsible_id,
+    }
 
     title = request.POST.get('title', '').strip()[:100]
     if title:
@@ -929,6 +1120,30 @@ def update_task_view(request, task_id):
     )
 
     task.save()
+
+    changes = []
+    if title and title != previous_values['title']:
+        changes.append({'field': 'title', 'label': 'Título', 'from': previous_values['title'], 'to': title})
+    if task.description != previous_values['description']:
+        changes.append({'field': 'description', 'label': 'Descrição', 'from': previous_values['description'], 'to': task.description})
+    if task.status != previous_values['status']:
+        changes.append({'field': 'status', 'label': 'Status', 'from': previous_values['status'], 'to': task.status})
+    if task.priority != previous_values['priority']:
+        changes.append({'field': 'priority', 'label': 'Prioridade', 'from': previous_values['priority'], 'to': task.priority})
+    if (task.deadline.isoformat() if task.deadline else None) != previous_values['deadline']:
+        changes.append({'field': 'deadline', 'label': 'Prazo', 'from': previous_values['deadline'], 'to': task.deadline.isoformat() if task.deadline else None})
+    if task.task_responsible_id != previous_values['task_responsible']:
+        changes.append({'field': 'task_responsible', 'label': 'Responsável', 'from': previous_values['task_responsible'], 'to': task.task_responsible_id})
+
+    if changes:
+        record_task_history(
+            project=task.project,
+            user=request.user,
+            action='updated',
+            task=task,
+            changes=changes,
+        )
+
     if request.POST.get('from_dashboard') == '1':
         return redirect('accounts:dashboard')
     return redirect('project_detail', project_id=task.project_id)
