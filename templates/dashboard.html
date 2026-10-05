@@ -116,62 +116,30 @@
 
         {% if projects %}
 
-            <section
-                class="stats-grid"
-                aria-label="Estatísticas de produtividade"
-            >
+<section
+    class="stats-grid"
+    aria-label="Estatísticas de produtividade"
+>
 
-                <div class="stat-card">
+    <div class="stat-card">
+        <span class="stat-label">Criadas hoje</span>
+        <strong>{{ tasks_today|default:0 }}</strong>
+        <small>{{ tasks_yesterday|default:0 }} criadas ontem</small>
+    </div>
 
-                    <span class="stat-label">
-                        Criadas hoje
-                    </span>
+    <div class="stat-card">
+        <span class="stat-label">Em andamento</span>
+        <strong id="statInProgress">{{ tasks_in_progress|default:0 }}</strong>
+        <small><span id="statPending">{{ tasks_pending|default:0 }}</span> pendentes</small>
+    </div>
 
-                    <strong>
-                        {{ tasks_today|default:0 }}
-                    </strong>
+    <div class="stat-card">
+        <span class="stat-label">Concluídas</span>
+        <strong id="statCompleted">{{ tasks_completed|default:0 }}</strong>
+        <small><span id="statTotal">{{ tasks_count|default:0 }}</span> no total</small>
+    </div>
 
-                    <small>
-                        {{ tasks_yesterday|default:0 }} criadas ontem
-                    </small>
-
-                </div>
-
-
-                <div class="stat-card">
-
-                    <span class="stat-label">
-                        Em andamento
-                    </span>
-
-                    <strong>
-                        {{ tasks_in_progress|default:0 }}
-                    </strong>
-
-                    <small>
-                        {{ tasks_pending|default:0 }} pendentes
-                    </small>
-
-                </div>
-
-
-                <div class="stat-card">
-
-                    <span class="stat-label">
-                        Concluídas
-                    </span>
-
-                    <strong>
-                        {{ tasks_completed|default:0 }}
-                    </strong>
-
-                    <small>
-                        {{ tasks_count|default:0 }} no total
-                    </small>
-
-                </div>
-
-            </section>
+</section>
 
 
             <div class="workspace-toolbar">
@@ -488,7 +456,7 @@
                 </label>
 
                 <span>
-                    {{ tasks_pending|default:0 }} tarefa(s)
+                    <span id="summaryPending">{{ tasks_pending|default:0 }}</span> tarefa(s)
                 </span>
 
             </div>
@@ -873,403 +841,181 @@ Preparar apresentação oral"
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    const csrfToken =
-        document.querySelector(
-            '[name=csrfmiddlewaretoken]'
-        )?.value;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+
+    const modal            = document.getElementById('taskModal');
+    const openBtn          = document.getElementById('openTaskModal');
+    const closeEls         = document.querySelectorAll('[data-close-task-modal]');
+    const projectSelect    = document.getElementById('task_project');
+    const responsibleSelect = document.getElementById('task_responsible');
+    const taskCards        = document.querySelectorAll('.kanban-task');
+    const columns          = document.querySelectorAll('.kanban-column');
 
 
-    const modal =
-        document.getElementById('taskModal');
+    /* ==========================================================
+    SUGERIR TAREFAS COM IA
+       ========================================================== */
 
-
-    const openBtn =
-        document.getElementById('openTaskModal');
-
-
-    const closeEls =
-        document.querySelectorAll(
-            '[data-close-task-modal]'
-        );
-
-
-    const projectSelect =
-        document.getElementById('task_project');
-
-
-    const responsibleSelect =
-        document.getElementById(
-            'task_responsible'
-        );
-
-
-    const taskCards =
-        document.querySelectorAll(
-            '.kanban-task'
-        );
-
-
-    const columns =
-        document.querySelectorAll(
-            '.kanban-column'
-        );
-
-
-    const tdModal =
-        document.getElementById(
-            'taskDistributionModal'
-        );
-
-
-    const tdOpenBtns =
-        document.querySelectorAll(
-            '.open-td-modal'
-        );
-
-
-    const tdCloseEls =
-        document.querySelectorAll(
-            '[data-close-td-modal]'
-        );
-
-
-    const tdTasksInput =
-        document.getElementById(
-            'tdTasksInput'
-        );
-
-
-    const tdGenerateBtn =
-        document.getElementById(
-            'tdGenerateBtn'
-        );
-
-
-    const tdConfirmBtn =
-        document.getElementById(
-            'tdConfirmBtn'
-        );
-
-
-    const tdSuggestionResults =
-        document.getElementById(
-            'tdSuggestionResults'
-        );
-
+    const tdModal            = document.getElementById('taskDistributionModal');
+    const tdOpenBtns         = document.querySelectorAll('.open-td-modal');
+    const tdCloseEls         = document.querySelectorAll('[data-close-td-modal]');
+    const tdTasksInput       = document.getElementById('tdTasksInput');
+    const tdGenerateBtn      = document.getElementById('tdGenerateBtn');
+    const tdConfirmBtn       = document.getElementById('tdConfirmBtn');
+    const tdSuggestionResults = document.getElementById('tdSuggestionResults');
 
     let tdCurrentProjectId = null;
 
-
     tdOpenBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            tdCurrentProjectId = btn.dataset.projectId;
 
-        btn.addEventListener(
-            'click',
-            function () {
+            document.getElementById('tdModalTitle').textContent =
+                'Sugerir tarefas — ' + btn.dataset.projectTitle;
 
-                tdCurrentProjectId =
-                    btn.dataset.projectId;
+            tdTasksInput.value = '';
+            tdSuggestionResults.innerHTML = '';
+            tdConfirmBtn.style.display = 'none';
 
-
-                document.getElementById(
-                    'tdModalTitle'
-                ).textContent =
-                    `Sugerir tarefas — ${btn.dataset.projectTitle}`;
-
-
-                tdTasksInput.value = '';
-
-                tdSuggestionResults.innerHTML = '';
-
-                tdConfirmBtn.style.display =
-                    'none';
-
-
-                tdModal.classList.add('open');
-
-                tdModal.setAttribute(
-                    'aria-hidden',
-                    'false'
-                );
-
-            }
-        );
-
+            tdModal.classList.add('open');
+            tdModal.setAttribute('aria-hidden', 'false');
+        });
     });
-
 
     tdCloseEls.forEach(function (el) {
+        el.addEventListener('click', function () {
+            tdModal.classList.remove('open');
+            tdModal.setAttribute('aria-hidden', 'true');
+        });
+    });
 
-        el.addEventListener(
-            'click',
-            function () {
+    tdGenerateBtn.addEventListener('click', function () {
 
-                tdModal.classList.remove('open');
+        const linhas = tdTasksInput.value
+            .split('\n')
+            .map(function (l) { return l.trim(); })
+            .filter(Boolean);
 
-                tdModal.setAttribute(
-                    'aria-hidden',
-                    'true'
-                );
+        if (!linhas.length) {
+            tdSuggestionResults.innerHTML =
+                '<div style="color: #ff9999;">Digite ao menos uma tarefa.</div>';
+            return;
+        }
 
+        tdGenerateBtn.disabled = true;
+        tdGenerateBtn.textContent = 'Analisando...';
+
+        tdSuggestionResults.innerHTML =
+            '<div style="color: #aaa;">Buscando membros e gerando sugestão...</div>';
+
+        const formData = new FormData();
+        linhas.forEach(function (desc) {
+            formData.append('task_description', desc);
+        });
+
+        fetch('/tarefas/' + tdCurrentProjectId + '/sugerir-distribuicao/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken },
+            body: formData
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+
+            if (!data.tasks || !data.tasks.length) {
+                tdSuggestionResults.innerHTML =
+                    '<div style="color: #ff9999;">' +
+                    (data.error || 'Não foi possível gerar sugestão.') +
+                    '</div>';
+                return;
             }
-        );
 
+            const assignPorId = {};
+            (data.assignments || []).forEach(function (a) {
+                assignPorId[a.temp_id] = a;
+            });
+
+            tdSuggestionResults.innerHTML = data.tasks.map(function (task) {
+                const assign = assignPorId[task.temp_id];
+
+                return '' +
+                    '<div style="padding: 12px; border: 1px solid #222; border-radius: 8px; background: #111;">' +
+                        '<div style="color: #fff; font-weight: 600; margin-bottom: 6px;">' +
+                            task.description +
+                        '</div>' +
+                        '<div style="color: ' + (assign ? '#8be3a1' : '#ff9999') + '; font-size: 13px;">' +
+                            (assign
+                                ? '→ Responsável sugerido (ID ' + assign.assigned_user_id + ')'
+                                : 'Sem sugestão — atribuir manualmente depois') +
+                        '</div>' +
+                    '</div>';
+            }).join('');
+
+            tdConfirmBtn.style.display = 'inline-block';
+        })
+        .catch(function () {
+            tdSuggestionResults.innerHTML =
+                '<div style="color: #ff9999;">Erro ao gerar sugestão.</div>';
+        })
+        .finally(function () {
+            tdGenerateBtn.disabled = false;
+            tdGenerateBtn.textContent = 'Gerar sugestão';
+        });
+    });
+
+    tdConfirmBtn.addEventListener('click', function () {
+
+        tdConfirmBtn.disabled = true;
+        tdConfirmBtn.textContent = 'Criando...';
+
+        fetch('/tarefas/' + tdCurrentProjectId + '/confirmar-distribuicao/', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken }
+        })
+        .then(function (res) { return res.json(); })
+        .then(function (data) {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Erro: ' + (data.error || 'não foi possível criar as tarefas.'));
+            }
+        })
+        .finally(function () {
+            tdConfirmBtn.disabled = false;
+            tdConfirmBtn.textContent = 'Confirmar e criar tarefas';
+        });
     });
 
 
-    tdGenerateBtn.addEventListener(
-        'click',
-        function () {
+    /* ==========================================================
+       CARDS DE ESTATÍSTICA (atualizam na hora, sem animação)
+       ========================================================== */
+
+    const statEls = {
+        pending:     [document.getElementById('statPending'),
+                      document.getElementById('summaryPending')],
+        in_progress: [document.getElementById('statInProgress')],
+        completed:   [document.getElementById('statCompleted')],
+        total:       [document.getElementById('statTotal')]
+    };
+
+    function bumpStat(key, delta) {
+        (statEls[key] || []).forEach(function (el) {
+            if (!el) return;
+            const current = parseInt(el.textContent, 10) || 0;
+            el.textContent = Math.max(0, current + delta);
+        });
+    }
+
+    function applyStatusChange(fromStatus, toStatus) {
+        bumpStat(fromStatus, -1);
+        bumpStat(toStatus, +1);
+    }
+
+
+    /* ==========================================================
+       KANBAN: ARRASTAR E SOLTAR (salva sozinho, sem recarregar)
+       ========================================================== */
 
-            const linhas =
-                tdTasksInput.value
-                    .split('\n')
-                    .map(l => l.trim())
-                    .filter(Boolean);
-
-
-            if (!linhas.length) {
-
-                tdSuggestionResults.innerHTML =
-                    '<div style="color: #ff9999;">Digite ao menos uma tarefa.</div>';
-
-                return;
-
-            }
-
-
-            tdGenerateBtn.disabled = true;
-
-            tdGenerateBtn.textContent =
-                'Analisando...';
-
-
-            tdSuggestionResults.innerHTML =
-                '<div style="color: #aaa;">Buscando membros e gerando sugestão...</div>';
-
-
-            const formData =
-                new FormData();
-
-
-            linhas.forEach(
-                desc =>
-                    formData.append(
-                        'task_description',
-                        desc
-                    )
-            );
-
-
-            fetch(
-                `/tarefas/${tdCurrentProjectId}/sugerir-distribuicao/`,
-                {
-                    method: 'POST',
-
-                    headers: {
-                        'X-CSRFToken':
-                            csrfToken
-                    },
-
-                    body: formData
-                }
-            )
-            .then(res => res.json())
-            .then(data => {
-
-                if (
-                    !data.tasks ||
-                    !data.tasks.length
-                ) {
-
-                    tdSuggestionResults.innerHTML =
-                        `<div style="color: #ff9999;">${data.error || 'Não foi possível gerar sugestão.'}</div>`;
-
-                    return;
-
-                }
-
-
-                const assignPorId = {};
-
-
-                (data.assignments || [])
-                    .forEach(
-                        a =>
-                            assignPorId[
-                                a.temp_id
-                            ] = a
-                    );
-
-
-                tdSuggestionResults.innerHTML =
-                    data.tasks
-                        .map(task => {
-
-                            const assign =
-                                assignPorId[
-                                    task.temp_id
-                                ];
-
-
-                            return `
-
-                                <div
-                                    style="
-                                        padding: 12px;
-                                        border: 1px solid #222;
-                                        border-radius: 8px;
-                                        background: #111;
-                                    "
-                                >
-
-                                    <div
-                                        style="
-                                            color: #fff;
-                                            font-weight: 600;
-                                            margin-bottom: 6px;
-                                        "
-                                    >
-                                        ${task.description}
-                                    </div>
-
-                                    <div
-                                        style="
-                                            color: ${assign ? '#8be3a1' : '#ff9999'};
-                                            font-size: 13px;
-                                        "
-                                    >
-                                        ${
-                                            assign
-                                                ? '→ Responsável sugerido (ID ' + assign.assigned_user_id + ')'
-                                                : 'Sem sugestão — atribuir manualmente depois'
-                                        }
-                                    </div>
-
-                                </div>
-
-                            `;
-
-                        })
-                        .join('');
-
-
-                tdConfirmBtn.style.display =
-                    'inline-block';
-
-            })
-            .catch(() => {
-
-                tdSuggestionResults.innerHTML =
-                    '<div style="color: #ff9999;">Erro ao gerar sugestão.</div>';
-
-            })
-            .finally(() => {
-
-                tdGenerateBtn.disabled = false;
-
-                tdGenerateBtn.textContent =
-                    'Gerar sugestão';
-
-            });
-
-        }
-    );
-
-
-    tdConfirmBtn.addEventListener(
-        'click',
-        function () {
-
-            tdConfirmBtn.disabled = true;
-
-            tdConfirmBtn.textContent =
-                'Criando...';
-
-
-            fetch(
-                `/tarefas/${tdCurrentProjectId}/confirmar-distribuicao/`,
-                {
-                    method: 'POST',
-
-                    headers: {
-                        'X-CSRFToken':
-                            csrfToken
-                    }
-                }
-            )
-            .then(res => res.json())
-            .then(data => {
-
-                if (data.status === 'success') {
-
-                    location.reload();
-
-                } else {
-
-                    alert(
-                        'Erro: ' +
-                        (
-                            data.error ||
-                            'não foi possível criar as tarefas.'
-                        )
-                    );
-
-                }
-
-            })
-            .finally(() => {
-
-                tdConfirmBtn.disabled = false;
-
-                tdConfirmBtn.textContent =
-                    'Confirmar e criar tarefas';
-
-            });
-
-        }
-    );
-
-
-    taskCards.forEach(
-        function (taskCard) {
-
-            taskCard.addEventListener(
-                'dragstart',
-                function () {
-
-                    taskCard.classList.add(
-                        'dragging'
-                    );
-
-                    taskCard.setAttribute(
-                        'data-dragging',
-                        'true'
-                    );
-
-                }
-            );
-
-
-            taskCard.addEventListener(
-                'dragend',
-                function () {
-
-                    taskCard.classList.remove(
-                        'dragging'
-                    );
-
-                    taskCard.removeAttribute(
-                        'data-dragging'
-                    );
-
-                }
-            );
-
-        }
-    );
-
-
-    /* atualiza contador e placeholder "Sem tarefas" de uma coluna */
     function refreshColumn(column) {
         const count = column.querySelectorAll('.kanban-task').length;
 
@@ -1290,14 +1036,16 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-
     function moveTask(taskId, newStatus, card, sourceColumn, targetColumn) {
+
+        const oldStatus = sourceColumn.dataset.status;
 
         function revert() {
             sourceColumn.appendChild(card);
-            card.dataset.status = sourceColumn.dataset.status;
+            card.dataset.status = oldStatus;
             refreshColumn(sourceColumn);
             refreshColumn(targetColumn);
+            applyStatusChange(newStatus, oldStatus);
         }
 
         fetch('/tarefas/' + taskId + '/status/', {
@@ -1322,6 +1070,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    taskCards.forEach(function (taskCard) {
+
+        taskCard.addEventListener('dragstart', function () {
+            taskCard.classList.add('dragging');
+            taskCard.setAttribute('data-dragging', 'true');
+        });
+
+        taskCard.addEventListener('dragend', function () {
+            taskCard.classList.remove('dragging');
+            taskCard.removeAttribute('data-dragging');
+        });
+    });
 
     columns.forEach(function (column) {
 
@@ -1346,6 +1106,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const sourceColumn = draggedTask.closest('.kanban-column');
             const taskId       = draggedTask.dataset.taskId;
             const newStatus    = column.dataset.status;
+            const oldStatus    = sourceColumn.dataset.status;
 
             if (!taskId || !newStatus || sourceColumn === column) return;
 
@@ -1354,10 +1115,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
             refreshColumn(sourceColumn);
             refreshColumn(column);
+            applyStatusChange(oldStatus, newStatus);
 
             moveTask(taskId, newStatus, draggedTask, sourceColumn, column);
         });
     });
+
+
+    /* ==========================================================
+       MEMBROS POR PROJETO (select de responsável)
+       ========================================================== */
 
     const projectMembers = {
 
@@ -1368,209 +1135,98 @@ document.addEventListener('DOMContentLoaded', function () {
                 {% for member in project.members.all %}
 
                     {
-                        value:
-                            "{{ member.pk }}",
-
-                        label:
-                            "{% if member.profile %}{{ member.profile.name|escapejs }}{% else %}{{ member.email|escapejs }}{% endif %}"
+                        value: "{{ member.pk }}",
+                        label: "{% if member.profile %}{{ member.profile.name|escapejs }}{% else %}{{ member.email|escapejs }}{% endif %}"
                     }
 
-                    {% if not forloop.last %}
-                        ,
-                    {% endif %}
+                    {% if not forloop.last %},{% endif %}
 
                 {% endfor %}
 
             ]
 
-            {% if not forloop.last %}
-                ,
-            {% endif %}
+            {% if not forloop.last %},{% endif %}
 
         {% endfor %}
 
     };
 
-
-    function populateResponsibleOptions(
-        projectId
-    ) {
+    function populateResponsibleOptions(projectId) {
 
         responsibleSelect.innerHTML =
             '<option value="">Selecione um membro do projeto</option>';
 
-
-        const members =
-            projectMembers[projectId] || [];
-
+        const members = projectMembers[projectId] || [];
 
         if (!members.length) {
 
-            const ownerOption =
-                document.createElement(
-                    'option'
-                );
-
-
-            ownerOption.value =
-                '{{ user.pk }}';
-
+            const ownerOption = document.createElement('option');
+            ownerOption.value = '{{ user.pk }}';
 
             {% if user.profile %}
-
-                ownerOption.textContent =
-                    '{{ user.profile.name|escapejs }}';
-
+                ownerOption.textContent = '{{ user.profile.name|escapejs }}';
             {% else %}
-
-                ownerOption.textContent =
-                    '{{ user.email|escapejs }}';
-
+                ownerOption.textContent = '{{ user.email|escapejs }}';
             {% endif %}
 
-
-            responsibleSelect.appendChild(
-                ownerOption
-            );
-
+            responsibleSelect.appendChild(ownerOption);
             return;
-
         }
 
-
-        members.forEach(
-            function (member) {
-
-                const option =
-                    document.createElement(
-                        'option'
-                    );
-
-
-                option.value =
-                    member.value;
-
-
-                option.textContent =
-                    member.label;
-
-
-                responsibleSelect.appendChild(
-                    option
-                );
-
-            }
-        );
-
+        members.forEach(function (member) {
+            const option = document.createElement('option');
+            option.value = member.value;
+            option.textContent = member.label;
+            responsibleSelect.appendChild(option);
+        });
     }
 
+    if (projectSelect && responsibleSelect) {
 
-    if (
-        projectSelect &&
-        responsibleSelect
-    ) {
-
-        projectSelect.addEventListener(
-            'change',
-            function () {
-
-                populateResponsibleOptions(
-                    this.value
-                );
-
-            }
-        );
-
+        projectSelect.addEventListener('change', function () {
+            populateResponsibleOptions(this.value);
+        });
 
         if (projectSelect.value) {
-
-            populateResponsibleOptions(
-                projectSelect.value
-            );
-
+            populateResponsibleOptions(projectSelect.value);
         }
-
-    }
-
-
-    if (
-        modal &&
-        openBtn
-    ) {
-
-        openBtn.addEventListener(
-            'click',
-            function () {
-
-                modal.classList.add(
-                    'open'
-                );
-
-                modal.setAttribute(
-                    'aria-hidden',
-                    'false'
-                );
-
-            }
-        );
-
-
-        closeEls.forEach(
-            function (el) {
-
-                el.addEventListener(
-                    'click',
-                    function () {
-
-                        modal.classList.remove(
-                            'open'
-                        );
-
-                        modal.setAttribute(
-                            'aria-hidden',
-                            'true'
-                        );
-
-                    }
-                );
-
-            }
-        );
-
-
-        document.addEventListener(
-            'keydown',
-            function (event) {
-
-                if (
-                    event.key === 'Escape' &&
-                    modal.classList.contains('open')
-                ) {
-
-                    modal.classList.remove(
-                        'open'
-                    );
-
-                    modal.setAttribute(
-                        'aria-hidden',
-                        'true'
-                    );
-
-                }
-
-            }
-        );
-
     }
 
 
     /* ==========================================================
-       OPÇÕES DA TAREFA: EDITAR / EXCLUIR (só o líder exclui)
+       MODAL NOVA TAREFA
        ========================================================== */
 
-    const taskForm    = modal.querySelector('form');
-    const modalTitle  = modal.querySelector('.task-modal-header h3');
-    const modalSubmit = modal.querySelector('button[type="submit"]');
+    if (modal && openBtn) {
+
+        openBtn.addEventListener('click', function () {
+            modal.classList.add('open');
+            modal.setAttribute('aria-hidden', 'false');
+        });
+
+        closeEls.forEach(function (el) {
+            el.addEventListener('click', function () {
+                modal.classList.remove('open');
+                modal.setAttribute('aria-hidden', 'true');
+            });
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape' && modal.classList.contains('open')) {
+                modal.classList.remove('open');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        });
+    }
+
+
+    /* ==========================================================
+       OPÇÕES DA TAREFA: EDITAR / EXCLUIR
+       ========================================================== */
+
+    const taskForm     = modal.querySelector('form');
+    const modalTitle   = modal.querySelector('.task-modal-header h3');
+    const modalSubmit  = modal.querySelector('button[type="submit"]');
     const createAction = taskForm.getAttribute('action');
 
     const taskMenu       = document.getElementById('taskMenu');
@@ -1596,7 +1252,7 @@ document.addEventListener('DOMContentLoaded', function () {
         modalSubmit.textContent = 'Salvar alterações';
 
         projectSelect.value = card.dataset.projectId;
-        projectSelect.disabled = true;               // projeto não muda na edição
+        projectSelect.disabled = true;
         populateResponsibleOptions(card.dataset.projectId);
 
         const field = function (name) {
@@ -1626,6 +1282,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (top + height > window.innerHeight - 8) {
             top = rect.top - height - 6;
         }
+
         popup.style.left = left + 'px';
         popup.style.top  = top + 'px';
     }
@@ -1650,7 +1307,7 @@ document.addEventListener('DOMContentLoaded', function () {
             activeCard = card;
             card.classList.add('menu-open');
 
-            taskMenuEdit.hidden = card.dataset.canEdit !== '1';
+            taskMenuEdit.hidden   = card.dataset.canEdit !== '1';
             taskMenuDelete.hidden = card.dataset.canDelete !== '1';
 
             placeBelow(taskMenu, button);
@@ -1693,10 +1350,15 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!data.success) {
                 throw new Error(data.error || 'Erro ao excluir tarefa.');
             }
+
             const column = card.closest('.kanban-column');
+            const status = card.dataset.status;
+
             closeTaskPopups();
             card.remove();
             refreshColumn(column);
+            bumpStat(status, -1);
+            bumpStat('total', -1);
         })
         .catch(function (error) {
             console.error(error);
@@ -1716,6 +1378,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     window.addEventListener('scroll', closeTaskPopups, true);
     window.addEventListener('resize', closeTaskPopups);
+
     taskCards.forEach(function (card) {
         card.addEventListener('dragstart', closeTaskPopups);
     });
@@ -1723,5 +1386,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 </script>
+
 
 {% endblock %}  
