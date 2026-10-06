@@ -1,0 +1,864 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ project.title }} - Resumo - Sincrow{% endblock %}
+
+{% block content %}
+<div class="project-page project-summary-page" style="--project-accent: {{ project.accent_color }}">
+
+    {% include 'includes/project_header.html' with project=project active_tab='summary' can_manage_settings=can_manage_settings %}
+
+    <main class="project-content">
+        <section class="project-summary-layout">
+
+            <div class="project-summary-toolbar">
+                <div class="project-summary-title">
+                    <p class="section-kicker">{{ project.code }}</p>
+                    <h2>Resumo</h2>
+                </div>
+            </div>
+
+            <div id="summaryGrid" class="summary-grid">
+
+                <!-- GRÁFICO -->
+                <article class="summary-block" data-block="chart">
+                    <div class="summary-block-header">
+                        <h3>Tarefas por status</h3>
+                        <div class="summary-block-tools">
+                            <button type="button" class="summary-chart-toggle" id="chartTypeToggle" aria-label="Alternar tipo de gráfico" aria-haspopup="true"></button>
+                        </div>
+                    </div>
+
+                    <div class="summary-chart-top">
+                        <div class="summary-total-wrap">
+                            <strong id="summaryCreatedTotal">0</strong>
+                            <span>criadas no período</span>
+                        </div>
+                    </div>
+
+                    <div class="summary-chart-wrap">
+                        <svg id="summaryChartSvg" viewBox="0 0 640 250" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Gráfico do resumo"></svg>
+                        <div class="summary-chart-tooltip" id="summaryChartTooltip" hidden></div>
+                    </div>
+
+                    <div class="summary-legend" id="summaryLegend"></div>
+
+                    <div class="summary-date-range">
+                        <label>
+                            <span>De</span>
+                            <input type="date" id="summaryStartDate">
+                        </label>
+                        <label>
+                            <span>A</span>
+                            <input type="date" id="summaryEndDate">
+                        </label>
+                        <div class="summary-range-shortcuts">
+                            <button type="button" data-range="7">7 dias</button>
+                            <button type="button" data-range="30">30 dias</button>
+                            <button type="button" data-range="90">90 dias</button>
+                            <button type="button" data-range="all">Tudo</button>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- HISTÓRICO -->
+                <article class="summary-block" data-block="history">
+                    <div class="summary-block-header">
+                        <h3>Histórico</h3>
+                    </div>
+                    <div class="summary-filter-chips">
+                        <button type="button" class="summary-filter-chip active" data-filter="all">Todos</button>
+                        <button type="button" class="summary-filter-chip" data-filter="created">Criação</button>
+                        <button type="button" class="summary-filter-chip" data-filter="updated">Edição</button>
+                        <button type="button" class="summary-filter-chip" data-filter="deleted">Exclusão</button>
+                    </div>
+                    <div class="summary-history-list" id="summaryHistoryList"></div>
+                </article>
+
+                <!-- ATRIBUIÇÃO -->
+                <article class="summary-block" data-block="assignment">
+                    <div class="summary-block-header">
+                        <h3>Atribuição</h3>
+                    </div>
+                    <div class="summary-assignment-table" id="summaryAssignmentTable"></div>
+                </article>
+
+            </div>
+        </section>
+    </main>
+</div>
+
+<div id="chartTypeMenu" class="task-floating task-menu" hidden>
+    <button type="button" class="task-menu-item" data-chart-type="bar">Colunas</button>
+    <button type="button" class="task-menu-item" data-chart-type="pie">Pizza</button>
+    <button type="button" class="task-menu-item" data-chart-type="line">Linha</button>
+</div>
+
+{{ summary_initial_data|json_script:'summaryInitialData' }}
+
+<script>
+(function () {
+
+    var initial   = JSON.parse(document.getElementById('summaryInitialData').textContent);
+    var projectId = Number(initial.projectId);
+    var userId    = Number(initial.userId);
+    var STORAGE_KEY = 'sincrow:summary:' + projectId + ':' + userId;
+
+    var STATUS_LABELS   = { pending: 'A fazer', in_progress: 'Em andamento', completed: 'Concluído' };
+    var PRIORITY_LABELS = { low: 'Baixa', medium: 'Média', high: 'Alta' };
+
+    var chartMenu     = document.getElementById('chartTypeMenu');
+    var chartToggle   = document.getElementById('chartTypeToggle');
+    var legend        = document.getElementById('summaryLegend');
+    var svg           = document.getElementById('summaryChartSvg');
+    var totalEl       = document.getElementById('summaryCreatedTotal');
+    var startInput    = document.getElementById('summaryStartDate');
+    var endInput      = document.getElementById('summaryEndDate');
+    var historyList   = document.getElementById('summaryHistoryList');
+    var assignmentTable = document.getElementById('summaryAssignmentTable');
+
+    var state = { chartType: 'bar', start: '', end: '' };
+    var firstTaskDate = '';
+    var debounceTimer = null;
+
+
+    /* ==========================================================
+       DATAS (sempre no fuso do navegador, sem UTC)
+       ========================================================== */
+
+    function toISODate(date) {
+        function pad(n) { return String(n).padStart(2, '0'); }
+        return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate());
+    }
+
+    function isValidDate(value) {
+        return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value));
+    }
+
+    function defaultPeriod() {
+        var end = new Date();
+        var start = new Date();
+        start.setDate(end.getDate() - 29);
+        return { start: toISODate(start), end: toISODate(end) };
+    }
+
+
+    /* ==========================================================
+       ESTADO SALVO (tipo de gráfico e período)
+       ========================================================== */
+
+    function readState() {
+        var next = { chartType: 'bar', start: '', end: '' };
+        try {
+            var parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+            if (!parsed || typeof parsed !== 'object') return next;
+            if (['bar', 'pie', 'line'].indexOf(parsed.chartType) !== -1) next.chartType = parsed.chartType;
+            if (isValidDate(parsed.start) && isValidDate(parsed.end) && parsed.start <= parsed.end) {
+                next.start = parsed.start;
+                next.end = parsed.end;
+            }
+        } catch (error) { /* usa o padrão */ }
+        return next;
+    }
+
+    function saveState() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (error) {
+            console.warn('Não foi possível salvar as preferências do resumo.', error);
+        }
+    }
+
+    function scheduleSave() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(saveState, 300);
+    }
+
+
+    /* ==========================================================
+       TIPO DE GRÁFICO (botão + menu)
+       ========================================================== */
+
+    var ICONS = {
+        bar:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V8M10 18V4M16 18v-9M22 18v-6M4 18h18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+        pie:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9V3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15V3.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
+        line: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 16l5-5 4 4 7-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    };
+
+    function applyChartType() {
+        chartToggle.innerHTML = ICONS[state.chartType] || ICONS.bar;
+        chartMenu.querySelectorAll('[data-chart-type]').forEach(function (button) {
+            button.style.background = button.dataset.chartType === state.chartType ? '#141414' : '';
+        });
+    }
+
+
+    /* ==========================================================
+       GRÁFICO
+       ========================================================== */
+
+    // AJUSTE AQUI: cores dos gráficos
+    var COLORS_BRIGHT = ['#ff5252', '#e6a23c', '#409eff'];   // colunas e linha
+    var COLORS_PIE    = ['#c23b3b', '#9a6a12', '#2f6fb8'];   // pizza (mais escuras, para o % branco ficar legível)
+
+    function seriesColors() {
+        return state.chartType === 'pie' ? COLORS_PIE : COLORS_BRIGHT;
+    }
+
+    function renderLegend(data) {
+        var totals = (data && data.totals) || { pending: 0, in_progress: 0, completed: 0 };
+        var colors = seriesColors();
+        var series = [
+            { name: 'A Fazer',      color: colors[0], value: totals.pending },
+            { name: 'Em Andamento', color: colors[1], value: totals.in_progress },
+            { name: 'Concluídas',   color: colors[2], value: totals.completed }
+        ];
+
+        legend.replaceChildren();
+        series.forEach(function (entry) {
+            var item = document.createElement('div');
+            item.className = 'summary-legend-item';
+
+            var swatch = document.createElement('span');
+            swatch.className = 'summary-swatch';
+            swatch.style.background = entry.color;
+
+            var name = document.createElement('span');
+            name.textContent = entry.name;
+
+            var value = document.createElement('strong');
+            value.textContent = '(' + entry.value + ')';
+
+            item.append(swatch, name, value);
+            legend.appendChild(item);
+        });
+    }
+
+    function renderBarChart(data) {
+        var series = [
+            { name: 'A Fazer',      color: '#ff5252', value: data.totals.pending },
+            { name: 'Em Andamento', color: '#e6a23c', value: data.totals.in_progress },
+            { name: 'Concluídas',   color: '#409eff', value: data.totals.completed }
+        ];
+        var maxValue = Math.max.apply(null, [0].concat(series.map(function (s) { return s.value; })));
+        var width = 640, height = 250, left = 48, right = 20, top = 18, bottom = 48;
+        var chartHeight = height - top - bottom;
+        var chartWidth  = width - left - right;
+        var step = Math.max(1, Math.ceil(maxValue / 4));
+        var yMaximum = step * 4;
+        var barWidth = 62;
+        var parts = [];
+
+        for (var i = 0; i <= 4; i++) {
+            var value = step * i;
+            var y = height - bottom - (chartHeight * value / yMaximum);
+            parts.push('<line x1="' + left + '" y1="' + y + '" x2="' + (width - right) + '" y2="' + y + '" stroke="#1a1a1a" stroke-width="1"/>');
+            parts.push('<text x="' + (left - 10) + '" y="' + (y + 4) + '" fill="#8c8c8c" font-size="11" text-anchor="end">' + value + '</text>');
+        }
+
+        series.forEach(function (item, index) {
+            var center = left + chartWidth * (index + 0.5) / series.length;
+            var barHeight = (item.value / yMaximum) * chartHeight;
+            var barY = height - bottom - barHeight;
+            parts.push('<rect x="' + (center - barWidth / 2) + '" y="' + barY + '" width="' + barWidth + '" height="' + barHeight + '" fill="' + item.color + '"/>');
+            parts.push('<text x="' + center + '" y="' + Math.max(top + 12, barY - 7) + '" fill="#fff" font-size="12" text-anchor="middle">' + item.value + '</text>');
+            parts.push('<text x="' + center + '" y="' + (height - 17) + '" fill="#c7c7c7" font-size="12" text-anchor="middle">' + item.name + '</text>');
+        });
+
+        svg.innerHTML = parts.join('');
+    }
+
+    var tooltip = document.getElementById('summaryChartTooltip');
+
+    function formatFullDate(iso) {
+        var match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+        return match ? match[3] + '/' + match[2] + '/' + match[1] : String(iso || '');
+    }
+
+    function hideLineHover() {
+        tooltip.hidden = true;
+        var group = svg.querySelector('#summaryHoverGroup');
+        if (group) group.setAttribute('visibility', 'hidden');
+    }
+
+    function bindLineHover(values, geo) {
+        var area  = svg.querySelector('#summaryHoverArea');
+        var group = svg.querySelector('#summaryHoverGroup');
+        if (!area || !group) return;
+
+        var guide = group.querySelector('line');
+        var dots  = group.querySelectorAll('circle');
+        var names = ['A Fazer', 'Em Andamento', 'Concluídas'];
+        var keys  = ['pending', 'in_progress', 'completed'];
+
+        // converte a posição do mouse para as coordenadas internas do gráfico
+        function toChartPoint(event) {
+            var point = svg.createSVGPoint();
+            point.x = event.clientX;
+            point.y = event.clientY;
+            var matrix = svg.getScreenCTM();
+            return matrix ? point.matrixTransform(matrix.inverse()) : null;
+        }
+
+        area.addEventListener('pointermove', function (event) {
+            var p = toChartPoint(event);
+            if (!p) return;
+
+            var ratio = (p.x - geo.left) / geo.chartWidth;
+            var index = Math.round(ratio * Math.max(1, values.length - 1));
+            index = Math.max(0, Math.min(values.length - 1, index));
+
+            var point = values[index];
+            var x = geo.xFor(index);
+
+            guide.setAttribute('x1', x);
+            guide.setAttribute('x2', x);
+            dots.forEach(function (dot, i) {
+                dot.setAttribute('cx', x);
+                dot.setAttribute('cy', geo.yFor(point[keys[i]]));
+            });
+            group.setAttribute('visibility', 'visible');
+
+            // conteúdo do balão (textContent: sem risco de injetar HTML)
+            tooltip.replaceChildren();
+
+            var title = document.createElement('div');
+            title.className = 'summary-tooltip-date';
+            title.textContent = formatFullDate(point.date);
+            tooltip.appendChild(title);
+
+            keys.forEach(function (key, i) {
+                var row = document.createElement('div');
+                row.className = 'summary-tooltip-row';
+
+                var swatch = document.createElement('span');
+                swatch.className = 'summary-swatch';
+                swatch.style.background = COLORS_BRIGHT[i];
+
+                var name = document.createElement('span');
+                name.textContent = names[i];
+
+                var value = document.createElement('strong');
+                value.textContent = point[key];
+
+                row.append(swatch, name, value);
+                tooltip.appendChild(row);
+            });
+
+            // posiciona o balão perto do mouse, sem sair do gráfico
+            tooltip.hidden = false;
+            var wrap = svg.parentElement.getBoundingClientRect();
+            var left = event.clientX - wrap.left + 14;
+            var top  = event.clientY - wrap.top + 14;
+
+            if (left + tooltip.offsetWidth > wrap.width - 6) {
+                left = event.clientX - wrap.left - tooltip.offsetWidth - 14;
+            }
+            if (top + tooltip.offsetHeight > wrap.height - 6) {
+                top = event.clientY - wrap.top - tooltip.offsetHeight - 14;
+            }
+
+            tooltip.style.left = Math.max(6, left) + 'px';
+            tooltip.style.top  = Math.max(6, top) + 'px';
+        });
+
+        area.addEventListener('pointerleave', hideLineHover);
+    }
+
+    function renderLineChart(data) {
+        var values = data.series;
+        if (!values.length) {
+            svg.innerHTML = '<text x="320" y="125" text-anchor="middle" fill="#8c8c8c" font-size="13">Sem dados no período</text>';
+            return;
+        }
+
+        var maxValue = 0;
+        values.forEach(function (p) { maxValue = Math.max(maxValue, p.pending, p.in_progress, p.completed); });
+
+        var width = 640, height = 250, left = 48, right = 20, top = 18, bottom = 42;
+        var chartHeight = height - top - bottom;
+        var chartWidth  = width - left - right;
+        var step = Math.max(1, Math.ceil(maxValue / 4));
+        var yMaximum = step * 4;
+
+        function xFor(index) { return left + (index * chartWidth) / Math.max(1, values.length - 1); }
+        function yFor(value) { return height - bottom - (chartHeight * value / yMaximum); }
+        function pointsFor(key) {
+            return values.map(function (p, i) { return xFor(i) + ',' + yFor(p[key]); }).join(' ');
+        }
+
+        var parts = [];
+        for (var i = 0; i <= 4; i++) {
+            var value = step * i;
+            var y = yFor(value);
+            parts.push('<line x1="' + left + '" y1="' + y + '" x2="' + (width - right) + '" y2="' + y + '" stroke="#1a1a1a" stroke-width="1"/>');
+            parts.push('<text x="' + (left - 10) + '" y="' + (y + 4) + '" fill="#8c8c8c" font-size="11" text-anchor="end">' + value + '</text>');
+        }
+
+        parts.push('<polyline points="' + pointsFor('pending')     + '" fill="none" stroke="' + COLORS_BRIGHT[0] + '" stroke-width="2"/>');
+        parts.push('<polyline points="' + pointsFor('in_progress') + '" fill="none" stroke="' + COLORS_BRIGHT[1] + '" stroke-width="2"/>');
+        parts.push('<polyline points="' + pointsFor('completed')   + '" fill="none" stroke="' + COLORS_BRIGHT[2] + '" stroke-width="2"/>');
+
+        var indexes = [0, Math.floor((values.length - 1) / 2), values.length - 1].filter(function (v, i, arr) {
+            return arr.indexOf(v) === i;
+        });
+        indexes.forEach(function (idx) {
+            var date = values[idx].date || '';
+            var label = date.length >= 10 ? date.slice(8, 10) + '/' + date.slice(5, 7) : date;
+            parts.push('<text x="' + xFor(idx) + '" y="' + (height - 12) + '" fill="#8c8c8c" font-size="11" text-anchor="middle">' + label + '</text>');
+        });
+
+        // marcador do mouse (linha vertical + um ponto por série)
+        parts.push('<g id="summaryHoverGroup" visibility="hidden" pointer-events="none">' +
+            '<line x1="0" y1="' + top + '" x2="0" y2="' + (height - bottom) + '" stroke="#5a5a5a" stroke-width="1" stroke-dasharray="3 3"/>' +
+            '<circle r="4" fill="' + COLORS_BRIGHT[0] + '" stroke="#0b0b0b" stroke-width="1.5"/>' +
+            '<circle r="4" fill="' + COLORS_BRIGHT[1] + '" stroke="#0b0b0b" stroke-width="1.5"/>' +
+            '<circle r="4" fill="' + COLORS_BRIGHT[2] + '" stroke="#0b0b0b" stroke-width="1.5"/>' +
+            '</g>');
+
+        // área invisível que recebe o mouse (fica por cima de tudo)
+        parts.push('<rect id="summaryHoverArea" x="' + left + '" y="' + top + '" width="' + chartWidth + '" height="' + chartHeight + '" fill="transparent"/>');
+
+        svg.innerHTML = parts.join('');
+
+        bindLineHover(values, { left: left, chartWidth: chartWidth, xFor: xFor, yFor: yFor });
+    }
+
+    function renderPieChart(data) {
+        var totals = [data.totals.pending, data.totals.in_progress, data.totals.completed];
+        var total = totals.reduce(function (sum, v) { return sum + v; }, 0);
+
+        if (!total) {
+            svg.innerHTML = '<circle cx="320" cy="125" r="70" fill="none" stroke="#303030" stroke-width="18"/>' +
+                '<text x="320" y="129" text-anchor="middle" fill="#8c8c8c" font-size="13">Sem tarefas no período</text>';
+            return;
+        }
+
+        var cx = 320, cy = 125, outer = 90, inner = 34;
+        var labelRadius = (outer + inner) / 2;
+        var current = -Math.PI / 2;
+        var slices = [];
+        var labels = [];
+
+        totals.forEach(function (value, idx) {
+            if (!value) return;
+
+            var angle = (value / total) * Math.PI * 2;
+            var mid = current + angle / 2;
+            var color = COLORS_PIE[idx];
+
+            if (value === total) {
+                slices.push('<circle cx="' + cx + '" cy="' + cy + '" r="' + outer + '" fill="' + color + '"/>');
+            } else {
+                var end = current + angle;
+                var largeArc = angle > Math.PI ? 1 : 0;
+                var x1 = cx + Math.cos(current) * outer, y1 = cy + Math.sin(current) * outer;
+                var x2 = cx + Math.cos(end) * outer,     y2 = cy + Math.sin(end) * outer;
+                slices.push('<path d="M ' + cx + ' ' + cy + ' L ' + x1 + ' ' + y1 +
+                    ' A ' + outer + ' ' + outer + ' 0 ' + largeArc + ' 1 ' + x2 + ' ' + y2 + ' Z"' +
+                    ' fill="' + color + '" stroke="#0b0b0b" stroke-width="1.5"/>');
+            }
+
+            // fatias muito pequenas (menos de ~5%) não têm espaço para o texto
+            if (angle >= 0.28) {
+                var percent = Math.round((value / total) * 100);
+                labels.push('<text x="' + (cx + Math.cos(mid) * labelRadius) + '" y="' + (cy + Math.sin(mid) * labelRadius + 5) + '"' +
+                    ' text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">' + percent + '%</text>');
+            }
+
+            current += angle;
+        });
+
+        svg.innerHTML = slices.join('') +
+            '<circle cx="' + cx + '" cy="' + cy + '" r="' + inner + '" fill="#0b0b0b"/>' +
+            labels.join('');
+    }
+
+    function renderChart(data) {
+        hideLineHover();
+        renderLegend(data);
+        totalEl.textContent = data.totals.created_in_period || 0;
+        if (state.chartType === 'bar')  renderBarChart(data);
+        if (state.chartType === 'line') renderLineChart(data);
+        if (state.chartType === 'pie')  renderPieChart(data);
+    }
+
+    function fetchChart() {
+        var params = new URLSearchParams({ inicio: state.start || '', fim: state.end || '' });
+
+        fetch('/projetos/' + projectId + '/resumo/grafico/?' + params.toString(), {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function (response) {
+            if (!response.ok) throw new Error('Falha ao carregar o gráfico.');
+            return response.json();
+        })
+        .then(function (payload) {
+            if (!payload || !payload.success) throw new Error('Resposta inválida.');
+            if (payload.first_task_date) firstTaskDate = String(payload.first_task_date);
+            renderChart(payload);
+        })
+        .catch(function () {
+            totalEl.textContent = '0';
+            renderLegend(null);
+            svg.innerHTML = '<text x="320" y="125" text-anchor="middle" fill="#8c8c8c" font-size="13">Não foi possível carregar os dados</text>';
+        });
+    }
+
+    function setPeriod(start, end) {
+        state.start = start;
+        state.end = end;
+        startInput.value = start;
+        endInput.value = end;
+        fetchChart();
+        scheduleSave();
+    }
+
+
+    /* ==========================================================
+       HISTÓRICO
+       Formato: Mudou a tarefa **Criar landing page** do status A fazer para Em andamento
+       ========================================================== */
+
+    function formatDate(value) {
+        if (!value) return 'sem prazo';
+        var match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value));
+        return match ? match[3] + '/' + match[2] + '/' + match[1] : String(value);
+    }
+
+    function formatChangeValue(field, value) {
+        if (field === 'status')           return STATUS_LABELS[value] || String(value);
+        if (field === 'priority')         return PRIORITY_LABELS[value] || String(value);
+        if (field === 'deadline')         return formatDate(value);
+        if (field === 'task_responsible') return value ? String(value) : 'sem responsável';
+        return (value === null || value === undefined || value === '') ? 'vazio' : String(value);
+    }
+
+    // cada linha é uma lista: texto comum (string) ou negrito ({ bold: '...' })
+    function historyLines(item) {
+        var title = item.task_title || 'sem título';
+
+        if (item.action === 'created') return [['Criou a tarefa ', { bold: title }]];
+        if (item.action === 'deleted') return [['Apagou a tarefa ', { bold: title }]];
+
+        var changes = Array.isArray(item.changes) ? item.changes : [];
+        if (!changes.length) return [['Mudou a tarefa ', { bold: title }]];
+
+        return changes.map(function (change) {
+            var field = change && change.field;
+            var from = formatChangeValue(field, change && change.from);
+            var to   = formatChangeValue(field, change && change.to);
+
+            switch (field) {
+                case 'status':
+                    return ['Mudou a tarefa ', { bold: title }, ' do status ', from, ' para ', to];
+                case 'title':
+                    return ['Mudou o título da tarefa ', { bold: from }, ' para ', { bold: to }];
+                case 'deadline':
+                    return ['Mudou o prazo da tarefa ', { bold: title }, ' de ', from, ' para ', to];
+                case 'priority':
+                    return ['Mudou a prioridade da tarefa ', { bold: title }, ' de ', from, ' para ', to];
+                case 'task_responsible':
+                    return ['Mudou o responsável da tarefa ', { bold: title }, ' de ', from, ' para ', to];
+                case 'description':
+                    return ['Editou a descrição da tarefa ', { bold: title }];
+                default:
+                    return ['Editou a tarefa ', { bold: title }];
+            }
+        });
+    }
+
+    function buildLine(parts) {
+        var line = document.createElement('div');
+        parts.forEach(function (part) {
+            if (typeof part === 'string') {
+                line.appendChild(document.createTextNode(part));
+            } else {
+                var bold = document.createElement('strong');
+                bold.textContent = part.bold;
+                line.appendChild(bold);
+            }
+        });
+        return line;
+    }
+
+    function renderHistory(items) {
+        historyList.replaceChildren();
+
+        if (!items.length) {
+            var empty = document.createElement('div');
+            empty.className = 'summary-empty';
+            empty.textContent = 'Nenhum histórico registrado.';
+            historyList.appendChild(empty);
+            return;
+        }
+
+        items.forEach(function (item) {
+            var userText = item.user_name || 'Sistema';
+
+            var row = document.createElement('div');
+            row.className = 'summary-history-item';
+
+            var avatar = document.createElement('div');
+            avatar.className = 'summary-history-avatar';
+            avatar.textContent = userText.charAt(0).toUpperCase();
+
+            var content = document.createElement('div');
+            content.className = 'summary-history-text';
+
+            var author = document.createElement('span');
+            author.className = 'summary-history-author';
+            author.textContent = userText;
+            content.appendChild(author);
+
+            historyLines(item).forEach(function (parts) {
+                content.appendChild(buildLine(parts));
+            });
+
+            var timestamp = document.createElement('small');
+            timestamp.textContent = new Date(item.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+            content.appendChild(timestamp);
+
+            row.append(avatar, content);
+            historyList.appendChild(row);
+        });
+    }
+
+    function fetchHistory(filter) {
+        filter = filter || 'all';
+
+        fetch('/projetos/' + projectId + '/resumo/historico/?limit=50', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function (response) {
+            if (!response.ok) throw new Error('Falha ao carregar o histórico.');
+            return response.json();
+        })
+        .then(function (payload) {
+            if (!payload || !Array.isArray(payload.items)) throw new Error('Resposta inválida.');
+            renderHistory(filter === 'all' ? payload.items : payload.items.filter(function (i) { return i.action === filter; }));
+        })
+        .catch(function () {
+            historyList.replaceChildren();
+            var error = document.createElement('div');
+            error.className = 'summary-empty';
+            error.textContent = 'Não foi possível carregar o histórico.';
+            historyList.appendChild(error);
+        });
+    }
+
+
+    /* ==========================================================
+       ATRIBUIÇÃO
+       ========================================================== */
+
+    function fetchAssignments() {
+        fetch('/projetos/' + projectId + '/resumo/atribuicao/', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function (response) {
+            if (!response.ok) throw new Error('Falha ao carregar as atribuições.');
+            return response.json();
+        })
+        .then(function (payload) {
+            if (!payload || !Array.isArray(payload.rows)) throw new Error('Resposta inválida.');
+
+            assignmentTable.replaceChildren();
+
+            payload.rows.forEach(function (rowData) {
+                if (!rowData.name) return;
+
+                var row = document.createElement('div');
+                row.className = 'summary-assignment-row';
+
+                var user = document.createElement('div');
+                user.className = 'summary-assignment-user';
+
+                var avatar = document.createElement('span');
+                avatar.className = 'summary-assignment-avatar';
+                avatar.textContent = rowData.name.charAt(0).toUpperCase();
+
+                var name = document.createElement('strong');
+                name.textContent = rowData.name;
+                user.append(avatar, name);
+
+                var percentValue = Math.max(0, Math.min(100, Number(rowData.percent) || 0));
+
+                var bar = document.createElement('div');
+                bar.className = 'summary-assignment-bar';
+
+                var fill = document.createElement('span');
+                fill.style.width = percentValue + '%';
+
+                var percent = document.createElement('em');
+                percent.textContent = percentValue + '%';
+
+                bar.append(fill, percent);
+                row.append(user, bar);
+                assignmentTable.appendChild(row);
+            });
+
+            if (!assignmentTable.children.length) {
+                var empty = document.createElement('div');
+                empty.className = 'summary-empty';
+                empty.textContent = 'Sem dados de atribuição.';
+                assignmentTable.appendChild(empty);
+            }
+        })
+        .catch(function () {
+            assignmentTable.replaceChildren();
+            var error = document.createElement('div');
+            error.className = 'summary-empty';
+            error.textContent = 'Não foi possível carregar as atribuições.';
+            assignmentTable.appendChild(error);
+        });
+    }
+
+
+    /* ==========================================================
+       EVENTOS
+       ========================================================== */
+
+    chartToggle.addEventListener('click', function (event) {
+        event.stopPropagation();
+        var rect = chartToggle.getBoundingClientRect();
+        chartMenu.style.left = Math.max(8, rect.right - 130) + 'px';
+        chartMenu.style.top  = (rect.bottom + 6) + 'px';
+        chartMenu.hidden = !chartMenu.hidden;
+    });
+
+    chartMenu.querySelectorAll('[data-chart-type]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            state.chartType = button.dataset.chartType;
+            chartMenu.hidden = true;
+            applyChartType();
+            fetchChart();
+            scheduleSave();
+        });
+    });
+
+    document.addEventListener('click', function (event) {
+        if (!chartMenu.contains(event.target) && !chartToggle.contains(event.target)) {
+            chartMenu.hidden = true;
+        }
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape') chartMenu.hidden = true;
+    });
+
+    window.addEventListener('scroll', function () { chartMenu.hidden = true; }, true);
+    window.addEventListener('resize', function () { chartMenu.hidden = true; });
+
+    document.querySelectorAll('.summary-filter-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+            document.querySelectorAll('.summary-filter-chip').forEach(function (item) {
+                item.classList.toggle('active', item === chip);
+            });
+            fetchHistory(chip.dataset.filter || 'all');
+        });
+    });
+
+    document.querySelectorAll('[data-range]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var value = button.dataset.range;
+            var end = new Date();
+            var start = new Date();
+
+            if (value === 'all') {
+                start = isValidDate(firstTaskDate)
+                    ? new Date(firstTaskDate + 'T00:00:00')
+                    : new Date(end.getTime() - 365 * 86400000);
+            } else {
+                start.setDate(end.getDate() - (Number(value) - 1));
+            }
+
+            setPeriod(toISODate(start), toISODate(end));
+        });
+    });
+
+    startInput.addEventListener('change', function () {
+        if (!startInput.value) { startInput.value = state.start; return; }
+        var start = startInput.value;
+        var end = state.end;
+        if (end && start > end) end = start;
+        setPeriod(start, end);
+    });
+
+    endInput.addEventListener('change', function () {
+        if (!endInput.value) { endInput.value = state.end; return; }
+        var end = endInput.value;
+        var start = state.start;
+        if (start && start > end) start = end;
+        setPeriod(start, end);
+    });
+
+
+
+
+    /* ==========================================================
+       INÍCIO
+       ========================================================== */
+
+    state = readState();
+    if (!state.start || !state.end) {
+        var period = defaultPeriod();
+        state.start = period.start;
+        state.end = period.end;
+    }
+    startInput.value = state.start;
+    endInput.value = state.end;
+
+    applyChartType();
+    fetchChart();
+    fetchHistory();
+    fetchAssignments();
+
+})();
+</script>
+
+<script>
+/* Setinha da barra superior + lista de integrantes (o cabeçalho é o mesmo do Quadro) */
+document.addEventListener('DOMContentLoaded', function () {
+
+    var toggleButton = document.getElementById('projectMenuToggle');
+    var navigation   = document.getElementById('projectNavigation');
+
+    if (toggleButton && navigation) {
+        toggleButton.addEventListener('click', function () {
+            navigation.classList.toggle('collapsed');
+
+            var collapsed = navigation.classList.contains('collapsed');
+
+            toggleButton.textContent = collapsed ? '↑' : '↓';
+            toggleButton.title = collapsed ? 'Abrir barra' : 'Minimizar barra';
+            toggleButton.setAttribute('aria-label', collapsed ? 'Abrir barra' : 'Minimizar barra');
+        });
+    }
+
+    var membersWrapper  = document.getElementById('projectMembers');
+    var membersButton   = document.getElementById('projectMembersButton');
+    var membersDropdown = document.getElementById('projectMembersDropdown');
+
+    if (membersButton && membersDropdown) {
+
+        function setMembersOpen(open) {
+            membersDropdown.hidden = !open;
+            membersButton.setAttribute('aria-expanded', String(open));
+        }
+
+        membersButton.addEventListener('click', function () {
+            setMembersOpen(membersDropdown.hidden);
+        });
+
+        document.addEventListener('click', function (event) {
+            if (!membersWrapper.contains(event.target)) setMembersOpen(false);
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') setMembersOpen(false);
+        });
+    }
+});
+</script>
+{% endblock %}

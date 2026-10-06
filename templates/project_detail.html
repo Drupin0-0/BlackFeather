@@ -8,164 +8,7 @@
 
 <div class="project-page" style="--project-accent: {{ project.accent_color }}">
 
-    <header class="project-header">
-
-        <div class="project-header-left">
-
-            <a
-                href="{% url 'project_list' %}"
-                class="project-back"
-                title="Voltar para projetos"
-            >
-                ←
-            </a>
-
-            <div class="project-title-wrapper">
-                <span class="project-category-heading" data-category="{{ project.category }}">{{ project.get_category_display }}</span>
-                <h1>{{ project.title }}</h1>
-            </div>
-
-        </div>
-
-        <div class="project-header-actions">
-
-            <div class="project-search" id="projectSearch">
-
-                <button
-                    type="button"
-                    class="project-search-button"
-                    id="projectSearchButton"
-                    title="Pesquisar tarefas"
-                    aria-label="Pesquisar tarefas"
-                >
-                    <span class="search-icon"></span>
-                </button>
-
-                <input
-                    type="text"
-                    id="projectTaskSearch"
-                    class="project-search-input"
-                    placeholder="Pesquisar tarefa..."
-                    autocomplete="off"
-                >
-
-            </div>
-
-<div class="project-members" id="projectMembers">
-
-    <button
-        type="button"
-        class="project-members-button"
-        id="projectMembersButton"
-        title="Integrantes"
-        aria-label="Integrantes"
-        aria-haspopup="true"
-        aria-expanded="false"
-    >
-        <span class="person-icon"></span>
-    </button>
-
-    <div class="project-members-dropdown" id="projectMembersDropdown" hidden>
-
-        <ul class="project-members-list">
-
-            <li class="project-member-item">
-                <strong>{{ project.owner.profile.name|default:project.owner.email }}</strong>
-                <span>Líder</span>
-            </li>
-
-            {% for member in project.members.all %}
-                {% if member.pk != project.owner_id %}
-                    <li class="project-member-item">
-                        <strong>{{ member.profile.name|default:member.email }}</strong>
-                        <span>Integrante</span>
-                    </li>
-                {% endif %}
-            {% endfor %}
-
-        </ul>
-
-        <div class="project-members-footer">
-            <a href="#" class="project-members-more">
-                <span>Mais opções</span>
-                <svg
-                    width="14" height="14" viewBox="0 0 24 24"
-                    fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round"
-                    aria-hidden="true"
-                >
-                    <line x1="7" y1="17" x2="17" y2="7"></line>
-                    <polyline points="7 7 17 7 17 17"></polyline>
-                </svg>
-            </a>
-        </div>
-
-    </div>
-
-</div>
-
-            {% if can_manage_settings %}
-            <a
-                href="{% url 'project_settings' project.pk %}"
-                class="project-members-button"
-                title="Configurações do projeto"
-                aria-label="Configurações do projeto"
-            >
-                <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    aria-hidden="true"
-                >
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-1.7 2.94-.08-.03a1.65 1.65 0 0 0-1.78.33l-.06.06h-3.4l-.02-.09a1.65 1.65 0 0 0-1.2-1.2l-.09-.02-2.94 1.7-.06-.08a1.65 1.65 0 0 0-1.82-.33l-.06.03-2.94-1.7.03-.08a1.65 1.65 0 0 0-.33-1.78l-.06-.06v-3.4l.09-.02a1.65 1.65 0 0 0 1.2-1.2l.02-.09-1.7-2.94.08-.06a1.65 1.65 0 0 0 .33-1.82l-.03-.06 1.7-2.94.08.03a1.65 1.65 0 0 0 1.78-.33l.06-.06h3.4l.02.09a1.65 1.65 0 0 0 1.2 1.2l.09.02 2.94-1.7.06.08a1.65 1.65 0 0 0 1.82.33l.06-.03 2.94 1.7-.03.08a1.65 1.65 0 0 0 .33 1.78l.06.06v3.4l-.09.02a1.65 1.65 0 0 0-1.2 1.2l-.02.09z"></path>
-                </svg>
-            </a>
-            {% endif %}
-
-    </header>
-
-
-    <nav
-        class="project-navigation"
-        id="projectNavigation"
-    >
-
-        <div class="project-navigation-center">
-
-            <a
-                href="{% url 'project_detail' project.pk %}"
-                class="project-nav-item active"
-            >
-                Quadro
-            </a>
-
-            <a
-                href="#"
-                class="project-nav-item"
-            >
-                Resumo
-            </a>
-
-        </div>
-
-    </nav>
-
-
-    <button
-        type="button"
-        class="project-navigation-toggle"
-        id="projectMenuToggle"
-        title="Minimizar barra"
-        aria-label="Minimizar barra"
-    >
-        ↓
-    </button>
+    {% include 'includes/project_header.html' with project=project active_tab='board' can_manage_settings=can_manage_settings %}
 
     <main class="project-content">
 
@@ -797,11 +640,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     /* ==========================================================
-       MOVER TAREFA (drag and drop)
+       MOVER TAREFA (salva sozinho, sem recarregar a página)
        ========================================================== */
 
-    function moveTask(taskId, newStatus) {
-        if (!taskId || !newStatus) return;
+    function refreshColumn(column) {
+        const container = column.querySelector('.project-kanban-tasks');
+        const count = container.querySelectorAll('.project-kanban-task').length;
+
+        column.querySelector('.project-task-count').textContent = count;
+
+        const empty = container.querySelector('.project-empty-column');
+
+        if (count === 0 && !empty) {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'project-empty-column';
+            placeholder.textContent = 'Sem tarefas';
+            container.appendChild(placeholder);
+        }
+
+        if (count > 0 && empty) {
+            empty.remove();
+        }
+    }
+
+    function moveTask(taskId, newStatus, card, sourceColumn, targetColumn) {
+
+        const oldStatus = sourceColumn.dataset.status;
+
+        function revert() {
+            sourceColumn.querySelector('.project-kanban-tasks').appendChild(card);
+            card.dataset.status = oldStatus;
+            refreshColumn(sourceColumn);
+            refreshColumn(targetColumn);
+        }
 
         fetch('/tarefas/' + taskId + '/status/', {
             method: 'POST',
@@ -816,17 +687,24 @@ document.addEventListener('DOMContentLoaded', function () {
         .then(function (data) {
             if (!data.success) {
                 console.error(data.error || 'Erro ao mover tarefa.');
-                return;
+                revert();
             }
-            location.reload();
         })
         .catch(function (error) {
             console.error('Erro ao mover tarefa:', error);
+            revert();
         });
     }
 
     taskCards.forEach(function (taskCard) {
-        taskCard.addEventListener('dragstart', function () {
+
+        taskCard.addEventListener('dragstart', function (event) {
+            // quem não pode editar não arrasta
+            if (taskCard.dataset.canEdit !== '1') {
+                event.preventDefault();
+                return;
+            }
+
             closeTaskPopups();
             taskCard.classList.add('dragging');
             taskCard.setAttribute('data-dragging', 'true');
@@ -839,6 +717,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     columns.forEach(function (column) {
+
         column.addEventListener('dragover', function (event) {
             event.preventDefault();
             column.classList.add('drag-over');
@@ -857,15 +736,21 @@ document.addEventListener('DOMContentLoaded', function () {
             );
             if (!draggedTask) return;
 
-            const taskId    = draggedTask.dataset.taskId;
-            const newStatus = column.dataset.status;
-            if (!taskId || !newStatus) return;
+            const sourceColumn = draggedTask.closest('.project-kanban-column');
+            const taskId       = draggedTask.dataset.taskId;
+            const newStatus    = column.dataset.status;
+
+            if (!taskId || !newStatus || sourceColumn === column) return;
 
             column.querySelector('.project-kanban-tasks').appendChild(draggedTask);
-            moveTask(taskId, newStatus);
+            draggedTask.dataset.status = newStatus;
+
+            refreshColumn(sourceColumn);
+            refreshColumn(column);
+
+            moveTask(taskId, newStatus, draggedTask, sourceColumn, column);
         });
     });
-
 });
 </script>
 {% endblock %}

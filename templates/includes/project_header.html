@@ -1,0 +1,128 @@
+<header class="project-header">
+
+    <div class="project-header-left">
+
+        <a
+            href="{% url 'project_list' %}"
+            class="project-back"
+            title="Voltar para projetos"
+        >
+            ←
+        </a>
+
+        <div class="project-title-wrapper">
+            <span class="project-category-heading" data-category="{{ project.category }}">{{ project.get_category_display }}</span>
+            <h1>{{ project.title }}</h1>
+        </div>
+
+    </div>
+
+    <div class="project-header-actions">
+
+        {% if active_tab != 'summary' %}
+        <div class="project-search" id="projectSearch">
+
+            <button
+                type="button"
+                class="project-search-button"
+                id="projectSearchButton"
+                title="Pesquisar tarefas"
+                aria-label="Pesquisar tarefas"
+            >
+                <span class="search-icon"></span>
+            </button>
+
+            <input
+                type="text"
+                id="projectTaskSearch"
+                class="project-search-input"
+                placeholder="Pesquisar tarefa..."
+                autocomplete="off"
+            >
+
+        </div>
+        {% endif %}
+
+        <div class="project-members" id="projectMembers">
+
+            <button
+                type="button"
+                class="project-members-button"
+                id="projectMembersButton"
+                title="Integrantes"
+                aria-label="Integrantes"
+                aria-haspopup="true"
+                aria-expanded="false"
+            >
+                <span class="person-icon"></span>
+            </button>
+
+            <div class="project-members-dropdown" id="projectMembersDropdown" hidden>
+                <ul class="project-members-list">
+                    <li class="project-member-item">
+                        <strong>{{ project.owner.profile.name|default:project.owner.email }}</strong>
+                        <span>Líder</span>
+                    </li>
+                    {% for member in project.members.all %}
+                        {% if member.pk != project.owner_id %}
+                            <li class="project-member-item">
+                                <strong>{{ member.profile.name|default:member.email }}</strong>
+                                <span>Integrante</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+                <div class="project-members-footer">
+                    <a href="#" class="project-members-more">
+                        <span>Mais opções</span>
+                        <svg
+                            width="14" height="14" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <line x1="7" y1="17" x2="17" y2="7"></line>
+                            <polyline points="7 7 17 7 17 17"></polyline>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+        {% if can_manage_settings %}
+        <a
+            href="{% url 'project_settings' project.pk %}"
+            class="project-members-button"
+            title="Configurações do projeto"
+            aria-label="Configurações do projeto"
+        >
+            <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+            >
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06-1.7 2.94-.08-.03a1.65 1.65 0 0 0-1.78.33l-.06.06h-3.4l-.02-.09a1.65 1.65 0 0 0-1.2-1.2l-.09-.02-2.94 1.7-.06-.08a1.65 1.65 0 0 0-1.82-.33l-.06.03-2.94-1.7.03-.08a1.65 1.65 0 0 0-.33-1.78l-.06-.06v-3.4l.09-.02a1.65 1.65 0 0 0 1.2-1.2l.02-.09-1.7-2.94.08-.06a1.65 1.65 0 0 0 .33-1.82l-.03-.06 1.7-2.94.08.03a1.65 1.65 0 0 0 1.78-.33l.06-.06h3.4l.02.09a1.65 1.65 0 0 0 1.2 1.2l.09.02 2.94-1.7.06.08a1.65 1.65 0 0 0 1.82.33l.06-.03 2.94 1.7-.03.08a1.65 1.65 0 0 0 .33 1.78l.06.06v3.4l-.09.02a1.65 1.65 0 0 0-1.2 1.2l-.02.09z"></path>
+            </svg>
+        </a>
+        {% endif %}
+
+    </div>
+
+</header>
+
+<nav class="project-navigation" id="projectNavigation">
+    <div class="project-navigation-center">
+        <a href="{% url 'project_detail' project.pk %}" class="project-nav-item {% if active_tab == 'board' %}active{% endif %}">Quadro</a>
+        <a href="{% url 'project_summary' project.pk %}" class="project-nav-item {% if active_tab == 'summary' %}active{% endif %}">Resumo</a>
+    </div>
+</nav>
+
+<button type="button" class="project-navigation-toggle" id="projectMenuToggle" title="Minimizar barra" aria-label="Minimizar barra">↓</button>
