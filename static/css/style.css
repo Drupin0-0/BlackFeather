@@ -3422,56 +3422,75 @@ button.project-members-button {
     }
 }
 
-.summary-grid {
-    position: relative;
-    min-height: 760px;
+
+/* ==========================================================
+   RESUMO DO PROJETO
+   ========================================================== */
+
+.project-summary-page .project-content {
+    overflow-y: auto;
+}
+
+.project-summary-layout {
     width: 100%;
+    padding-bottom: 28px;
+}
+
+.project-summary-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 4px;
+}
+
+.project-summary-title h2 {
+    color: #fff;
+    font-size: 20px;
+    margin-top: 6px;
+}
+
+
+/* ---------- GRADE FIXA ---------- */
+
+.summary-grid {
+    /* AJUSTE AQUI: altura dos blocos */
+    --summary-top-height: 560px;           /* "Tarefas por status" e "Histórico" */
+    --summary-bottom-min-height: 340px;    /* "Atribuição" (cresce sozinho se tiver mais integrantes) */
+
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
     margin-top: 16px;
 }
 
-.project-summary-page .project-content {
-    overflow: auto;
-}
-
 .summary-block {
-    position: absolute;
-    z-index: 1;
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    padding: 18px 20px 16px;
     background: #0b0b0b;
     border: 1px solid #1a1a1a;
-    padding: 14px 16px 12px;
     overflow: hidden;
-    box-sizing: border-box;
-    min-width: 280px;
-    min-height: 200px;
+}
+
+.summary-block[data-block="chart"],
+.summary-block[data-block="history"] {
+    height: var(--summary-top-height);
+}
+
+.summary-block[data-block="assignment"] {
+    grid-column: 1 / -1;
 }
 
 .summary-block-header {
-    position: relative;
-    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding-bottom: 12px;
+    min-height: 40px;
+    padding-bottom: 14px;
     border-bottom: 1px solid #161616;
-    cursor: grab;
-    touch-action: none;
-    user-select: none;
-}
-
-.summary-block-header:active {
-    cursor: grabbing;
-}
-
-.summary-block-label {
-    display: block;
-    margin-bottom: 4px;
-    font-size: 10px;
-    color: #8c8c8c;
-    letter-spacing: 1px;
-    text-transform: uppercase;
 }
 
 .summary-block-header h3 {
@@ -3492,10 +3511,16 @@ button.project-members-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
     background: transparent;
     border: 1px solid #222;
     color: #eaeaea;
     cursor: pointer;
+}
+
+.summary-chart-toggle:hover {
+    background: #111;
+    border-color: #333;
 }
 
 .summary-chart-toggle svg {
@@ -3503,54 +3528,49 @@ button.project-members-button {
     height: 18px;
 }
 
+/* ---------- GRÁFICO ---------- */
+
 .summary-chart-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 0 8px;
+    padding: 18px 0 10px;
 }
 
 .summary-total-wrap {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 }
 
 .summary-total-wrap strong {
-    font-size: 26px;
+    font-size: 32px;
     line-height: 1;
-    color: #ffffff;
+    color: #fff;
 }
 
 .summary-total-wrap span {
     color: #8c8c8c;
-    font-size: 11px;
-    letter-spacing: 0.8px;
-    text-transform: lowercase;
+    font-size: 12px;
 }
 
 .summary-chart-wrap {
     flex: 1;
-    min-height: 150px;
-    margin-top: 10px;
-    background: rgba(0, 0, 0, 0.18);
-    border: 1px solid #121212;
+    min-height: 220px;
+    position: relative;
     display: flex;
     align-items: stretch;
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid #121212;
 }
 
 .summary-chart-wrap svg {
     width: 100%;
     height: 100%;
-    min-height: 170px;
 }
 
 .summary-legend {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 12px;
-    padding-top: 6px;
+    gap: 18px;
+    margin-top: 16px;
 }
 
 .summary-legend-item {
@@ -3570,10 +3590,10 @@ button.project-members-button {
 .summary-date-range {
     display: flex;
     flex-wrap: wrap;
-    align-items: end;
-    gap: 10px;
-    margin-top: 14px;
-    padding-top: 10px;
+    align-items: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 14px;
     border-top: 1px solid #161616;
 }
 
@@ -3588,11 +3608,11 @@ button.project-members-button {
 }
 
 .summary-date-range input {
+    min-height: 36px;
+    padding: 0 10px;
     background: #050505;
     border: 1px solid #242424;
     color: #fff;
-    min-height: 32px;
-    padding: 0 8px;
 }
 
 .summary-range-shortcuts {
@@ -3603,89 +3623,118 @@ button.project-members-button {
 }
 
 .summary-range-shortcuts button,
-.summary-filter-chip,
-.project-summary-restore {
+.summary-filter-chip {
+    min-height: 34px;
+    padding: 0 14px;
     background: transparent;
     border: 1px solid #222;
     color: #d5d5d5;
-    padding: 6px 10px;
-    font-size: 11px;
+    font-size: 12px;
     cursor: pointer;
 }
+
+.summary-range-shortcuts button:hover,
+.summary-filter-chip:hover {
+    background: #111;
+    border-color: #333;
+}
+
+/* ---------- HISTÓRICO ---------- */
 
 .summary-filter-chips {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin: 14px 0 10px;
+    margin: 16px 0 12px;
 }
 
 .summary-filter-chip.active {
     background: #111;
     border-color: #3a3a3a;
+    color: #fff;
 }
 
+/* rola, mas sem mostrar a barra de rolagem */
 .summary-history-list {
-    overflow: auto;
     flex: 1;
     min-height: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding-right: 4px;
+    scrollbar-width: none;          /* Firefox */
+    -ms-overflow-style: none;       /* Edge antigo */
+}
+
+.summary-history-list::-webkit-scrollbar {
+    display: none;                  /* Chrome, Opera GX, Edge */
 }
 
 .summary-history-item {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     align-items: flex-start;
-    padding: 8px 0;
+    padding: 14px 0;
     border-bottom: 1px solid #151515;
 }
 
+/* o "* { border-radius: 2px !important }" do site força cantos retos, por isso o !important aqui */
 .summary-history-avatar,
 .summary-assignment-avatar {
-    width: 24px;
-    height: 24px;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
     background: #171717;
+    border: 1px solid #262626;
+    border-radius: 50% !important;
     color: #fff;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
 }
 
 .summary-history-text {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 4px;
     color: #d9d9d9;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.summary-history-author {
+    color: #fff;
     font-size: 12px;
-    line-height: 1.45;
+    font-weight: 700;
+}
+
+.summary-history-text strong {
+    color: #fff;
+    font-weight: 700;
 }
 
 .summary-history-text small {
     color: #777;
-    font-size: 10px;
+    font-size: 11px;
 }
+
+/* ---------- ATRIBUIÇÃO ---------- */
 
 .summary-assignment-table {
     display: flex;
     flex-direction: column;
-    gap: 14px;
-    margin-top: 18px;
-    overflow: auto;
-    flex: 1;
-    padding-right: 4px;
+    gap: 16px;
+    margin-top: 20px;
 }
 
 .summary-assignment-row {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(160px, 3fr);
+    /* AJUSTE AQUI: o primeiro valor (160px) é a distância do nome até a barra */
+    grid-template-columns: 160px minmax(0, 1fr);
     align-items: center;
-    gap: 12px;
+    gap: 14px;
 }
 
 .summary-assignment-user {
@@ -3707,7 +3756,7 @@ button.project-members-button {
     position: relative;
     display: block;
     width: 100%;
-    height: 28px;
+    height: 32px;
     background: #2a2a2a;
     border: 1px solid #232323;
     overflow: hidden;
@@ -3715,21 +3764,26 @@ button.project-members-button {
 
 .summary-assignment-bar span {
     position: absolute;
+    z-index: 0;
     inset: 0 auto 0 0;
     width: 0;
-    background: var(--project-accent, #a3c7ff);
+    /* AJUSTE AQUI: 55% = quanto da cor do projeto fica (menor = mais escuro) */
+    background: color-mix(in srgb, var(--project-accent, #a3c7ff) 55%, #000);
     transition: width 0.25s ease;
 }
 
 .summary-assignment-bar em {
     position: absolute;
+    z-index: 1;
     left: 10px;
     top: 50%;
     transform: translateY(-50%);
+    color: #ffffff;
     font-style: normal;
-    color: #fff;
-    font-size: 11px;
-    letter-spacing: 0.5px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
 }
 
 .summary-empty {
@@ -3738,64 +3792,74 @@ button.project-members-button {
     padding: 18px 0;
 }
 
-.summary-resize-handle {
-    position: absolute;
-    z-index: 3;
-    right: 4px;
-    bottom: 4px;
-    width: 18px;
-    height: 18px;
-    border-right: 2px solid #666;
-    border-bottom: 2px solid #666;
-    cursor: nwse-resize;
-    touch-action: none;
-}
+/* ---------- TELAS MENORES ---------- */
 
-.project-summary-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    margin-top: 18px;
-    margin-bottom: 4px;
-}
-
-.project-summary-title h2 {
-    color: #fff;
-    font-size: 20px;
-    margin-top: 6px;
-}
-
-@media (max-width: 760px) {
+@media (max-width: 900px) {
     .summary-grid {
-        position: static;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        min-height: unset;
+        grid-template-columns: minmax(0, 1fr);
     }
 
-    .summary-block {
-        position: static !important;
-        width: 100% !important;
-        height: auto !important;
-        min-height: 200px;
+    .summary-block[data-block="chart"],
+    .summary-block[data-block="history"] {
+        height: auto;
+        min-height: 460px;
     }
 
-    .summary-resize-handle {
-        display: none;
+    .summary-history-list {
+        max-height: 380px;
     }
 
-    .summary-block-header {
-        cursor: default;
-        touch-action: auto;
-        user-select: auto;
+    .summary-assignment-row {
+        grid-template-columns: 120px minmax(0, 1fr);
     }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .summary-block,
     .summary-assignment-bar span {
         transition: none !important;
     }
+}
+
+/* balão de data do gráfico em linha */
+.summary-chart-tooltip {
+    position: absolute;
+    z-index: 5;
+    min-width: 150px;
+    padding: 9px 11px;
+    background: #0d0d0d;
+    border: 1px solid #2a2a2a;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+    color: #e5e5e5;
+    font-size: 12px;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.summary-chart-tooltip[hidden] {
+    display: none;
+}
+
+.summary-tooltip-date {
+    margin-bottom: 7px;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.summary-tooltip-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0;
+}
+
+.summary-tooltip-row .summary-swatch {
+    width: 10px;
+    height: 10px;
+}
+
+.summary-tooltip-row strong {
+    margin-left: auto;
+    padding-left: 14px;
+    color: #ffffff;
 }

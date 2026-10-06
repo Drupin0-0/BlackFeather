@@ -717,24 +717,48 @@ def project_summary_history_view(request, project_id):
     project = _get_user_project(request, project_id)
     offset = int(request.GET.get('offset', '0') or 0)
     limit = int(request.GET.get('limit', '50') or 50)
-    history = (
+    history = list(
         TaskHistory.objects.filter(project=project)
         .select_related('user', 'user__profile')
         .order_by('-created_at')[offset:offset + limit]
     )
+
+    # troca os ids de "responsável" pelos nomes
+    responsible_ids = set()
+    for item in history:
+        for change in (item.changes or []):
+            if isinstance(change, dict) and change.get('field') == 'task_responsible':
+                for key in ('from', 'to'):
+                    if change.get(key):
+                        responsible_ids.add(change[key])
+
+    names = {}
+    if responsible_ids:
+        for person in User.objects.filter(pk__in=responsible_ids).select_related('profile'):
+            profile = getattr(person, 'profile', None)
+            names[person.pk] = profile.name if profile and profile.name else person.email
+
+    def resolved_changes(item):
+        result = []
+        for change in (item.changes or []):
+            if isinstance(change, dict) and change.get('field') == 'task_responsible':
+                change = {**change, 'from': names.get(change.get('from')), 'to': names.get(change.get('to'))}
+            result.append(change)
+        return result
+
     payload = []
     for item in history:
+        profile = getattr(item.user, 'profile', None) if item.user else None
         payload.append({
             'id': item.pk,
             'action': item.action,
             'task_title': item.task_title,
             'task_id': item.task_id,
-            'changes': item.changes,
+            'changes': resolved_changes(item),
             'created_at': item.created_at.isoformat(),
-            'user_name': item.user.profile.name if item.user and getattr(item.user, 'profile', None) and item.user.profile.name else (item.user.email if item.user else 'Sistema'),
+            'user_name': (profile.name if profile and profile.name else item.user.email) if item.user else 'Sistema',
         })
     return JsonResponse({'success': True, 'items': payload})
-
 
 @login_required
 def project_summary_assignment_view(request, project_id):

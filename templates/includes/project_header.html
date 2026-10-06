@@ -19,6 +19,7 @@
 
     <div class="project-header-actions">
 
+        {% if active_tab != 'summary' %}
         <div class="project-search" id="projectSearch">
 
             <button
@@ -40,6 +41,7 @@
             >
 
         </div>
+        {% endif %}
 
         <div class="project-members" id="projectMembers">
 
