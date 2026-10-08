@@ -1,0 +1,15 @@
+{% load static %}
+<span class="crow-avatar {{ extra_class }}" style="width:{{ size }}px; height:{{ size }}px;">
+    <img
+        class="crow-avatar-suit"
+        src="{% static suit_image %}"
+        alt=""
+    >
+    {% if hat %}
+        <img
+            class="crow-avatar-hat"
+            src="{% static 'img/avatars/hat.png' %}"
+            alt=""
+        >
+    {% endif %}
+</span>

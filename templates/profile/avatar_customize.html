@@ -1,0 +1,233 @@
+{% load static %}
+{% load avatar_tags %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customizar Avatar - BlackFeather</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+        body {
+            background: #000; color: #f5f5f5; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center; padding: 20px;
+        }
+
+        /* Avatar-corvo: regras essenciais do componente, duplicadas aqui porque
+           esta página é avulsa e não carrega static/css/style.css. */
+        .crow-avatar {
+            position: relative;
+            display: inline-block;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #ffffff;
+            flex-shrink: 0;
+            isolation: isolate;
+        }
+        .crow-avatar-suit {
+            width: 100%;
+            height: 100%;
+            display: block;
+            position: absolute;
+            left: 0;
+            top: 0;
+            object-fit: cover;
+            object-position: center 50%;
+            transform: none;
+        }
+        .crow-avatar-hat {
+            position: absolute;
+            left: 50%;
+            top: 3%;
+            width: 50%;
+            height: auto;
+            transform: translateX(-50%);
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .avatar-card {
+            background: #0a0a0a; border: 1px solid #262626; border-radius: 16px;
+            width: 100%; max-width: 680px; padding: 28px 32px;
+            box-shadow: 0 20px 40px rgba(0,0,0,.8);
+        }
+
+        .avatar-back-link {
+            display: inline-flex; align-items: center; gap: 8px; width: fit-content;
+            margin-bottom: 18px; color: #a3a3a3; text-decoration: none;
+            font-size: 12px; font-weight: 600; transition: color .2s;
+        }
+        .avatar-back-link:hover { color: #fff; }
+
+        h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+        .avatar-subtitle { font-size: 13px; color: #8a8a8a; margin-bottom: 26px; }
+
+        .avatar-layout {
+            display: flex; gap: 36px; align-items: flex-start;
+        }
+
+        .avatar-options { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+
+        .avatar-preview-col {
+            flex-shrink: 0; width: 220px; display: flex; flex-direction: column;
+            align-items: center; gap: 16px;
+        }
+
+        .crow-avatar-big { width: 200px; height: 200px; border: 2px solid #262626; }
+
+        .option-group-label {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.8px; color: #8a8a8a; margin-bottom: 12px;
+        }
+
+        .swatch-row { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        .swatch-btn {
+            width: 56px; height: 56px; border: 2px solid #262626; border-radius: 50%;
+            cursor: pointer; padding: 0; background: #050505; overflow: hidden;
+            transition: border-color .15s, transform .1s;
+        }
+        .swatch-btn:hover { transform: translateY(-1px); border-color: #525252; }
+        .swatch-btn.selected { border-color: #ffffff; }
+        .swatch-btn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+        /* Chapéu: mesmo estilo de swatch, mas é um único botão que liga/desliga.
+           Sem texto "chapéu" nenhum — a própria imagem já diz o que é. */
+        .hat-swatch-btn { background: #0d0d0d; }
+        .hat-swatch-btn img { object-fit: contain; padding: 8px; }
+        .hat-swatch-btn.selected { background: #141414; }
+
+        .avatar-actions {
+            display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px;
+        }
+
+        .btn-save, .btn-cancel {
+            border-radius: 8px; padding: 11px 20px; font-size: 13px; font-weight: 600;
+            cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;
+        }
+        .btn-save { background: #ffffff; color: #000; border: 1px solid #ffffff; }
+        .btn-save:hover { opacity: .9; }
+        .btn-cancel { background: none; color: #a3a3a3; border: 1px solid #262626; }
+        .btn-cancel:hover { border-color: #525252; color: #fff; }
+
+        @media (max-width: 560px) {
+            .avatar-layout { flex-direction: column-reverse; }
+            .avatar-preview-col { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="avatar-card">
+        <a href="{% url 'accounts:view_profile' %}" class="avatar-back-link">
+            <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Voltar ao perfil
+        </a>
+
+        <h1>Customizar avatar</h1>
+        <p class="avatar-subtitle">Escolha a cor do paletó e os acessórios do seu corvo.</p>
+
+        <form method="POST" action="{% url 'accounts:customize_avatar' %}">
+            {% csrf_token %}
+
+            <div class="avatar-layout">
+
+                <div class="avatar-options">
+
+                    <div>
+                        <div class="option-group-label">Paletó</div>
+                        <div class="swatch-row" id="suitSwatches">
+                            {% for value, label in suit_choices %}
+                                <button
+                                    type="button"
+                                    class="swatch-btn{% if profile.avatar_suit == value %} selected{% endif %}"
+                                    data-suit="{{ value }}"
+                                    aria-label="Paletó {{ label }}"
+                                    title="{{ label }}"
+                                >
+                                    <img src="{% static 'img/avatars/suit-'|add:value|add:'.png' %}" alt="{{ label }}">
+                                </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="option-group-label">Acessórios</div>
+                        <div class="swatch-row">
+                            <button
+                                type="button"
+                                id="hatSwatch"
+                                class="swatch-btn hat-swatch-btn{% if profile.avatar_hat %} selected{% endif %}"
+                                aria-label="Cartola"
+                                title="Cartola"
+                            >
+                                <img src="{% static 'img/avatars/hat.png' %}" alt="Cartola">
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="avatar-preview-col">
+                    {% render_crow_avatar profile size=200 extra_class="crow-avatar-big" %}
+                </div>
+
+            </div>
+
+            <input type="hidden" name="avatar_suit" id="avatarSuitInput" value="{{ profile.avatar_suit|default:'black' }}">
+            <input type="hidden" name="avatar_hat" id="avatarHatInput" value="{% if profile.avatar_hat %}1{% else %}0{% endif %}">
+
+            <div class="avatar-actions">
+                <a href="{% url 'accounts:view_profile' %}" class="btn-cancel">Cancelar</a>
+                <button type="submit" class="btn-save">Salvar</button>
+            </div>
+
+        </form>
+    </div>
+
+    <script>
+        const previewSuitImg = document.querySelector('.crow-avatar-big .crow-avatar-suit');
+        const previewEl = document.querySelector('.crow-avatar-big');
+        const avatarSuitInput = document.getElementById('avatarSuitInput');
+        const avatarHatInput = document.getElementById('avatarHatInput');
+
+        document.querySelectorAll('#suitSwatches .swatch-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#suitSwatches .swatch-btn').forEach((other) => {
+                    other.classList.toggle('selected', other === btn);
+                });
+
+                avatarSuitInput.value = btn.dataset.suit;
+                if (previewSuitImg) {
+                    previewSuitImg.src = btn.querySelector('img').src;
+                }
+            });
+        });
+
+        document.getElementById('hatSwatch').addEventListener('click', () => {
+            const hatBtn = document.getElementById('hatSwatch');
+            const isOn = hatBtn.classList.toggle('selected');
+            avatarHatInput.value = isOn ? '1' : '0';
+
+            let hatImg = previewEl ? previewEl.querySelector('.crow-avatar-hat') : null;
+
+            if (isOn && !hatImg && previewEl) {
+                hatImg = document.createElement('img');
+                hatImg.className = 'crow-avatar-hat';
+                hatImg.alt = '';
+                hatImg.src = hatBtn.querySelector('img').src;
+                previewEl.appendChild(hatImg);
+            } else if (!isOn && hatImg) {
+                hatImg.remove();
+            }
+        });
+    </script>
+
+</body>
+</html>

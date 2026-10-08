@@ -10,12 +10,11 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
 from django.http import JsonResponse
-from PIL import Image, UnidentifiedImageError
 import secrets
 
 from .forms import CustomUserCreationForm
 from .services import enviar_email_codigo
-from .models import UserProfile, Technology, CategoryChoices
+from .models import UserProfile, Technology, CategoryChoices, AvatarSuitChoices
 from Tasks.models import Project, ProjectMember, Task
 
 User = get_user_model()
@@ -282,6 +281,7 @@ def view_profile_view(request):
             'profile': profile,
             'skills': profile.skills.all(),
             'skill_catalog': grouped_technologies(),
+            'suit_choices': AvatarSuitChoices.choices,
             **extra,
         }
 
@@ -298,35 +298,7 @@ def view_profile_view(request):
         profile.course_area = (request.POST.get('course_area') or '').strip()
         profile.website = (request.POST.get('website') or '').strip()
 
-        old_avatar_name = profile.avatar.name if profile.avatar else None
-        uploaded_avatar = request.FILES.get('avatar')
-        remove_avatar = request.POST.get('remove_avatar') == '1'
-
-        if uploaded_avatar:
-            if uploaded_avatar.size > 5 * 1024 * 1024:
-                return render(request, 'profile/view_profile.html',
-                              ctx(error='A foto deve ter no máximo 5 MB.'))
-            try:
-                image = Image.open(uploaded_avatar)
-                if image.format not in {'JPEG', 'PNG', 'WEBP'}:
-                    raise ValueError('Formato de imagem não permitido.')
-                if image.width * image.height > 25_000_000:
-                    raise ValueError('Dimensões da imagem muito grandes.')
-                image.verify()
-                uploaded_avatar.seek(0)
-            except (UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError):
-                return render(request, 'profile/view_profile.html',
-                              ctx(error='Envie uma imagem válida nos formatos JPG, PNG ou WebP.'))
-
-        if remove_avatar:
-            profile.avatar = None
-        elif uploaded_avatar:
-            profile.avatar = uploaded_avatar
-
         profile.save()
-
-        if old_avatar_name and (remove_avatar or uploaded_avatar):
-            profile.avatar.storage.delete(old_avatar_name)
 
         ids = [int(v) for v in request.POST.getlist('skills') if v.strip().isdigit()]
         profile.skills.set(Technology.objects.filter(pk__in=ids))
@@ -334,6 +306,26 @@ def view_profile_view(request):
         return redirect('accounts:view_profile')
 
     return render(request, 'profile/view_profile.html', ctx())
+
+
+@login_required
+def customize_avatar_view(request):
+    profile, _ = UserProfile.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        avatar_suit = request.POST.get('avatar_suit')
+        if avatar_suit in AvatarSuitChoices.values:
+            profile.avatar_suit = avatar_suit
+
+        profile.avatar_hat = request.POST.get('avatar_hat') == '1'
+        profile.save()
+
+        return redirect('accounts:view_profile')
+
+    return render(request, 'profile/avatar_customize.html', {
+        'profile': profile,
+        'suit_choices': AvatarSuitChoices.choices,
+    })
 
 
 def logout_view(request):

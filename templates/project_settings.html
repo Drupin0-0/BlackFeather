@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load avatar_tags %}
 
 {% block title %}Configurações de {{ project.title }} - Sincrow{% endblock %}
 
@@ -25,19 +26,7 @@
                 <div class="settings-card settings-members-card">
                     <div class="settings-item project-member-item">
                         <div class="settings-item-text project-member-identity">
-                            {% if project.owner.profile.avatar %}
-                                <img
-                                    src="{{ project.owner.profile.avatar.url }}"
-                                    alt=""
-                                    width="40"
-                                    height="40"
-                                    style="width: 40px; height: 40px; object-fit: cover; border-radius: 50% !important;"
-                                >
-                            {% else %}
-                                <span aria-hidden="true" style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #343b45; border-radius: 50% !important;">
-                                    {{ project.owner.profile.name|default:project.owner.email|first|upper }}
-                                </span>
-                            {% endif %}
+                            {% render_crow_avatar project.owner.profile size=40 %}
                             <span class="project-member-copy">
                                 <strong>{{ project.owner.profile.name|default:project.owner.email }}</strong>
                                 <span>{{ role_labels.boss }}</span>
@@ -48,19 +37,7 @@
                     {% for membership in memberships %}
                         <div class="settings-item project-member-item" data-membership-user="{{ membership.user_id }}">
                             <div class="settings-item-text project-member-identity">
-                                {% if membership.user.profile.avatar %}
-                                    <img
-                                        src="{{ membership.user.profile.avatar.url }}"
-                                        alt=""
-                                        width="40"
-                                        height="40"
-                                        style="width: 40px; height: 40px; object-fit: cover; border-radius: 50% !important;"
-                                    >
-                                {% else %}
-                                    <span aria-hidden="true" style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #343b45; border-radius: 50% !important;">
-                                        {{ membership.user.profile.name|default:membership.user.email|first|upper }}
-                                    </span>
-                                {% endif %}
+                                {% render_crow_avatar membership.user.profile size=40 %}
                                 <span class="project-member-copy">
                                     <strong>{{ membership.user.profile.name|default:membership.user.email }}</strong>
                                     <span>{{ membership.get_role_display }}</span>
