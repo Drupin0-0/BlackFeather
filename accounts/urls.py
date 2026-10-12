@@ -9,7 +9,6 @@ from .views import (
     delete_account_view,
     delete_account_page,
     view_profile_view,
-    customize_avatar_view,
     search_users,
     logout_view,
     bio_update,
@@ -40,5 +39,4 @@ urlpatterns = [
     path('deletar-conta/confirmar/', delete_account_view, name='delete_account'),
 
     path('perfil/', view_profile_view, name='view_profile'),
-    path('perfil/avatar/', customize_avatar_view, name='customize_avatar'),
 ]

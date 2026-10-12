@@ -14,7 +14,7 @@ import secrets
 
 from .forms import CustomUserCreationForm
 from .services import enviar_email_codigo
-from .models import UserProfile, Technology, CategoryChoices, AvatarSuitChoices
+from .models import UserProfile, Technology, CategoryChoices, AvatarBirdChoices
 from Tasks.models import Project, ProjectMember, Task
 
 User = get_user_model()
@@ -281,7 +281,6 @@ def view_profile_view(request):
             'profile': profile,
             'skills': profile.skills.all(),
             'skill_catalog': grouped_technologies(),
-            'suit_choices': AvatarSuitChoices.choices,
             **extra,
         }
 
@@ -297,6 +296,9 @@ def view_profile_view(request):
         profile.birth_date = request.POST.get('birth_date') or None
         profile.course_area = (request.POST.get('course_area') or '').strip()
         profile.website = (request.POST.get('website') or '').strip()
+        avatar_bird = request.POST.get('avatar_bird')
+        if avatar_bird in AvatarBirdChoices.values:
+            profile.avatar_bird = avatar_bird
 
         profile.save()
 
@@ -306,26 +308,6 @@ def view_profile_view(request):
         return redirect('accounts:view_profile')
 
     return render(request, 'profile/view_profile.html', ctx())
-
-
-@login_required
-def customize_avatar_view(request):
-    profile, _ = UserProfile.objects.get_or_create(user=request.user)
-
-    if request.method == 'POST':
-        avatar_suit = request.POST.get('avatar_suit')
-        if avatar_suit in AvatarSuitChoices.values:
-            profile.avatar_suit = avatar_suit
-
-        profile.avatar_hat = request.POST.get('avatar_hat') == '1'
-        profile.save()
-
-        return redirect('accounts:view_profile')
-
-    return render(request, 'profile/avatar_customize.html', {
-        'profile': profile,
-        'suit_choices': AvatarSuitChoices.choices,
-    })
 
 
 def logout_view(request):

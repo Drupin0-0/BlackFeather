@@ -59,10 +59,11 @@ class Technology(models.Model):
         return f"{self.name} ({self.get_category_display()})"
 
 
-class AvatarSuitChoices(models.TextChoices):
-    BLACK = 'black', 'Clássico'
-    WINE = 'wine', 'Vinho'
-    NAVY = 'navy', 'Azul-Marinho'
+class AvatarBirdChoices(models.TextChoices):
+    AGUIA = 'aguia', 'Águia'
+    CORVO = 'corvo', 'Corvo'
+    CORUJA = 'coruja', 'Coruja'
+    PAPAGAIO = 'papagaio', 'Papagaio'
 
 
 class UserProfile(models.Model):
@@ -74,16 +75,12 @@ class UserProfile(models.Model):
     course_area = models.CharField(max_length=150, blank=True)
     website = models.URLField(blank=True)
 
-    # Avatar: não é mais upload livre de foto — a pessoa escolhe um corvo
-    # (cor do paletó) e, opcionalmente, um chapéu, combinados via CSS.
-    # Novas cores de paletó = adicionar um choice aqui + um PNG em
-    # static/img/avatars/suit-<valor>.png, nada mais muda.
-    avatar_suit = models.CharField(
+    # A pessoa escolhe uma das quatro aves disponíveis em static/img/avatars/.
+    avatar_bird = models.CharField(
         max_length=20,
-        choices=AvatarSuitChoices.choices,
-        default=AvatarSuitChoices.BLACK,
+        choices=AvatarBirdChoices.choices,
+        default=AvatarBirdChoices.CORVO,
     )
-    avatar_hat = models.BooleanField(default=False)
 
     skills = models.ManyToManyField(Technology, blank=True, related_name="profiles")
 

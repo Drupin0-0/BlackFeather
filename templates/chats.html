@@ -200,7 +200,10 @@
         color: #ffffff;
         background: color-mix(in srgb, var(--project-accent, #3b4a6b) 35%, #101318);
         user-select: none;
+        overflow: hidden;
+        border-radius: 50%;
     }
+    .tc-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
     .tc-item-text { min-width: 0; flex: 1; }
 
@@ -685,7 +688,7 @@
                     </span>
 
                     <span class="tc-item-code">{{ project.code }}</span>
-                    {% for member in project.members.all %}<span class="tc-member-data" hidden data-id="{{ member.id }}" data-name="{{ member.profile.name|default:member.email }}" data-email="{{ member.email }}"></span>{% endfor %}
+                    {% for member in project.members.all %}<span class="tc-member-data" hidden data-id="{{ member.id }}" data-name="{{ member.profile.name|default:member.email }}" data-email="{{ member.email }}" data-avatar-bird="{{ member.profile.avatar_bird|default:'corvo' }}"></span>{% endfor %}
                 </button>
             {% endfor %}
 
@@ -811,6 +814,12 @@
     const MY_ID = {{ user.id }};
     const DIRECT_LIST_URL = "{% url 'direct_list' %}";
     const DIRECT_OPEN_TEMPLATE = "{% url 'direct_open' 0 %}";   // .../abrir/0/
+    const AVATAR_IMAGES = {
+        aguia: "{% static 'img/avatars/Aguia.jpg' %}",
+        corvo: "{% static 'img/avatars/Corvo.jpg' %}",
+        coruja: "{% static 'img/avatars/Coruja.jpg' %}",
+        papagaio: "{% static 'img/avatars/Papagaio.jpg' %}"
+    };
 
     const csrfInput = document.querySelector("[name=csrfmiddlewaretoken]");
     const csrfToken = csrfInput ? csrfInput.value : "";
@@ -855,6 +864,15 @@
         el.style.background = colorFor(name);
     }
 
+    function paintBirdAvatar(el, bird) {
+        const img = document.createElement("img");
+        img.src = AVATAR_IMAGES[bird] || AVATAR_IMAGES.corvo;
+        img.alt = "";
+        img.setAttribute("aria-hidden", "true");
+        el.replaceChildren(img);
+        el.style.background = "#111";
+    }
+
     const projectItems = Array.from(itemsBox.querySelectorAll(".tc-item[data-code]"));
 
     projectItems.forEach(function (item) {
@@ -866,7 +884,8 @@
             return {
                 id: Number(el.dataset.id),
                 name: el.dataset.name,
-                email: el.dataset.email
+                email: el.dataset.email,
+                avatar_bird: el.dataset.avatarBird || "corvo"
             };
         });
     }
@@ -940,7 +959,11 @@
 
         titleEl.textContent = cfg.title;
         subtitleEl.textContent = cfg.subtitle;
-        paintAvatar(headerAv, cfg.title);
+        if (cfg.kind === "dm") {
+            paintBirdAvatar(headerAv, cfg.avatar_bird);
+        } else {
+            paintAvatar(headerAv, cfg.title);
+        }
 
         if (cfg.fullUrl) {
             openFull.href = cfg.fullUrl;
@@ -988,6 +1011,7 @@
             key: conv.id,
             hash: "dm-" + conv.id,
             title: conv.name,
+            avatar_bird: conv.avatar_bird,
             subtitle: "Conversa privada",
             wsPath: "/ws/privado/" + conv.id + "/",
             fullUrl: null,
@@ -1118,7 +1142,7 @@
             } else {
                 const av = document.createElement("span");
                 av.className = "tc-avatar";
-                paintAvatar(av, message.username);
+                paintBirdAvatar(av, message.avatar_bird);
                 row.appendChild(av);
             }
         }
@@ -1211,7 +1235,7 @@
             const av = document.createElement("span");
             av.className = "tc-avatar";
             av.setAttribute("aria-hidden", "true");
-            paintAvatar(av, member.name);
+            paintBirdAvatar(av, member.avatar_bird);
 
             const text = document.createElement("span");
             text.className = "tc-member-text";
@@ -1324,19 +1348,24 @@
             el.appendChild(text);
 
             el.addEventListener("click", function () {
-                openDm({ id: el.dataset.dmId, name: el.dataset.title });
+                openDm({
+                    id: el.dataset.dmId,
+                    name: el.dataset.title,
+                    avatar_bird: el.dataset.avatarBird
+                });
             });
 
             dmItemsBox.appendChild(el);
         }
 
         el.dataset.title = conv.name;
+        el.dataset.avatarBird = conv.avatar_bird || "corvo";
         el.dataset.members = "";
         el.dataset.code = "";
 
         el.querySelector(".tc-item-title").textContent = conv.name;
         el.querySelector(".tc-item-sub").textContent = conv.last_message || "Conversa privada";
-        paintAvatar(el.querySelector(".tc-avatar"), conv.name);
+        paintBirdAvatar(el.querySelector(".tc-avatar"), conv.avatar_bird);
 
         dmSection.hidden = false;
 

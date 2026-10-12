@@ -4,6 +4,7 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 
 from .models import Message
@@ -64,6 +65,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         message = await self.save_message(content)
         username = await self.get_user_name()
+        avatar_bird = await self.get_user_avatar_bird()
 
         await self.channel_layer.group_send(
             self.room_group_name,
@@ -71,6 +73,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "type": "chat_message",
                 "message": message.content,
                 "username": username,
+                "avatar_bird": avatar_bird,
                 "created_at": message.created_at.isoformat(),
             },
         )
@@ -81,6 +84,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 "type": "message",
                 "message": event["message"],
                 "username": event["username"],
+                "avatar_bird": event["avatar_bird"],
                 "created_at": event["created_at"],
             })
         )
@@ -117,6 +121,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return user.email
 
     @database_sync_to_async
+    def get_user_avatar_bird(self):
+        try:
+            return self.scope["user"].profile.avatar_bird or "corvo"
+        except ObjectDoesNotExist:
+            return "corvo"
+
+    @database_sync_to_async
     def get_message_history(self):
         messages = Message.objects.filter(
             project=self.project
@@ -129,15 +140,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         for message in messages:
             user = message.user
-
-            if hasattr(user, "profile"):
-                username = user.profile.name
-            else:
-                username = user.email
+            try:
+                profile = user.profile
+            except ObjectDoesNotExist:
+                profile = None
+            username = (profile.name if profile and profile.name else user.email)
 
             history.append({
                 "message": message.content,
                 "username": username,
+                "avatar_bird": (profile.avatar_bird or "corvo") if profile else "corvo",
                 "created_at": message.created_at.isoformat(),
             })
 

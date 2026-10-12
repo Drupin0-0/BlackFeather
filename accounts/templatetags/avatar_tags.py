@@ -5,22 +5,23 @@ register = template.Library()
 
 @register.inclusion_tag('accounts/_crow_avatar.html')
 def render_crow_avatar(profile, size=40, extra_class=''):
-    """
-    Renderiza o avatar-corvo de um UserProfile: a camada do paletó
-    (static/img/avatars/suit-<cor>.png) e, se avatar_hat estiver marcado,
-    o chapéu por cima (static/img/avatars/hat.png), posicionado via CSS.
-
-    Uso: {% render_crow_avatar profile size=40 %}
-    Ou com classe extra: {% render_crow_avatar profile size=110 extra_class="crow-avatar-preview" %}
-    Se `profile` for None (ex: usuário sem perfil criado ainda), cai no
-    corvo clássico sem chapéu.
-    """
-    suit = getattr(profile, 'avatar_suit', 'black') or 'black'
-    hat = bool(getattr(profile, 'avatar_hat', False))
+    bird = getattr(profile, 'avatar_bird', 'corvo') or 'corvo'
+    image_by_bird = {
+        'aguia': 'Aguia.jpg',
+        'corvo': 'Corvo.jpg',
+        'coruja': 'Coruja.jpg',
+        'papagaio': 'Papagaio.jpg',
+    }
+    label_by_bird = {
+        'aguia': 'Águia',
+        'corvo': 'Corvo',
+        'coruja': 'Coruja',
+        'papagaio': 'Papagaio',
+    }
 
     return {
-        'suit_image': f'img/avatars/suit-{suit}.png',
-        'hat': hat,
+        'bird_image': f"img/avatars/{image_by_bird.get(bird, 'Corvo.jpg')}",
+        'bird_label': label_by_bird.get(bird, 'Corvo'),
         'size': size,
         'extra_class': extra_class,
     }

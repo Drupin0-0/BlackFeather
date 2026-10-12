@@ -5,6 +5,7 @@ from urllib.request import Request, urlopen
 from urllib.error import URLError, HTTPError
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Q, Count
 from django.http import JsonResponse
@@ -748,7 +749,10 @@ def project_summary_history_view(request, project_id):
 
     payload = []
     for item in history:
-        profile = getattr(item.user, 'profile', None) if item.user else None
+        try:
+            profile = item.user.profile if item.user else None
+        except ObjectDoesNotExist:
+            profile = None
         payload.append({
             'id': item.pk,
             'action': item.action,
@@ -757,6 +761,7 @@ def project_summary_history_view(request, project_id):
             'changes': resolved_changes(item),
             'created_at': item.created_at.isoformat(),
             'user_name': (profile.name if profile and profile.name else item.user.email) if item.user else 'Sistema',
+            'user_avatar_bird': (getattr(profile, 'avatar_bird', 'corvo') or 'corvo') if profile else 'corvo',
         })
     return JsonResponse({'success': True, 'items': payload})
 
@@ -771,10 +776,15 @@ def project_summary_assignment_view(request, project_id):
         if member.pk in seen_ids:
             continue
         seen_ids.add(member.pk)
+        try:
+            profile = member.profile
+        except ObjectDoesNotExist:
+            profile = None
         member_tasks = Task.objects.filter(project=project, task_responsible=member).count()
         rows.append({
             'user_id': member.pk,
-            'name': member.profile.name if getattr(member, 'profile', None) and member.profile.name else member.email,
+            'name': profile.name if profile and profile.name else member.email,
+            'avatar_bird': (profile.avatar_bird or 'corvo') if profile else 'corvo',
             'count': member_tasks,
             'percent': int(round((member_tasks / total_tasks * 100) if total_tasks else 0)),
         })

@@ -99,6 +99,27 @@
 <script>
 (function () {
 
+    const summaryAvatarImages = {
+        aguia: "{% static 'img/avatars/Aguia.jpg' %}",
+        corvo: "{% static 'img/avatars/Corvo.jpg' %}",
+        coruja: "{% static 'img/avatars/Coruja.jpg' %}",
+        papagaio: "{% static 'img/avatars/Papagaio.jpg' %}"
+    };
+
+    function createBirdAvatar(className, bird) {
+        var avatar = document.createElement('div');
+        avatar.className = className;
+        var image = document.createElement('img');
+        image.src = summaryAvatarImages[bird] || summaryAvatarImages.corvo;
+        image.alt = '';
+        image.setAttribute('aria-hidden', 'true');
+        image.style.width = '100%';
+        image.style.height = '100%';
+        image.style.objectFit = 'cover';
+        avatar.appendChild(image);
+        return avatar;
+    }
+
     var initial   = JSON.parse(document.getElementById('summaryInitialData').textContent);
     var projectId = Number(initial.projectId);
     var userId    = Number(initial.userId);
@@ -599,9 +620,7 @@
             var row = document.createElement('div');
             row.className = 'summary-history-item';
 
-            var avatar = document.createElement('div');
-            avatar.className = 'summary-history-avatar';
-            avatar.textContent = userText.charAt(0).toUpperCase();
+            var avatar = createBirdAvatar('summary-history-avatar', item.user_avatar_bird);
 
             var content = document.createElement('div');
             content.className = 'summary-history-text';
@@ -674,9 +693,7 @@
                 var user = document.createElement('div');
                 user.className = 'summary-assignment-user';
 
-                var avatar = document.createElement('span');
-                avatar.className = 'summary-assignment-avatar';
-                avatar.textContent = rowData.name.charAt(0).toUpperCase();
+                var avatar = createBirdAvatar('summary-assignment-avatar', rowData.avatar_bird);
 
                 var name = document.createElement('strong');
                 name.textContent = rowData.name;
