@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from Tasks.models import Project, ProjectMember
+from accounts.models import UserProfile
 from .models import JoinRequest, Notification
 
 
@@ -194,3 +195,30 @@ class NotificationFlowTests(TestCase):
 				description__contains="recusou",
 			).exists()
 		)
+
+
+class DirectConversationAvatarTests(TestCase):
+	def setUp(self):
+		User = get_user_model()
+		self.me = User.objects.create_user(email="me@example.com", password="Senha123!")
+		self.other = User.objects.create_user(email="other@example.com", password="Senha123!")
+		UserProfile.objects.create(user=self.me, name="Eu", avatar_bird="corvo")
+		UserProfile.objects.create(user=self.other, name="Outra pessoa", avatar_bird="aguia")
+		self.project = Project.objects.create(title="Projeto compartilhado", owner=self.me)
+		self.project.members.add(self.me, self.other)
+		self.client.force_login(self.me)
+
+	def test_direct_conversation_endpoints_include_selected_avatar(self):
+		opened = self.client.post(reverse("direct_open", args=[self.other.pk]))
+		self.assertEqual(opened.status_code, 200)
+		self.assertEqual(opened.json()["avatar_bird"], "aguia")
+
+		listed = self.client.get(reverse("direct_list"))
+		self.assertEqual(listed.status_code, 200)
+		self.assertEqual(listed.json()["conversations"][0]["avatar_bird"], "aguia")
+
+	def test_project_chat_member_markup_includes_selected_avatar(self):
+		response = self.client.get(reverse("chat_list"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'data-avatar-bird="aguia"')

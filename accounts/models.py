@@ -59,6 +59,13 @@ class Technology(models.Model):
         return f"{self.name} ({self.get_category_display()})"
 
 
+class AvatarBirdChoices(models.TextChoices):
+    AGUIA = 'aguia', 'Águia'
+    CORVO = 'corvo', 'Corvo'
+    CORUJA = 'coruja', 'Coruja'
+    PAPAGAIO = 'papagaio', 'Papagaio'
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     name = models.CharField(max_length=100)
@@ -67,7 +74,14 @@ class UserProfile(models.Model):
     birth_date = models.DateField(null=True, blank=True)
     course_area = models.CharField(max_length=150, blank=True)
     website = models.URLField(blank=True)
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+
+    # A pessoa escolhe uma das quatro aves disponíveis em static/img/avatars/.
+    avatar_bird = models.CharField(
+        max_length=20,
+        choices=AvatarBirdChoices.choices,
+        default=AvatarBirdChoices.CORVO,
+    )
+
     skills = models.ManyToManyField(Technology, blank=True, related_name="profiles")
 
 

@@ -3,6 +3,7 @@ import json
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 
 from .models import DirectConversation, DirectMessage, display_name
@@ -62,6 +63,7 @@ class DirectChatConsumer(AsyncWebsocketConsumer):
             "type": "message",
             "sender_id": event["sender_id"],
             "username": event["username"],
+            "avatar_bird": event["avatar_bird"],
             "message": event["message"],
             "created_at": event["created_at"],
         }))
@@ -97,9 +99,14 @@ class DirectChatConsumer(AsyncWebsocketConsumer):
 
     @staticmethod
     def _serialize(message):
+        try:
+            profile = message.sender.profile
+        except ObjectDoesNotExist:
+            profile = None
         return {
             "sender_id": message.sender_id,
             "username": display_name(message.sender),
+            "avatar_bird": (profile.avatar_bird or "corvo") if profile else "corvo",
             "message": message.content,
             "created_at": message.created_at.isoformat(),
         }

@@ -1,11 +1,6 @@
-from io import BytesIO
-from tempfile import TemporaryDirectory
-
 from django.contrib.auth import get_user_model
-from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.test import TestCase
 from django.urls import reverse
-from PIL import Image
 
 from .models import Technology, UserProfile
 
@@ -53,40 +48,59 @@ class ProfileSecurityAndAvatarTests(TestCase):
 		)
 		self.client.force_login(self.user)
 
-	def make_png(self):
-		content = BytesIO()
-		Image.new("RGB", (3, 3), color="#336699").save(content, format="PNG")
-		return SimpleUploadedFile("avatar.png", content.getvalue(), content_type="image/png")
-
 	def test_profile_has_back_button(self):
 		response = self.client.get(reverse("accounts:view_profile"))
 
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, "Voltar ao painel")
 
-	def test_profile_avatar_upload_is_saved_to_media_storage(self):
-		with TemporaryDirectory() as media_root, override_settings(MEDIA_ROOT=media_root):
-			response = self.client.post(reverse("accounts:view_profile"), {
-				"name": "Perfil com foto",
-				"avatar": self.make_png(),
-				"skills": [],
-			})
+	def test_profile_defaults_to_crow(self):
+		self.client.get(reverse("accounts:view_profile"))
+		profile = UserProfile.objects.get(user=self.user)
 
-			self.assertRedirects(response, reverse("accounts:view_profile"))
-			profile = self.user.profile
-			self.assertTrue(profile.avatar.name)
-			self.assertTrue(profile.avatar.storage.exists(profile.avatar.name))
+		self.assertEqual(profile.avatar_bird, "corvo")
 
-	def test_profile_rejects_non_image_upload(self):
+	def test_profile_avatar_carousel_exposes_all_birds_and_navigation(self):
+		response = self.client.get(reverse("accounts:view_profile"))
+
+		self.assertContains(response, "Selecionar avatar anterior")
+		self.assertContains(response, "Selecionar próximo avatar", html=False)
+		self.assertContains(response, "avatarOptions")
+		self.assertContains(response, "value: 'aguia'")
+		self.assertContains(response, "value: 'corvo'")
+		self.assertContains(response, "value: 'coruja'")
+		self.assertContains(response, "value: 'papagaio'")
+		self.assertContains(response, "img/avatars/Aguia.jpg")
+		self.assertContains(response, "img/avatars/Corvo.jpg")
+		self.assertContains(response, "img/avatars/Coruja.jpg")
+		self.assertContains(response, "img/avatars/Papagaio.jpg")
+
+	def test_profile_saves_selected_bird_with_profile_form(self):
 		response = self.client.post(reverse("accounts:view_profile"), {
-			"name": "Perfil com arquivo inválido",
-			"avatar": SimpleUploadedFile(
-				"not-image.png",
-				b"isso nao e uma imagem",
-				content_type="image/png",
-			),
+			"name": "Dono",
+			"avatar_bird": "coruja",
 		})
 
-		self.assertEqual(response.status_code, 200)
-		self.assertContains(response, "Envie uma imagem válida")
-		self.assertFalse(self.user.profile.avatar)
+		self.assertRedirects(response, reverse("accounts:view_profile"))
+		profile = self.user.profile
+		profile.refresh_from_db()
+		self.assertEqual(profile.avatar_bird, "coruja")
+
+	def test_profile_ignores_invalid_bird_value(self):
+		response = self.client.post(reverse("accounts:view_profile"), {
+			"name": "Dono",
+			"avatar_bird": "inexistente",
+		})
+
+		self.assertRedirects(response, reverse("accounts:view_profile"))
+		profile = self.user.profile
+		profile.refresh_from_db()
+		self.assertEqual(profile.avatar_bird, "corvo")
+
+	def test_profile_avatar_tag_uses_selected_bird(self):
+		profile, _ = UserProfile.objects.get_or_create(user=self.user)
+		profile.avatar_bird = "papagaio"
+		profile.save()
+		response = self.client.get(reverse("accounts:view_profile"))
+
+		self.assertContains(response, "img/avatars/Papagaio.jpg")

@@ -2,7 +2,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
-from Tasks.models import Project, ProjectMember, Task
+from Tasks.models import Project, ProjectMember, Task, TaskHistory
+from accounts.models import UserProfile
 
 
 class CreateTaskViewTests(TestCase):
@@ -20,6 +21,26 @@ class CreateTaskViewTests(TestCase):
             owner=self.user,
         )
         self.project.members.add(self.user)
+
+    def test_project_summary_payloads_include_the_selected_bird(self):
+        UserProfile.objects.create(
+            user=self.user,
+            name='Teste',
+            avatar_bird='coruja',
+        )
+        TaskHistory.objects.create(
+            project=self.project,
+            user=self.user,
+            action='created',
+            task_title='Tarefa de teste',
+        )
+
+        history = self.client.get(reverse('project_summary_history', args=[self.project.pk]))
+        assignments = self.client.get(reverse('project_summary_assignment', args=[self.project.pk]))
+
+        self.assertEqual(history.json()['items'][0]['user_avatar_bird'], 'coruja')
+        owner_row = next(row for row in assignments.json()['rows'] if row['user_id'] == self.user.pk)
+        self.assertEqual(owner_row['avatar_bird'], 'coruja')
 
     def test_project_role_and_permissions_helpers(self):
         member = get_user_model().objects.create_user(

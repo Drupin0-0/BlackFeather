@@ -1,6 +1,6 @@
 ﻿{% extends 'base.html' %}
 
-{% load static %}
+{% load static avatar_tags %}
 
 {% block title %}Painel - Sincrow{% endblock %}
 
@@ -237,14 +237,24 @@
                     <p>{{ task.description|default:"Sem descrição." }}</p>
 
                     <div class="task-meta">
-                        <span>
+                        <span class="task-assignee">
                             {% if task.task_responsible %}
-                                {{ task.task_responsible.profile.name|default:task.task_responsible.email }}
+                                {% render_crow_avatar task.task_responsible.profile size=34 extra_class="task-assignee-avatar" %}
                             {% else %}
-                                Sem responsável
+                                <span class="task-assignee-avatar task-assignee-avatar-empty" aria-hidden="true">?</span>
                             {% endif %}
+                            <span class="task-assignee-copy">
+                                <small>Responsável</small>
+                                <strong>
+                                    {% if task.task_responsible %}
+                                        {{ task.task_responsible.profile.name|default:task.task_responsible.email }}
+                                    {% else %}
+                                        Sem responsável
+                                    {% endif %}
+                                </strong>
+                            </span>
                         </span>
-                        <span>
+                        <span class="task-deadline">
                             {% if task.deadline %}{{ task.deadline|date:"d/m/Y" }}{% else %}Sem data{% endif %}
                         </span>
                     </div>

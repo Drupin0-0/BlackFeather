@@ -1,6 +1,7 @@
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET, require_POST
@@ -25,11 +26,16 @@ def share_a_project(user, other):
 def _serialize(conversation, me):
     other = conversation.other_user(me)
     last = conversation.messages.order_by("-created_at").first()
+    try:
+        profile = other.profile
+    except ObjectDoesNotExist:
+        profile = None
 
     return {
         "id": conversation.pk,
         "user_id": other.pk,
         "name": display_name(other),
+        "avatar_bird": (profile.avatar_bird or "corvo") if profile else "corvo",
         "last_message": last.content[:80] if last else "",
         "last_at": (last.created_at if last else conversation.created_at).isoformat(),
     }
