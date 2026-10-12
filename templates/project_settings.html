@@ -22,16 +22,42 @@
                 <div class="settings-group-header">
                     <span>PROJETO</span>
                     <h2 id="settingsMembersTitle">Integrantes</h2>
+                    {% if can_invite_members %}
+                        <p>Convide uma conta existente. Ela fará parte do projeto depois de aceitar o convite na central de notificações.</p>
+                    {% else %}
+                        <p>Seu cargo não permite enviar convites. Peça ao responsável pelo projeto para ajustar suas permissões.</p>
+                    {% endif %}
                 </div>
+                {% if can_invite_members %}
+                    <form
+                        class="settings-card project-invite-form"
+                        id="projectInviteForm"
+                        data-url="{% url 'send_join_request' project.code %}"
+                    >
+                        {% csrf_token %}
+                        <label for="projectInviteEmail">E-mail da pessoa</label>
+                        <div class="project-invite-controls">
+                            <input
+                                type="email"
+                                id="projectInviteEmail"
+                                name="username"
+                                placeholder="pessoa@exemplo.com"
+                                autocomplete="email"
+                                required
+                            >
+                            <button type="submit" class="settings-button">Enviar convite</button>
+                        </div>
+                        <p class="project-invite-feedback" id="projectInviteFeedback" role="status" aria-live="polite"></p>
+                    </form>
+                {% endif %}
                 <div class="settings-card settings-members-card">
-                    <div class="settings-item project-member-item">
+                    <div class="settings-item project-member-item project-owner-card">
                         <div class="settings-item-text project-member-identity">
-                            {% render_crow_avatar project.owner.profile size=40 %}
                             <span class="project-member-copy">
                                 <strong>{{ project.owner.profile.name|default:project.owner.email }}</strong>
-                                <span>{{ role_labels.boss }}</span>
                             </span>
                         </div>
+                        <span class="project-owner-role">{{ role_labels.boss }}</span>
                     </div>
 
                     {% for membership in memberships %}
@@ -251,6 +277,29 @@ document.addEventListener('DOMContentLoaded', function () {
             throw new Error(result.error || 'Não foi possível salvar a alteração.');
         }
         return {response: response, result: result};
+    }
+
+    const inviteForm = document.getElementById('projectInviteForm');
+    if (inviteForm) {
+        inviteForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            const submitButton = inviteForm.querySelector('[type="submit"]');
+            const feedback = document.getElementById('projectInviteFeedback');
+            submitButton.disabled = true;
+            feedback.textContent = 'Enviando convite...';
+            try {
+                const {result} = await postForm(inviteForm.dataset.url, new FormData(inviteForm));
+                if (!result.success) {
+                    throw new Error(result.error || 'Não foi possível enviar o convite.');
+                }
+                feedback.textContent = 'Convite enviado. A pessoa precisa aceitá-lo nas notificações para entrar no projeto.';
+                inviteForm.reset();
+            } catch (error) {
+                feedback.textContent = error.message;
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
     }
 
     document.querySelectorAll('[data-member-action]').forEach(function (button) {

@@ -29,7 +29,10 @@
                 title="Pesquisar tarefas"
                 aria-label="Pesquisar tarefas"
             >
-                <span class="search-icon"></span>
+                <svg class="project-header-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="10.8" cy="10.8" r="6.3"></circle>
+                    <path d="m15.5 15.5 4.2 4.2"></path>
+                </svg>
             </button>
 
             <input
@@ -54,7 +57,10 @@
                 aria-haspopup="true"
                 aria-expanded="false"
             >
-                <span class="person-icon"></span>
+                <svg class="project-header-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="8" r="3.2"></circle>
+                    <path d="M5.5 20c.5-3.4 2.8-5.2 6.5-5.2s6 1.8 6.5 5.2"></path>
+                </svg>
             </button>
 
             <div class="project-members-dropdown" id="projectMembersDropdown" hidden>
@@ -72,6 +78,14 @@
                         {% endif %}
                     {% endfor %}
                 </ul>
+                {% if can_manage_settings %}
+                    <div class="project-members-footer">
+                        <a href="{% url 'project_settings' project.pk %}" class="project-members-more">
+                            <span>Gerenciar integrantes e permissões</span>
+                            <span aria-hidden="true">→</span>
+                        </a>
+                    </div>
+                {% endif %}
             </div>
 
         </div>

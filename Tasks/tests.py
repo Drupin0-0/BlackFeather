@@ -414,8 +414,19 @@ class CreateTaskViewTests(TestCase):
         self.assertContains(response, 'Promover a Líder')
         self.assertContains(response, 'name="new_owner_id"')
         self.assertContains(response, 'data-permission="can_create_tasks"')
+        self.assertContains(response, 'id="projectInviteForm"')
+        self.assertContains(response, 'Enviar convite')
         self.assertNotContains(response, 'ownerPassword')
         self.assertNotContains(response, 'deleteConfirmation')
+
+    def test_project_members_dropdown_links_to_member_management(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse('project_detail', args=[self.project.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Gerenciar integrantes e permissões')
+        self.assertContains(response, reverse('project_settings', args=[self.project.pk]))
 
     def test_project_settings_shows_default_permissions_without_other_members(self):
         response = self.client.get(

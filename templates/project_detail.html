@@ -402,9 +402,11 @@ document.addEventListener('DOMContentLoaded', function () {
         projectTaskModal.setAttribute('aria-hidden', 'true');
     }
 
-    projectAddTaskBtn.addEventListener('click', function () {
-        openTaskModal('create');
-    });
+    if (projectAddTaskBtn) {
+        projectAddTaskBtn.addEventListener('click', function () {
+            openTaskModal('create');
+        });
+    }
 
     document
         .querySelectorAll('[data-close-project-task-modal]')

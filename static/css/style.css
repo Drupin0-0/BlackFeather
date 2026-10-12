@@ -2223,6 +2223,16 @@ body { overflow-x: hidden; }
     justify-content: flex-start;
 }
 
+.project-owner-card {
+    min-height: 78px;
+    margin-bottom: 10px;
+    padding: 18px 22px;
+    border: 1px solid #292d34;
+    border-radius: 9px;
+    background: linear-gradient(110deg, #14171b, #0d0f12 72%);
+    box-shadow: inset 3px 0 #d8d8d8, 0 10px 26px rgba(0, 0, 0, .2);
+}
+
 .project-member-identity {
     display: flex;
     align-items: center;
@@ -2264,6 +2274,21 @@ body { overflow-x: hidden; }
 .project-member-copy > span {
     color: #666666;
     font-size: 11px;
+}
+
+.project-owner-card .project-member-identity { gap: 0; }
+.project-owner-card .project-member-copy strong { font-size: 16px; letter-spacing: -.25px; }
+.project-owner-role {
+    margin-left: auto;
+    padding: 6px 10px;
+    border: 1px solid #353a42;
+    border-radius: 999px;
+    background: #191c21;
+    color: #c4c9d0;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .9px;
+    text-transform: uppercase;
 }
 
 .project-member-actions {
@@ -2602,7 +2627,7 @@ body { overflow-x: hidden; }
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 6px;
     flex-shrink: 0;
 }
 
@@ -2615,61 +2640,53 @@ body { overflow-x: hidden; }
     align-items: center;
     gap: 6px;
     flex-shrink: 0;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     transition: width 0.2s ease;
 }
 
 .project-search.open {
-    width: 212px;
+    width: 206px;
 }
 
 .project-search-button {
-    width: 36px;
-    height: 36px;
-    flex: 0 0 36px;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     padding: 0;
-    background: transparent;
-    border: 1px solid #222222;
-    border-radius: 4px;
-    color: #8c8c8c;
+    background: #0b0b0b;
+    border: 1px solid #242424;
+    border-radius: 7px;
+    color: #a6a6a6;
     cursor: pointer;
+    transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
 }
 
 .project-search-button:hover {
     color: #ffffff;
-    background: #111111;
-    border-color: #333333;
+    background: #171717;
+    border-color: #454545;
+    transform: translateY(-1px);
 }
 
-.search-icon {
-    width: 12px;
-    height: 12px;
-    position: relative;
+.project-header-icon {
+    width: 16px;
+    height: 16px;
     display: block;
-    border: 1.5px solid currentColor;
-    border-radius: 50%;
-}
-
-.search-icon::after {
-    content: "";
-    position: absolute;
-    width: 6px;
-    height: 1.5px;
-    right: -5px;
-    bottom: -2px;
-    background: currentColor;
-    transform: rotate(45deg);
-    transform-origin: left center;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
 }
 
 .project-search-input {
     box-sizing: border-box;
     width: 0;
-    height: 36px;
+    height: 32px;
     flex: 0 0 0;
     padding: 0;
     margin: 0;
@@ -2709,47 +2726,30 @@ body { overflow-x: hidden; }
 /* INTEGRANTES */
 
 .project-members-button {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
-    border: 1px solid #222222;
-    border-radius: 4px;
-    color: #8c8c8c;
+    padding: 0;
+    background: #0b0b0b;
+    border: 1px solid #242424;
+    border-radius: 7px;
+    color: #a6a6a6;
     text-decoration: none;
-    transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+    transition: color 0.16s ease, background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
 }
 
 .project-members-button:hover {
     color: #ffffff;
-    background: #111111;
-    border-color: #333333;
+    background: #171717;
+    border-color: #454545;
+    transform: translateY(-1px);
 }
 
-.person-icon {
-    width: 11px;
-    height: 11px;
-    position: relative;
-    display: block;
-    margin-top: -8px;
-    border: 1.5px solid currentColor;
-    border-radius: 50%;
-}
-
-.person-icon::after {
-    content: "";
-    position: absolute;
-    width: 17px;
-    height: 9px;
-    left: 50%;
-    bottom: -11px;
-    transform: translateX(-50%);
-    border: 1.5px solid currentColor;
-    border-radius: 9px 9px 5px 5px;
-}
+.project-members-button:focus-visible,
+.project-search-button:focus-visible { outline: 2px solid #a3c7ff; outline-offset: 2px; }
 
 /* NAVEGAÇÃO */
 
@@ -4106,6 +4106,14 @@ body:has(.landing-page) > * { width: 100%; }
 .logout-btn { width: 100%; background: transparent; cursor: pointer; font-family: inherit; }
 .settings-item form { margin: 0; }
 .settings-button { font-family: inherit; cursor: pointer; }
+.project-invite-form { margin-bottom: 12px; padding: 18px 20px; }
+.project-invite-form > label { display: block; margin-bottom: 8px; color: #c9cdd4; font-size: 11px; font-weight: 600; }
+.project-invite-controls { display: flex; gap: 10px; }
+.project-invite-controls input { min-width: 0; min-height: 40px; flex: 1; padding: 0 12px; border: 1px solid #30343a; border-radius: 6px; background: #08090b; color: #f4f4f4; font: inherit; font-size: 12px; }
+.project-invite-controls input:focus { border-color: #8a929d; outline: 2px solid rgba(163, 199, 255, .22); }
+.project-invite-feedback { min-height: 16px; margin-top: 8px; color: #b7c4d7; font-size: 11px; line-height: 1.5; }
+.project-member-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.project-member-actions button:disabled, .project-invite-controls button:disabled { cursor: wait; opacity: .6; }
 .app-legal-links { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; padding: 16px 8px 2px; }
 .app-legal-links a { font-size: 9px; }
 
@@ -4198,4 +4206,10 @@ body:has(.legal-page) { display: block; min-height: 100vh; padding: 0; backgroun
 
 @media (prefers-reduced-motion: reduce) {
     .landing-page *, .landing-page *::before, .landing-page *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+@media (max-width: 620px) {
+    .project-invite-controls { align-items: stretch; flex-direction: column; }
+    .project-invite-controls .settings-button { width: 100%; }
+    .project-member-actions { width: 100%; }
 }

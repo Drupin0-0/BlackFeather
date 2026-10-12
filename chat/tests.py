@@ -71,6 +71,46 @@ class NotificationFlowTests(TestCase):
 		self.assertIn(self.project.title, notification.description)
 		self.assertTrue(notification.join_request_id)
 
+	def test_project_invite_requires_recipient_acceptance(self):
+		self.client.force_login(self.sender)
+
+		response = self.client.post(
+			reverse("send_join_request", args=[self.project.code]),
+			{"username": self.recipient.email},
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertTrue(response.json()["success"])
+		self.assertFalse(self.project.members.filter(pk=self.recipient.pk).exists())
+		self.assertTrue(
+			JoinRequest.objects.filter(
+				project=self.project,
+				recipient=self.recipient,
+				request_type="invite",
+				status="pending",
+			).exists()
+		)
+
+	def test_member_without_invite_permission_cannot_invite(self):
+		member = get_user_model().objects.create_user(
+			email="member@example.com",
+			password="Senha123!",
+		)
+		self.project.members.add(member)
+		ProjectMember.objects.create(
+			project=self.project,
+			user=member,
+			can_invite_members=False,
+		)
+		self.client.force_login(member)
+
+		response = self.client.post(
+			reverse("send_join_request", args=[self.project.code]),
+			{"username": self.recipient.email},
+		)
+
+		self.assertEqual(response.status_code, 403)
+
 	def test_request_to_join_by_code_notifies_project_owner(self):
 		self.client.force_login(self.recipient)
 

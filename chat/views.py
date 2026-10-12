@@ -108,13 +108,11 @@ def send_join_request(request, project_code):
         code=project_code,
     )
 
-    if not project.members.filter(
-        id=request.user.id
-    ).exists() and project.owner_id != request.user.id:
+    if not project.user_can(request.user, 'can_invite_members'):
         return JsonResponse(
             {
                 "success": False,
-                "error": "Você não pode enviar solicitações para este projeto.",
+                "error": "Você não tem permissão para convidar pessoas para este projeto.",
             },
             status=403,
         )

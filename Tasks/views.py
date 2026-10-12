@@ -851,6 +851,7 @@ def project_settings_view(request, project_id):
             'project': project,
             'memberships': memberships,
             'is_boss': project.is_boss(request.user),
+            'can_invite_members': project.user_can(request.user, 'can_invite_members'),
             'role_labels': {
                 'boss': 'Chefe',
                 ProjectMember.Role.LEADER: 'Líder',
