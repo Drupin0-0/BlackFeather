@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Privacidade e dados | Sincrow{% endblock %}
+
+{% block content %}
+<main class="legal-page">
+    <a class="legal-back-link" href="{% url 'home' %}">← Voltar ao Sincrow</a>
+    <header class="legal-header">
+        <p class="landing-eyebrow"><span></span> Transparência e dados</p>
+        <h1>Aviso de privacidade</h1>
+        <p>Este aviso explica quais informações podem ser tratadas ao usar o Sincrow e para quais finalidades.</p>
+    </header>
+
+    {% if controller_name and controller_contact %}
+        <aside class="legal-notice"><strong>Responsável pelo tratamento</strong><p>{{ controller_name }} · <a href="mailto:{{ controller_contact }}">{{ controller_contact }}</a></p></aside>
+    {% else %}
+        <aside class="legal-notice legal-notice-action"><strong>Informação necessária antes da publicação</strong><p>O responsável legal pelo serviço e seu canal de privacidade ainda precisam ser configurados. O operador deve preencher DATA_CONTROLLER_NAME e DATA_CONTROLLER_CONTACT no ambiente antes de disponibilizar este serviço publicamente.</p></aside>
+    {% endif %}
+
+    <nav class="legal-toc" aria-label="Nesta página">
+        <a href="#dados">Dados tratados</a><a href="#finalidades">Finalidades</a><a href="#compartilhamento">Compartilhamento</a><a href="#retencao">Retenção e direitos</a><a href="#cookies">Cookies</a>
+    </nav>
+
+    <section class="legal-section" id="dados">
+        <h2>Quais dados podem ser tratados</h2>
+        <ul>
+            <li><strong>Conta:</strong> e-mail, credenciais protegidas e informações necessárias à autenticação. No login Google, os dados de perfil e e-mail autorizados pelo usuário podem ser recebidos do provedor.</li>
+            <li><strong>Perfil opcional:</strong> nome, biografia, data de nascimento, área de curso, site, habilidades e avatar selecionado.</li>
+            <li><strong>Conteúdo do serviço:</strong> projetos, tarefas, responsáveis, prazos, mensagens, solicitações de participação e notificações criadas durante o uso.</li>
+            <li><strong>Dados técnicos:</strong> informações de sessão e segurança necessárias para autenticar solicitações e proteger a aplicação.</li>
+        </ul>
+    </section>
+
+    <section class="legal-section" id="finalidades">
+        <h2>Finalidades e fundamento do tratamento</h2>
+        <p>Os dados são usados para criar e manter a conta, exibir o perfil, organizar projetos e tarefas, permitir colaboração e conversas, enviar notificações solicitadas, proteger o serviço e atender pedidos do usuário.</p>
+        <p>O controlador deve documentar a hipótese legal aplicável a cada finalidade, conforme a LGPD, e obter consentimento quando essa for a hipótese escolhida. Campos de perfil não necessários ao funcionamento devem permanecer opcionais.</p>
+    </section>
+
+    <section class="legal-section" id="compartilhamento">
+        <h2>Compartilhamento e serviços externos</h2>
+        <p>O conteúdo de projetos e conversas pode ser visto por integrantes autorizados daquele espaço, de acordo com as permissões do projeto.</p>
+        {% if ai_external_processor_enabled %}
+            <p>Recursos de sugestão assistidos por automação podem enviar ao serviço externo configurado pelo operador (n8n) informações relacionadas ao projeto, às tarefas e aos integrantes selecionados. O operador deve identificar o fornecedor, a região de processamento, os prazos de retenção e as salvaguardas aplicáveis antes de ativar esse recurso.</p>
+        {% else %}
+            <p>O código oferece integração opcional com n8n para sugestões de tarefas e distribuição. Ela depende de configuração do operador. Se ativada, esta página deve ser atualizada com o fornecedor, os dados enviados, a região e as salvaguardas aplicáveis.</p>
+        {% endif %}
+        <p>O login Google é opcional e sujeito às políticas do Google. Dados não devem ser vendidos. Outros compartilhamentos só devem ocorrer quando necessários ao serviço, autorizados ou exigidos por lei.</p>
+    </section>
+
+    <section class="legal-section" id="retencao">
+        <h2>Retenção, segurança e seus direitos</h2>
+        <p>Dados da conta ficam associados ao serviço enquanto a conta estiver ativa. O controlador deve definir e publicar prazos específicos para registros técnicos, cópias de segurança e exclusão após o encerramento da conta. Medidas técnicas e administrativas são adotadas para reduzir riscos, sem que qualquer sistema possa prometer segurança absoluta.</p>
+        <p>Nos termos da LGPD, a pessoa pode solicitar confirmação e acesso, correção, anonimização, bloqueio ou eliminação quando cabível, portabilidade, informação sobre compartilhamentos, revogação de consentimento e revisão de decisões automatizadas aplicáveis. Use o canal de privacidade identificado no início desta página.</p>
+        <p>Se o canal do controlador ainda não estiver configurado, não há um meio adequado para exercer esses direitos — essa pendência deve ser resolvida antes da publicação.</p>
+    </section>
+
+    <section class="legal-section" id="cookies">
+        <h2>Cookies e armazenamento local</h2>
+        <p>O site utiliza armazenamento técnico necessário para sessão, autenticação e proteção contra falsificação de solicitações (CSRF). A autenticação por terceiros pode envolver tecnologias do respectivo provedor. Não foi identificada nesta página uma ferramenta de publicidade ou análise; se for adicionada, este aviso e a escolha de consentimento deverão ser revistos antes da ativação.</p>
+    </section>
+
+    <p class="legal-disclaimer">Este texto é uma base informativa gerada a partir das funcionalidades encontradas no sistema. Não substitui a revisão jurídica nem a validação do controlador, dos fornecedores, dos prazos de retenção e das bases legais efetivamente adotadas.</p>
+</main>
+{% endblock %}

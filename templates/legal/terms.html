@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Termos de uso | Sincrow{% endblock %}
+
+{% block content %}
+<main class="legal-page">
+    <a class="legal-back-link" href="{% url 'home' %}">← Voltar ao Sincrow</a>
+    <header class="legal-header">
+        <p class="landing-eyebrow"><span></span> Regras de uso</p>
+        <h1>Termos de uso</h1>
+        <p>Leia as regras básicas para acessar e utilizar os espaços de trabalho do Sincrow.</p>
+    </header>
+
+    <section class="legal-section">
+        <h2>Conta e acesso</h2>
+        <p>Você deve fornecer informações corretas, manter seus meios de autenticação em segurança e avisar o responsável pelo serviço sobre uso não autorizado. Cada usuário é responsável pelas atividades realizadas em sua conta, ressalvados os direitos previstos em lei.</p>
+    </section>
+    <section class="legal-section">
+        <h2>Uso permitido e conteúdo</h2>
+        <p>Use o serviço de forma lícita, respeite os direitos e a privacidade de outras pessoas e não tente comprometer a disponibilidade ou a segurança da plataforma. Você mantém os direitos sobre o conteúdo que envia e declara possuir autorização para compartilhá-lo com os integrantes do projeto.</p>
+        <p>As permissões de projetos controlam o acesso dentro da plataforma; não publique informações que você não esteja autorizado a compartilhar. O responsável pelo projeto deve revisar participantes e permissões.</p>
+    </section>
+    <section class="legal-section">
+        <h2>Recursos automatizados</h2>
+        <p>Sugestões automatizadas são auxiliares e podem estar indisponíveis, incompletas ou incorretas. Elas não substituem a revisão humana. Quando integrações externas estiverem habilitadas, os dados tratados por elas são descritos no <a href="{% url 'legal_privacy' %}">Aviso de privacidade</a>.</p>
+    </section>
+    <section class="legal-section">
+        <h2>Disponibilidade e alterações</h2>
+        <p>O serviço é fornecido conforme sua disponibilidade e pode receber manutenção ou alterações. Não é prometido funcionamento ininterrupto nem ausência total de erros. O responsável deverá informar mudanças relevantes nestes termos e manter a versão vigente acessível.</p>
+    </section>
+    <section class="legal-section">
+        <h2>Encerramento e direitos legais</h2>
+        <p>Você pode deixar de usar o serviço e solicitar a exclusão da conta pelas ferramentas disponíveis. Medidas contra uso abusivo devem ser proporcionais, justificadas e respeitar os direitos e garantias previstos na legislação aplicável. Nenhum trecho destes termos limita direitos que não possam ser afastados por contrato.</p>
+    </section>
+    <section class="legal-section">
+        <h2>Responsável pelo serviço</h2>
+        <p>Antes da disponibilização pública, o operador deve identificar nestes termos a pessoa ou organização que oferece o serviço, seu endereço/canal de contato, regras de suporte, eventuais condições comerciais e foro competente aplicável. Esses dados não foram fornecidos para este projeto.</p>
+        <p>Para questões sobre dados pessoais, consulte o <a href="{% url 'legal_privacy' %}">Aviso de privacidade</a>. Para suporte, acesse <a href="{% url 'support' %}">Suporte</a>.</p>
+    </section>
+    <p class="legal-disclaimer">Texto-base sujeito à revisão jurídica. Os termos precisam ser completados e aprovados pelo responsável pelo serviço antes de uso público.</p>
+</main>
+{% endblock %}

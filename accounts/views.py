@@ -4,9 +4,11 @@ from django.contrib.auth.views import LoginView
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth.password_validation import validate_password
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils import timezone
 from django.http import JsonResponse
@@ -137,16 +139,18 @@ def solicitar_codigo_view(request):
 
         cache.set(rate_key, solicitations + 1, timeout=600)
 
-        if User.objects.filter(email=email).exists():
+        user = User.objects.filter(email=email).first()
+        if user:
             codigo = f"{secrets.randbelow(900000) + 100000}"
             cache.set(f'reset_code_{email}', codigo, timeout=600)
             enviar_email_codigo(email, codigo)
 
-            request.session['email_recuperacao'] = email
-            messages.success(request, 'Código enviado para o seu e-mail!')
-            return redirect('accounts:verificar_codigo')
-
-        messages.error(request, 'E-mail não encontrado no sistema.')
+        request.session['email_recuperacao'] = email
+        messages.success(
+            request,
+            'Se houver uma conta associada a esse e-mail, enviaremos um código de recuperação.'
+        )
+        return redirect('accounts:verificar_codigo')
 
     return render(request, 'registration/solicitar_codigo.html')
 
@@ -157,28 +161,63 @@ def verificar_codigo_view(request):
     if not email:
         return redirect('accounts:solicitar_codigo')
 
+        avatar_upload = request.FILES.get('avatar')
+        if avatar_upload:
+            if avatar_upload.size > 5 * 1024 * 1024:
+                messages.error(request, 'A imagem do perfil deve ter no máximo 5 MB.')
+                return redirect('accounts:view_profile')
+
+            try:
+                image_dimensions = get_image_dimensions(avatar_upload)
+            except (OSError, ValueError):
+                image_dimensions = None
+
+            if not image_dimensions or avatar_upload.content_type not in {'image/jpeg', 'image/png', 'image/webp'}:
+                messages.error(request, 'Envie uma imagem JPEG, PNG ou WebP válida.')
+                return redirect('accounts:view_profile')
+
+            extension = {
+                'image/jpeg': '.jpg',
+                'image/png': '.png',
+                'image/webp': '.webp',
+            }[avatar_upload.content_type]
+            safe_avatar_path = f'avatars/profiles/{secrets.token_urlsafe(24)}{extension}'
+            profile.avatar.save(safe_avatar_path, avatar_upload, save=False)
     if request.method == 'POST':
         codigo_digitado = request.POST.get('codigo')
         nova_senha = request.POST.get('nova_senha')
         confirmar_senha = request.POST.get('confirmar_senha')
         codigo_salvo = cache.get(f'reset_code_{email}')
+        attempt_key = f'reset_attempts_{email}'
+        attempts = cache.get(attempt_key, 0)
 
-        if not codigo_salvo or codigo_salvo != codigo_digitado:
+        if attempts >= 5:
+            cache.delete(f'reset_code_{email}')
+            messages.error(request, 'Muitas tentativas. Solicite um novo código de recuperação.')
+            return redirect('accounts:solicitar_codigo')
+
+        if not codigo_salvo or not codigo_digitado or not secrets.compare_digest(str(codigo_salvo), str(codigo_digitado)):
+            cache.set(attempt_key, attempts + 1, timeout=600)
             messages.error(request, 'Código inválido ou expirado.')
-        elif nova_senha != confirmar_senha:
+        elif not nova_senha or nova_senha != confirmar_senha:
             messages.error(request, 'As senhas não coincidem.')
-        elif len(nova_senha) < 8:
-            messages.error(request, 'A senha deve ter pelo menos 8 caracteres.')
         else:
             user = User.objects.get(email=email)
-            user.set_password(nova_senha)
-            user.save()
+            try:
+                validate_password(nova_senha, user=user)
+            except ValidationError as error:
+                for message in error.messages:
+                    messages.error(request, message)
+            else:
+                user.set_password(nova_senha)
+                user.save()
 
-            cache.delete(f'reset_code_{email}')
-            del request.session['email_recuperacao']
+                cache.delete(f'reset_code_{email}')
+                cache.delete(attempt_key)
+                del request.session['email_recuperacao']
 
-            messages.success(request, 'Senha alterada com sucesso! Faça login.')
-            return redirect('accounts:login')
+                messages.success(request, 'Senha alterada com sucesso! Faça login.')
+                return redirect('accounts:login')
 
     return render(request, 'registration/verificar_codigo.html')
 
@@ -310,6 +349,8 @@ def view_profile_view(request):
     return render(request, 'profile/view_profile.html', ctx())
 
 
+@login_required
+@require_POST
 def logout_view(request):
     logout(request)
     return redirect("accounts:login")

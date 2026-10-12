@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block title %}Suporte | Sincrow{% endblock %}
+
+{% block content %}
+<main class="legal-page">
+    <a class="legal-back-link" href="{% url 'home' %}">← Voltar ao Sincrow</a>
+    <header class="legal-header">
+        <p class="landing-eyebrow"><span></span> Estamos aqui para ajudar</p>
+        <h1>Suporte</h1>
+        <p>Fale com a equipe sobre acesso à conta, projetos, tarefas ou problemas técnicos.</p>
+    </header>
+    <section class="legal-section legal-support-card">
+        <h2>Entre em contato</h2>
+        {% if support_email %}
+            <p>Envie uma mensagem para o canal de suporte configurado:</p>
+            <p><a class="legal-contact-link" href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+        {% else %}
+            <p>O canal de suporte ainda não foi configurado. O operador deve definir SUPPORT_EMAIL no ambiente antes de disponibilizar o site ao público.</p>
+        {% endif %}
+        <p>Ao pedir ajuda, informe o endereço da página e descreva o problema. Não envie sua senha, códigos de recuperação ou dados pessoais desnecessários.</p>
+    </section>
+    <section class="legal-section">
+        <h2>Privacidade e dados pessoais</h2>
+        <p>Para dúvidas ou solicitações relacionadas aos seus dados pessoais, consulte o <a href="{% url 'legal_privacy' %}">Aviso de privacidade</a> e utilize o canal do controlador informado lá.</p>
+    </section>
+</main>
+{% endblock %}

@@ -60,6 +60,7 @@ class ProfileSecurityAndAvatarTests(TestCase):
 
 		self.assertEqual(profile.avatar_bird, "corvo")
 
+
 	def test_profile_avatar_carousel_exposes_all_birds_and_navigation(self):
 		response = self.client.get(reverse("accounts:view_profile"))
 
@@ -104,3 +105,34 @@ class ProfileSecurityAndAvatarTests(TestCase):
 		response = self.client.get(reverse("accounts:view_profile"))
 
 		self.assertContains(response, "img/avatars/Papagaio.jpg")
+
+
+class PublicInformationAndLogoutTests(TestCase):
+	def setUp(self):
+		self.user = get_user_model().objects.create_user(
+			email="site-user@example.com",
+			password="Senha123!",
+		)
+
+	def test_public_information_pages_are_reachable(self):
+		for route_name, heading in (
+			("legal_terms", "Termos de uso"),
+			("legal_privacy", "Aviso de privacidade"),
+			("legal_accessibility", "Acessibilidade"),
+			("support", "Suporte"),
+		):
+			with self.subTest(route=route_name):
+				response = self.client.get(reverse(route_name))
+				self.assertEqual(response.status_code, 200)
+				self.assertContains(response, heading)
+
+	def test_logout_rejects_get_and_accepts_post(self):
+		self.client.force_login(self.user)
+
+		get_response = self.client.get(reverse("accounts:logout"))
+		self.assertEqual(get_response.status_code, 405)
+		self.assertTrue(self.client.session.get("_auth_user_id"))
+
+		post_response = self.client.post(reverse("accounts:logout"))
+		self.assertRedirects(post_response, reverse("accounts:login"))
+		self.assertNotIn("_auth_user_id", self.client.session)

@@ -46,9 +46,11 @@
 
         <div class="sidebar-footer">
 
-            <a href="{% url 'accounts:logout' %}" class="logout-btn">
-                Sair
-            </a>
+            <form method="post" action="{% url 'accounts:logout' %}" class="logout-form">
+                {% csrf_token %}
+                <button type="submit" class="logout-btn">Sair</button>
+            </form>
+            {% include 'includes/legal_links.html' %}
 
         </div>
 

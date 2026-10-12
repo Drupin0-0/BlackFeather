@@ -22,6 +22,12 @@ class CreateTaskViewTests(TestCase):
         )
         self.project.members.add(self.user)
 
+    def test_create_task_endpoint_rejects_get_requests(self):
+        response = self.client.get(reverse('task_create'))
+
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.json()['error'], 'Envie os dados da tarefa usando POST.')
+
     def test_project_summary_payloads_include_the_selected_bird(self):
         UserProfile.objects.create(
             user=self.user,
@@ -422,7 +428,7 @@ class CreateTaskViewTests(TestCase):
         self.assertContains(response, 'Permitir criação de tarefas')
         self.assertContains(response, 'Permitir exclusão de tarefas')
         self.assertContains(response, 'Permitir edição de tarefas')
-        self.assertContains(response, 'Criação de novos quadros')
+        self.assertNotContains(response, 'Criação de novos quadros')
         self.assertContains(response, 'Convidar novos integrantes')
         self.assertContains(response, 'class="permission-toggle is-active"')
         self.assertContains(response, 'class="permission-toggle"')
@@ -451,6 +457,21 @@ class CreateTaskViewTests(TestCase):
         self.assertFalse(self.project.default_can_edit_tasks)
         self.assertTrue(self.project.default_can_create_boards)
         self.assertFalse(self.project.default_can_invite_members)
+
+    def test_default_permission_update_does_not_require_unsupported_board_permission(self):
+        response = self.client.post(
+            reverse('project_default_member_permissions', args=[self.project.pk]),
+            {
+                'can_create_tasks': 'true',
+                'can_delete_tasks': 'false',
+                'can_edit_tasks': 'true',
+                'can_invite_members': 'true',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.project.refresh_from_db()
+        self.assertFalse(self.project.default_can_create_boards)
 
     def test_leader_cannot_update_default_permissions_without_a_common_member(self):
         leader = get_user_model().objects.create_user(

@@ -118,6 +118,16 @@
         </section>
     </main>
 
-    <footer class="landing-footer"><a class="landing-brand" href="{% url 'home' %}"><img class="landing-logo-image" src="{% static 'images/logo.png' %}" alt=""><span>Sincrow</span></a><span>Um espaço melhor para fazer as coisas acontecerem.</span><a href="{% if user.is_authenticated %}{% url 'accounts:dashboard' %}{% else %}{% url 'accounts:login' %}{% endif %}">{% if user.is_authenticated %}Acessar painel{% else %}Acessar conta{% endif %} <span aria-hidden="true">↗</span></a></footer>
+    <footer class="landing-footer">
+        <a class="landing-brand" href="{% url 'home' %}"><img class="landing-logo-image" src="{% static 'images/logo.png' %}" alt=""><span>Sincrow</span></a>
+        <span>Um espaço melhor para fazer as coisas acontecerem.</span>
+        <nav class="landing-legal-links" aria-label="Informações legais e suporte">
+            <a href="{% url 'legal_terms' %}">Termos</a>
+            <a href="{% url 'legal_privacy' %}">Privacidade</a>
+            <a href="{% url 'legal_accessibility' %}">Acessibilidade</a>
+            <a href="{% url 'support' %}">Suporte</a>
+        </nav>
+        <a href="{% if user.is_authenticated %}{% url 'accounts:dashboard' %}{% else %}{% url 'accounts:login' %}{% endif %}">{% if user.is_authenticated %}Acessar painel{% else %}Acessar conta{% endif %} <span aria-hidden="true">↗</span></a>
+    </footer>
 </div>
 {% endblock %}

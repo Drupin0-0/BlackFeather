@@ -12,6 +12,28 @@ urlpatterns = [
 
     # Página pública inicial
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
+    path(
+        'privacidade/',
+        TemplateView.as_view(
+            template_name='legal/privacy.html',
+            extra_context={
+                'controller_name': settings.DATA_CONTROLLER_NAME,
+                'controller_contact': settings.DATA_CONTROLLER_CONTACT,
+                'ai_external_processor_enabled': settings.AI_EXTERNAL_PROCESSOR_ENABLED,
+            },
+        ),
+        name='legal_privacy',
+    ),
+    path('termos/', TemplateView.as_view(template_name='legal/terms.html'), name='legal_terms'),
+    path('acessibilidade/', TemplateView.as_view(template_name='legal/accessibility.html'), name='legal_accessibility'),
+    path(
+        'suporte/',
+        TemplateView.as_view(
+            template_name='legal/support.html',
+            extra_context={'support_email': settings.SUPPORT_EMAIL},
+        ),
+        name='support',
+    ),
 
     # URLs próprias
     path('accounts/', include('accounts.urls')),

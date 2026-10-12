@@ -222,3 +222,33 @@ class DirectConversationAvatarTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, 'data-avatar-bird="aguia"')
+
+
+class ProjectChatAccessTests(TestCase):
+	def setUp(self):
+		User = get_user_model()
+		self.owner = User.objects.create_user(email="chat-owner@example.com", password="Senha123!")
+		self.member = User.objects.create_user(email="chat-member@example.com", password="Senha123!")
+		self.outsider = User.objects.create_user(email="chat-outsider@example.com", password="Senha123!")
+		self.project = Project.objects.create(title="Chat privado", owner=self.owner)
+		self.project.members.add(self.owner, self.member)
+
+	def test_anonymous_user_is_redirected_to_login(self):
+		response = self.client.get(reverse("project_chat", args=[self.project.code]))
+
+		self.assertEqual(response.status_code, 302)
+		self.assertIn(reverse("accounts:login"), response["Location"])
+
+	def test_non_member_cannot_open_project_chat(self):
+		self.client.force_login(self.outsider)
+
+		response = self.client.get(reverse("project_chat", args=[self.project.code]))
+
+		self.assertEqual(response.status_code, 403)
+
+	def test_project_member_can_open_project_chat(self):
+		self.client.force_login(self.member)
+
+		response = self.client.get(reverse("project_chat", args=[self.project.code]))
+
+		self.assertEqual(response.status_code, 200)

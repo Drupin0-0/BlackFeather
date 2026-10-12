@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages as django_messages
-from django.http import JsonResponse
+from django.http import HttpResponseForbidden, JsonResponse
 from django.db.models import Q
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
@@ -31,11 +31,15 @@ def chat_list_view(request):
     return render(request, 'chats.html', {'projects': projects})
 
 
+@login_required
 def test_chat(request, project_code):
     project = get_object_or_404(
         Project,
         code=project_code
     )
+
+    if project.owner_id != request.user.pk and not project.members.filter(pk=request.user.pk).exists():
+        return HttpResponseForbidden("Você não tem acesso a este projeto.")
 
     return render(
         request,

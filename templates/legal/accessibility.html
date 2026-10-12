@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block title %}Acessibilidade | Sincrow{% endblock %}
+
+{% block content %}
+<main class="legal-page">
+    <a class="legal-back-link" href="{% url 'home' %}">← Voltar ao Sincrow</a>
+    <header class="legal-header">
+        <p class="landing-eyebrow"><span></span> Acesso para todas as pessoas</p>
+        <h1>Acessibilidade</h1>
+        <p>Queremos que as ferramentas de projetos e colaboração sejam utilizáveis por pessoas com diferentes necessidades e formas de navegação.</p>
+    </header>
+    <section class="legal-section">
+        <h2>Compromissos de desenvolvimento</h2>
+        <ul>
+            <li>Usar estrutura semântica, rótulos e nomes acessíveis onde aplicável.</li>
+            <li>Manter navegação por teclado e indicador de foco visível nos controles.</li>
+            <li>Respeitar a preferência do sistema por movimento reduzido em animações suportadas.</li>
+            <li>Revisar contraste, ampliação, formulários, mensagens de erro e diálogos durante a evolução do produto.</li>
+        </ul>
+        <p>Esta declaração não representa certificação de conformidade. A interface ainda precisa de testes regulares com teclado, leitores de tela, ampliação e pessoas com deficiência.</p>
+    </section>
+    <section class="legal-section">
+        <h2>Encontrou uma barreira?</h2>
+        <p>Informe a página, o que tentou fazer e, se desejar, o recurso assistivo utilizado. Evite enviar dados sensíveis no relato.</p>
+        {% if support_email %}
+            <p><a class="legal-contact-link" href="mailto:{{ support_email }}?subject=Relato%20de%20acessibilidade">Relatar problema de acessibilidade: {{ support_email }}</a></p>
+        {% else %}
+            <p>O canal de suporte ainda não está configurado. O responsável deve definir SUPPORT_EMAIL no ambiente antes da publicação.</p>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}

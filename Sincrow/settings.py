@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,8 +26,26 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 DEBUG = os.getenv("DEBUG", "False") == "True"
+if not DEBUG and not SECRET_KEY:
+    raise ImproperlyConfigured("Configure SECRET_KEY no ambiente quando DEBUG estiver desativado.")
 
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0").split(",")
+    if host.strip()
+]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False") == "True"
+SECURE_COOKIES = os.getenv("SECURE_COOKIES", "False") == "True"
+SESSION_COOKIE_SECURE = SECURE_COOKIES
+CSRF_COOKIE_SECURE = SECURE_COOKIES
+SECURE_HSTS_SECONDS = int(os.getenv("SECURE_HSTS_SECONDS", "0"))
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 
 # Application definition
@@ -146,7 +165,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'pt-br'
 
 TIME_ZONE = 'UTC'
 
@@ -159,7 +178,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
     BASE_DIR / 'static',  # Remova o '/css' daqui
@@ -180,6 +199,10 @@ EMAIL_HOST_USER = os.getenv('EMAIL_REMETENTE')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_SENHA')
 DEFAULT_FROM_EMAIL = os.getenv('EMAIL_REMETENTE')
 EMAIL_TIMEOUT = 10
+SUPPORT_EMAIL = os.getenv('SUPPORT_EMAIL') or DEFAULT_FROM_EMAIL or ''
+DATA_CONTROLLER_NAME = os.getenv('DATA_CONTROLLER_NAME', '')
+DATA_CONTROLLER_CONTACT = os.getenv('DATA_CONTROLLER_CONTACT') or SUPPORT_EMAIL
+AI_EXTERNAL_PROCESSOR_ENABLED = bool(os.getenv('N8N_WEBHOOK_URL'))
 
 AUTH_USER_MODEL = 'accounts.User'
 REST_FRAMEWORK = {

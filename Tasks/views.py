@@ -443,6 +443,7 @@ def _validar_resposta_ia(data, tasks_enviadas, membros_validos_ids):
     return resultado if resultado else None
 
 @login_required
+@require_POST
 def create_task_view(request):
     user_projects = Project.objects.filter(Q(owner=request.user) | Q(members=request.user)).distinct().order_by('title')
 
@@ -494,7 +495,7 @@ def create_task_view(request):
 
         return redirect('accounts:dashboard')
 
-    return render(request, 'task_create.html', {'projects': user_projects})
+    return JsonResponse({'error': 'Envie os dados da tarefa usando POST.'}, status=405)
 
 
 @login_required
@@ -832,7 +833,6 @@ def project_settings_view(request, project_id):
         ('can_create_tasks', 'Permitir criação de tarefas'),
         ('can_delete_tasks', 'Permitir exclusão de tarefas'),
         ('can_edit_tasks', 'Permitir edição de tarefas'),
-        ('can_create_boards', 'Criação de novos quadros (em breve, sem efeito por enquanto)'),
         ('can_invite_members', 'Convidar novos integrantes'),
     )
     for membership in memberships:
@@ -873,6 +873,8 @@ def update_default_member_permissions_view(request, project_id):
     permission_values = {}
     for permission in ProjectMember.PERMISSION_FIELDS:
         raw_value = request.POST.get(permission)
+        if permission == 'can_create_boards' and raw_value is None:
+            continue
         if raw_value not in {'true', 'false', '1', '0', 'on', 'off'}:
             return JsonResponse(
                 {'error': f'Valor inválido para a permissão {permission}.'},
@@ -995,6 +997,8 @@ def update_member_permissions_view(request, project_id, user_id):
     permission_values = {}
     for permission in ProjectMember.PERMISSION_FIELDS:
         raw_value = request.POST.get(permission)
+        if permission == 'can_create_boards' and raw_value is None:
+            continue
         if raw_value not in {'true', 'false', '1', '0', 'on', 'off'}:
             return JsonResponse(
                 {'error': f'Valor inválido para a permissão {permission}.'},
