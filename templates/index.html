@@ -1,14 +1,123 @@
+{% extends 'base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
-</html> 
+{% block title %}Sincrow — projetos que avançam juntos{% endblock %}
+
+{% block content %}
+<div class="landing-page">
+    <header class="landing-header">
+        <a class="landing-brand" href="{% url 'home' %}" aria-label="Sincrow, página inicial">
+            <img class="landing-logo-image" src="{% static 'images/logo.png' %}" alt="">
+            <span>Sincrow</span>
+        </a>
+        <nav class="landing-nav" aria-label="Navegação principal">
+            <a href="#recursos">Recursos</a>
+            <a href="#como-funciona">Como funciona</a>
+        </nav>
+        <div class="landing-actions">
+            {% if user.is_authenticated %}
+                <a class="landing-login" href="{% url 'accounts:dashboard' %}">Ir para o painel</a>
+            {% else %}
+                <a class="landing-login" href="{% url 'accounts:login' %}">Entrar</a>
+                <a class="landing-button landing-button-small" href="{% url 'accounts:register' %}">Criar conta <span aria-hidden="true">↗</span></a>
+            {% endif %}
+        </div>
+    </header>
+
+    <main>
+        <section class="landing-hero">
+            <div class="landing-hero-copy">
+                <p class="landing-eyebrow"><span></span> Um espaço de trabalho feito para equipes</p>
+                <h1>Menos ruído.<br><span>Mais trabalho</span><br>bem feito.</h1>
+                <p class="landing-lede">Organize projetos, acompanhe tarefas e mantenha todo mundo por dentro — em um só lugar, no ritmo do seu time.</p>
+                <div class="landing-hero-actions">
+                    {% if user.is_authenticated %}
+                        <a class="landing-button" href="{% url 'accounts:dashboard' %}">Acessar meu espaço <span aria-hidden="true">→</span></a>
+                    {% else %}
+                        <a class="landing-button" href="{% url 'accounts:register' %}">Comece a organizar <span aria-hidden="true">→</span></a>
+                        <a class="landing-text-link" href="{% url 'accounts:login' %}">Já tem uma conta? Entre</a>
+                    {% endif %}
+                </div>
+                <p class="landing-note"><span aria-hidden="true">✳</span> Projetos, pessoas e próximos passos, lado a lado.</p>
+            </div>
+
+            <div class="landing-visual" aria-label="Prévia de um quadro de tarefas do Sincrow">
+                <div class="landing-board">
+                    <div class="landing-kanban">
+                        <div class="landing-column">
+                            <div class="landing-column-title"><span>Pendente</span><b>0</b></div>
+                            <div class="landing-empty">Sem tarefas</div>
+                        </div>
+                        <div class="landing-column">
+                            <div class="landing-column-title"><span>Em andamento</span><b>1</b></div>
+                            <article class="landing-task">
+                                <div class="landing-task-head"><span>Hospital</span><span class="landing-task-priority">Média</span></div>
+                                <strong>Revisar relatórios</strong>
+                                <p>Revisando relatórios</p>
+                                <div class="landing-task-meta"><strong>Dudu</strong><span>10/02/2028</span></div>
+                            </article>
+                        </div>
+                        <div class="landing-column landing-column-done">
+                            <div class="landing-column-title"><span>Concluída</span><b>0</b></div>
+                            <div class="landing-empty">Sem tarefas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-proof" aria-label="Visão geral do Sincrow">
+            <p>O que sua equipe precisa, conectado em um só espaço</p>
+            <div class="landing-proof-items"><span><b>01</b> Projetos organizados</span><span><b>02</b> Tarefas com contexto</span><span><b>03</b> Conversas no lugar certo</span><span><b>04</b> Progresso visível</span></div>
+        </section>
+
+        <section class="landing-features" id="recursos">
+            <div class="landing-section-heading">
+                <p class="landing-eyebrow"><span></span> Tudo conectado</p>
+                <h2>Do primeiro plano<br>à entrega final.</h2>
+                <p>Um jeito mais simples de transformar planos em progresso — sem espalhar o trabalho por mil lugares.</p>
+            </div>
+            <div class="landing-feature-grid">
+                <article class="landing-feature-card feature-projects">
+                    <span class="landing-feature-icon" aria-hidden="true">▦</span>
+                    <h3>Projetos com direção</h3>
+                    <p>Reúna pessoas, decisões e tarefas em espaços que deixam claro o que está acontecendo e o que vem depois.</p>
+                    <span class="landing-feature-link">Cada projeto, no seu espaço <b>↗</b></span>
+                </article>
+                <article class="landing-feature-card feature-team">
+                    <span class="landing-feature-icon" aria-hidden="true">◎</span>
+                    <h3>Um time em sintonia</h3>
+                    <p>Converse nos projetos ou em particular, compartilhe contexto e acompanhe notificações importantes.</p>
+                    <span class="landing-feature-link">Colaboração sem desencontro <b>↗</b></span>
+                </article>
+                <article class="landing-feature-card feature-insights">
+                    <span class="landing-feature-icon" aria-hidden="true">↗</span>
+                    <h3>Progresso que dá para ver</h3>
+                    <p>Acompanhe tarefas por status, consulte o histórico e entenda como o trabalho está avançando.</p>
+                    <span class="landing-feature-link">Mais clareza para decidir <b>↗</b></span>
+                </article>
+            </div>
+        </section>
+
+        <section class="landing-how" id="como-funciona">
+            <div class="landing-how-intro"><p class="landing-eyebrow"><span></span> Comece do seu jeito</p><h2>Organizar o trabalho<br>pode ser leve.</h2></div>
+            <div class="landing-steps">
+                <article><span>01</span><div><h3>Crie seu espaço</h3><p>Abra um projeto e convide as pessoas que vão construir com você.</p></div></article>
+                <article><span>02</span><div><h3>Transforme planos em tarefas</h3><p>Defina responsáveis, prioridades e prazos para cada próximo passo.</p></div></article>
+                <article><span>03</span><div><h3>Acompanhe o que importa</h3><p>Veja atualizações, converse com o time e celebre cada entrega.</p></div></article>
+            </div>
+        </section>
+
+        <section class="landing-cta">
+            <div><p class="landing-eyebrow"><span></span> Seu próximo projeto começa aqui</p><h2>Vamos tirar as ideias do papel?</h2><p>Crie seu espaço e dê ao seu time um lugar para avançar junto.</p></div>
+            {% if user.is_authenticated %}
+                <a class="landing-button" href="{% url 'accounts:dashboard' %}">Voltar ao meu painel <span aria-hidden="true">→</span></a>
+            {% else %}
+                <a class="landing-button" href="{% url 'accounts:register' %}">Criar minha conta <span aria-hidden="true">→</span></a>
+            {% endif %}
+        </section>
+    </main>
+
+    <footer class="landing-footer"><a class="landing-brand" href="{% url 'home' %}"><img class="landing-logo-image" src="{% static 'images/logo.png' %}" alt=""><span>Sincrow</span></a><span>Um espaço melhor para fazer as coisas acontecerem.</span><a href="{% if user.is_authenticated %}{% url 'accounts:dashboard' %}{% else %}{% url 'accounts:login' %}{% endif %}">{% if user.is_authenticated %}Acessar painel{% else %}Acessar conta{% endif %} <span aria-hidden="true">↗</span></a></footer>
+</div>
+{% endblock %}

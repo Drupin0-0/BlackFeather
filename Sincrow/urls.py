@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
 from chat import views
@@ -8,6 +9,9 @@ from chat.views import send_join_request
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # Página pública inicial
+    path('', TemplateView.as_view(template_name='index.html'), name='home'),
 
     # URLs próprias
     path('accounts/', include('accounts.urls')),
