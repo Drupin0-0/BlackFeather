@@ -240,6 +240,9 @@
     </style>
 </head>
 <body>
+    {% if user.is_authenticated %}
+        <script src="{% static 'js/notes/drafts.js' %}" defer></script>
+    {% endif %}
 
     {% block content %}
     {% endblock %}

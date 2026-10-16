@@ -4,6 +4,7 @@ from django.urls import path
 from .consumers import NotificationConsumer
 from .consumers import ChatConsumer
 from .direct_consumers import DirectChatConsumer
+from notes.routing import websocket_urlpatterns as notes_websocket_urlpatterns
 
   
 
@@ -18,4 +19,4 @@ websocket_urlpatterns = [
     ),
     path("ws/privado/<int:conversation_id>/", DirectChatConsumer.as_asgi()),
 
-]
+] + notes_websocket_urlpatterns

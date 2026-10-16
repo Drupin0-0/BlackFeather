@@ -122,6 +122,7 @@
     <div class="project-navigation-center">
         <a href="{% url 'project_detail' project.pk %}" class="project-nav-item {% if active_tab == 'board' %}active{% endif %}">Quadro</a>
         <a href="{% url 'project_summary' project.pk %}" class="project-nav-item {% if active_tab == 'summary' %}active{% endif %}">Resumo</a>
+        <a href="{% url 'project_notes' project.pk %}" class="project-nav-item {% if active_tab == 'notes' %}active{% endif %}">NOTES</a>
     </div>
 </nav>
 

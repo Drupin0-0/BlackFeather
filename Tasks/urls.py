@@ -28,6 +28,7 @@ urlpatterns = [
     path('projetos/sugerir-ia/', suggest_project_ai_view, name='project_suggest_ai'),
     path('tarefas/novo/', create_task_view, name='task_create'),
     path('tarefas/<int:task_id>/status/', views.update_task_status_view, name='update_task_status'),
+    path('projetos/<int:project_id>/notes/', include('notes.urls')),
     path('projetos/<int:project_id>/resumo/', views.project_summary_view, name='project_summary'),
     path('projetos/<int:project_id>/resumo/grafico/', views.project_summary_chart_view, name='project_summary_chart'),
     path('projetos/<int:project_id>/resumo/historico/', views.project_summary_history_view, name='project_summary_history'),

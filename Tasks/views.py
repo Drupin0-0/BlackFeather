@@ -18,8 +18,6 @@ from rest_framework import viewsets
 from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import redirect
 from django.utils.dateparse import parse_date
-from django.views.decorators.http import require_POST
-
 from .models import Project, ProjectMember, Task, TaskHistory, record_task_history
 from .serializers import ProjectSerializer, TaskSerializer
 from accounts.models import UserProfile, Technology
@@ -443,59 +441,58 @@ def _validar_resposta_ia(data, tasks_enviadas, membros_validos_ids):
     return resultado if resultado else None
 
 @login_required
-@require_POST
 def create_task_view(request):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Envie os dados da tarefa usando POST.'}, status=405)
+
     user_projects = Project.objects.filter(Q(owner=request.user) | Q(members=request.user)).distinct().order_by('title')
 
-    if request.method == 'POST':
-        project_id = request.POST.get('project')
-        title = request.POST.get('title', '').strip()
-        description = request.POST.get('description', '').strip()
-        status = request.POST.get('status', 'pending')
-        priority = request.POST.get('priority', 'medium')
-        deadline = request.POST.get('deadline')
-        responsible_id = request.POST.get('task_responsible')
+    project_id = request.POST.get('project')
+    title = request.POST.get('title', '').strip()
+    description = request.POST.get('description', '').strip()
+    status = request.POST.get('status', 'pending')
+    priority = request.POST.get('priority', 'medium')
+    deadline = request.POST.get('deadline')
+    responsible_id = request.POST.get('task_responsible')
 
-        if not title or not project_id:
-            return redirect('accounts:dashboard')
-
-        project = get_object_or_404(Project, pk=project_id)
-
-        if project.owner != request.user and request.user not in project.members.all():
-            return redirect('accounts:dashboard')
-        if not project.user_can(request.user, 'can_create_tasks'):
-            return JsonResponse(
-                {'error': 'Você não tem permissão para criar tarefas neste projeto.'},
-                status=403,
-            )
-
-        task = Task.objects.create(
-            project=project,
-            title=title,
-            description=description or '',
-            status=status,
-            priority=priority,
-            deadline=deadline or None,
-            task_responsible=project.members.filter(pk=responsible_id).first() if responsible_id else None,
-        )
-        record_task_history(
-            project=project,
-            user=request.user,
-            action='created',
-            task=task,
-            changes=[{
-                'field': 'title',
-                'label': 'Tarefa',
-                'from': None,
-                'to': title,
-            }],
-        )
-        if request.POST.get('from_project') == '1':
-                return redirect('project_detail', project_id=project.pk)
-
+    if not title or not project_id:
         return redirect('accounts:dashboard')
 
-    return JsonResponse({'error': 'Envie os dados da tarefa usando POST.'}, status=405)
+    project = get_object_or_404(Project, pk=project_id)
+
+    if project.owner != request.user and request.user not in project.members.all():
+        return redirect('accounts:dashboard')
+    if not project.user_can(request.user, 'can_create_tasks'):
+        return JsonResponse(
+            {'error': 'Você não tem permissão para criar tarefas neste projeto.'},
+            status=403,
+        )
+
+    task = Task.objects.create(
+        project=project,
+        title=title,
+        description=description or '',
+        status=status,
+        priority=priority,
+        deadline=deadline or None,
+        task_responsible=project.members.filter(pk=responsible_id).first() if responsible_id else None,
+    )
+    record_task_history(
+        project=project,
+        user=request.user,
+        action='created',
+        task=task,
+        changes=[{
+            'field': 'title',
+            'label': 'Tarefa',
+            'from': None,
+            'to': title,
+        }],
+    )
+    if request.POST.get('from_project') == '1':
+            return redirect('project_detail', project_id=project.pk)
+
+    return redirect('accounts:dashboard')
 
 
 @login_required
@@ -862,8 +859,10 @@ def project_settings_view(request, project_id):
 
 
 @login_required
-@require_POST
 def update_default_member_permissions_view(request, project_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
     project = _get_user_project(request, project_id)
     if not project.is_boss(request.user):
         return JsonResponse(
@@ -890,8 +889,10 @@ def update_default_member_permissions_view(request, project_id):
 
 
 @login_required
-@require_POST
 def remove_member_view(request, project_id, user_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
     project = _get_user_project(request, project_id)
     if not project.is_boss(request.user):
         return JsonResponse(
@@ -915,8 +916,10 @@ def remove_member_view(request, project_id, user_id):
 
 
 @login_required
-@require_POST
 def promote_member_view(request, project_id, user_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
     project = _get_user_project(request, project_id)
     if not project.is_boss(request.user):
         return JsonResponse(
@@ -941,8 +944,10 @@ def promote_member_view(request, project_id, user_id):
 
 
 @login_required
-@require_POST
 def demote_member_view(request, project_id, user_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
     project = _get_user_project(request, project_id)
     if not project.is_boss(request.user):
         return JsonResponse(
@@ -968,8 +973,10 @@ def demote_member_view(request, project_id, user_id):
 
 
 @login_required
-@require_POST
 def update_member_permissions_view(request, project_id, user_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
     project = _get_user_project(request, project_id)
     is_boss = project.is_boss(request.user)
     if not is_boss and not project.is_leader(request.user):
@@ -1014,8 +1021,10 @@ def update_member_permissions_view(request, project_id, user_id):
 
 
 @login_required
-@require_POST
 def transfer_ownership_view(request, project_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
     project = _get_user_project(request, project_id)
     if not project.is_boss(request.user):
         return JsonResponse(
@@ -1052,8 +1061,10 @@ def transfer_ownership_view(request, project_id):
 
 
 @login_required
-@require_POST
 def delete_project_view(request, project_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
     project = _get_user_project(request, project_id)
     if not project.is_boss(request.user):
         return JsonResponse(
@@ -1079,8 +1090,10 @@ def _get_user_task(request, task_id):
 
 
 @login_required
-@require_POST
 def delete_task_view(request, task_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
     task = _get_user_task(request, task_id)
     if not task.project.user_can(request.user, 'can_delete_tasks'):
         return JsonResponse(
@@ -1107,8 +1120,10 @@ def delete_task_view(request, task_id):
 
 
 @login_required
-@require_POST
 def update_task_view(request, task_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método inválido.'}, status=405)
+
     task = _get_user_task(request, task_id)
     if not task.project.user_can(request.user, 'can_edit_tasks'):
         return JsonResponse(
