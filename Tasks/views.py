@@ -113,6 +113,10 @@ def my_tasks_view(request):
         'sections': sections,
         'recently_completed': recently_completed,
         'pending_total': pending_qs.count(),
+        'overdue_total': len(buckets['overdue']),
+        'due_today_total': len(buckets['today']),
+        'in_progress_total': pending_qs.filter(status='in_progress').count(),
+        'today': today,
     }
 
     return render(request, 'minhas_tarefas.html', context)

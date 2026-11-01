@@ -55,29 +55,76 @@
     </aside>
 
     <!-- CONTEÚDO PRINCIPAL -->
-    <main class="dashboard-main">
+    <main class="dashboard-main my-tasks-page">
 
         <header class="main-header">
-            <h1>Minhas Tarefas</h1>
+            <div class="tasks-page-heading">
+                <h1>Minhas tarefas</h1>
+                <p>Suas prioridades e prazos em um só lugar.</p>
+            </div>
 
             <div class="user-profile">
                 Logado como <strong>{{ user.profile.name|default:user.email }}</strong>
             </div>
         </header>
 
-        <div class="tasks-toolbar">
-            <span id="pendingCounter">
-                {{ pending_total }} tarefa(s) sob sua responsabilidade
-            </span>
-        </div>
+        <section class="tasks-overview" aria-label="Resumo das tarefas">
+            <div class="tasks-overview-copy">
+                <span>RESUMO DE {{ today|date:"d/m/Y" }}</span>
+                <h2>Seu ritmo de trabalho</h2>
+                <p>Acompanhe os prazos e o andamento das tarefas sob sua responsabilidade.</p>
+            </div>
+            <div class="tasks-overview-metrics" aria-label="Indicadores das tarefas">
+                <div class="tasks-metric">
+                    <strong id="pendingOverviewCount">{{ pending_total }}</strong>
+                    <span>Em aberto</span>
+                </div>
+                <div class="tasks-metric tasks-metric--urgent">
+                    <strong>{{ overdue_total }}</strong>
+                    <span>Atrasadas</span>
+                </div>
+                <div class="tasks-metric">
+                    <strong>{{ due_today_total }}</strong>
+                    <span>Vencem hoje</span>
+                </div>
+                <div class="tasks-metric">
+                    <strong>{{ in_progress_total }}</strong>
+                    <span>Em andamento</span>
+                </div>
+                <div class="tasks-metric">
+                    <strong id="completedOverviewCount">{{ recently_completed|length }}</strong>
+                    <span>Concluídas recentes</span>
+                </div>
+            </div>
+        </section>
 
         {% if pending_total == 0 and not recently_completed %}
 
             <div class="agenda-empty-state">
-                Nenhuma tarefa atribuída a você no momento. 
+                <h2>Nenhuma tarefa por aqui</h2>
+                <p>Nenhuma tarefa atribuída a você no momento.</p>
+                <a href="{% url 'project_list' %}">Explorar projetos <span aria-hidden="true">→</span></a>
             </div>
 
         {% else %}
+
+            <div class="tasks-toolbar">
+                <div class="tasks-toolbar-heading">
+                    <h2>Sua agenda</h2>
+                    <span id="pendingCounter">{{ pending_total }} tarefa(s) em aberto</span>
+                </div>
+                <div class="tasks-toolbar-controls">
+                    <label class="tasks-search" for="taskSearch">
+                        <span aria-hidden="true">⌕</span>
+                        <input type="search" id="taskSearch" placeholder="Buscar tarefa ou projeto" autocomplete="off">
+                    </label>
+                    <div class="task-filter-group" role="group" aria-label="Filtrar tarefas">
+                        <button type="button" class="task-filter-button active" data-task-filter="all" aria-pressed="true">Todas</button>
+                        <button type="button" class="task-filter-button" data-task-filter="open" aria-pressed="false">Em aberto</button>
+                        <button type="button" class="task-filter-button" data-task-filter="completed" aria-pressed="false">Concluídas</button>
+                    </div>
+                </div>
+            </div>
 
             {% for section in sections %}
                 {% if section.tasks %}
@@ -102,7 +149,7 @@
                                     data-deadline="{{ task.deadline|date:"d/m/Y"|default:"Sem prazo definido" }}"
                                 >
                                     <label class="task-agenda-check" onclick="event.stopPropagation();">
-                                        <input type="checkbox" class="task-complete-checkbox" data-task-id="{{ task.pk }}">
+                                        <input type="checkbox" class="task-complete-checkbox" data-task-id="{{ task.pk }}" aria-label="Marcar {{ task.title }} como concluída">
                                         <span class="task-agenda-checkmark"></span>
                                     </label>
 
@@ -110,14 +157,15 @@
                                         <div class="task-agenda-top">
                                             <span class="task-project">{{ task.project.title }}</span>
                                             <span class="task-priority priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                                            <span class="task-status status-{{ task.status }}">{{ task.get_status_display }}</span>
                                         </div>
 
                                         <strong class="task-agenda-title">{{ task.title }}</strong>
 
-                                        {% if task.deadline %}
-                                            <span class="task-agenda-deadline">{{ task.deadline|date:"d/m/Y" }}</span>
-                                        {% endif %}
+                                        {% if task.description %}<p class="task-agenda-description">{{ task.description }}</p>{% endif %}
+                                        <span class="task-agenda-deadline"><span class="task-deadline-label">Prazo</span>{% if task.deadline %}{{ task.deadline|date:"d/m/Y" }}{% else %}Sem prazo{% endif %}</span>
                                     </div>
+                                    <span class="task-agenda-open-hint" aria-hidden="true">Ver detalhes&nbsp; →</span>
                                 </div>
                             {% endfor %}
                         </div>
@@ -148,7 +196,7 @@
                                 data-deadline="{{ task.deadline|date:"d/m/Y"|default:"Sem prazo definido" }}"
                             >
                                 <label class="task-agenda-check" onclick="event.stopPropagation();">
-                                    <input type="checkbox" class="task-complete-checkbox" data-task-id="{{ task.pk }}" checked>
+                                    <input type="checkbox" class="task-complete-checkbox" data-task-id="{{ task.pk }}" aria-label="Reabrir {{ task.title }}" checked>
                                     <span class="task-agenda-checkmark"></span>
                                 </label>
 
@@ -156,20 +204,26 @@
                                     <div class="task-agenda-top">
                                         <span class="task-project">{{ task.project.title }}</span>
                                         <span class="task-priority priority-{{ task.priority }}">{{ task.get_priority_display }}</span>
+                                            <span class="task-status status-{{ task.status }}">{{ task.get_status_display }}</span>
                                     </div>
 
                                     <strong class="task-agenda-title">{{ task.title }}</strong>
 
-                                    {% if task.deadline %}
-                                        <span class="task-agenda-deadline">{{ task.deadline|date:"d/m/Y" }}</span>
-                                    {% endif %}
+                                        {% if task.description %}<p class="task-agenda-description">{{ task.description }}</p>{% endif %}
+                                        <span class="task-agenda-deadline"><span class="task-deadline-label">Prazo</span>{% if task.deadline %}{{ task.deadline|date:"d/m/Y" }}{% else %}Sem prazo{% endif %}</span>
                                 </div>
+                                    <span class="task-agenda-open-hint" aria-hidden="true">Ver detalhes&nbsp; →</span>
                             </div>
                         {% endfor %}
                     </div>
 
                 </section>
             {% endif %}
+
+            <div class="tasks-no-results" id="taskNoResults" hidden>
+                <strong>Nenhuma tarefa encontrada</strong>
+                <span>Tente outro termo ou altere o filtro selecionado.</span>
+            </div>
 
         {% endif %}
 
@@ -245,6 +299,60 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let currentCard = null;
 
+    const taskSearch = document.getElementById('taskSearch');
+    const noResults = document.getElementById('taskNoResults');
+    const filterButtons = document.querySelectorAll('[data-task-filter]');
+    const pendingOverviewCount = document.getElementById('pendingOverviewCount');
+    const completedOverviewCount = document.getElementById('completedOverviewCount');
+
+    function syncTaskOverviewCounts() {
+        const cards = Array.from(document.querySelectorAll('.task-agenda-card'));
+        const completedCount = cards.filter(function (card) { return card.dataset.status === 'completed'; }).length;
+
+        if (completedOverviewCount) completedOverviewCount.textContent = completedCount;
+        const pendingValue = pendingCounter?.textContent.match(/\d+/)?.[0];
+        if (pendingOverviewCount && pendingValue) pendingOverviewCount.textContent = pendingValue;
+    }
+
+    function applyTaskFilters() {
+        const query = taskSearch ? taskSearch.value.trim().toLocaleLowerCase('pt-BR') : '';
+        const activeFilter = document.querySelector('[data-task-filter].active')?.dataset.taskFilter || 'all';
+        let visibleCount = 0;
+
+        document.querySelectorAll('.task-agenda-card').forEach(function (card) {
+            const state = card.dataset.status === 'completed' ? 'completed' : 'open';
+            const searchableText = `${card.dataset.title} ${card.dataset.project} ${card.textContent}`.toLocaleLowerCase('pt-BR');
+            const matchesFilter = activeFilter === 'all' || activeFilter === state;
+            const matchesSearch = !query || searchableText.includes(query);
+            const isVisible = matchesFilter && matchesSearch;
+
+            card.style.display = isVisible ? '' : 'none';
+            if (isVisible) visibleCount += 1;
+        });
+
+        document.querySelectorAll('.agenda-section').forEach(function (section) {
+            const hasVisibleCards = Array.from(section.querySelectorAll('.task-agenda-card'))
+                .some(function (card) { return card.style.display !== 'none'; });
+            section.style.display = hasVisibleCards ? '' : 'none';
+        });
+
+        if (noResults) noResults.hidden = visibleCount > 0;
+        syncTaskOverviewCounts();
+    }
+
+    filterButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+            filterButtons.forEach(function (filterButton) {
+                const isActive = filterButton === button;
+                filterButton.classList.toggle('active', isActive);
+                filterButton.setAttribute('aria-pressed', String(isActive));
+            });
+            applyTaskFilters();
+        });
+    });
+
+    taskSearch?.addEventListener('input', applyTaskFilters);
+
     function statusLabel(status) {
         return status === 'completed' ? 'Concluída'
             : status === 'in_progress' ? 'Em andamento'
@@ -295,15 +403,20 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!match) return;
         const newValue = Math.max(0, parseInt(match[0], 10) + delta);
         pendingCounter.textContent = pendingCounter.textContent.replace(/\d+/, newValue);
+        if (pendingOverviewCount) pendingOverviewCount.textContent = newValue;
     }
 
     function completeCardVisually(card) {
         card.classList.add('task-agenda-card--done');
         card.dataset.status = 'completed';
+        applyTaskFilters();
         setTimeout(function () {
             card.style.opacity = '0';
             card.style.transform = 'translateX(12px)';
-            setTimeout(function () { card.remove(); }, 250);
+            setTimeout(function () {
+                card.remove();
+                applyTaskFilters();
+            }, 250);
         }, 500);
     }
 
@@ -339,7 +452,10 @@ document.addEventListener('DOMContentLoaded', function () {
                     // na próxima vez que a página for recarregada.
                     updatePendingCounter(1);
                     card.style.opacity = '0';
-                    setTimeout(function () { card.remove(); }, 250);
+                    setTimeout(function () {
+                        card.remove();
+                        applyTaskFilters();
+                    }, 250);
                 }
             }).catch(function () {
                 checkbox.disabled = false;
