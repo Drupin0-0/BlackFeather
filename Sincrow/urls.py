@@ -1,15 +1,16 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.views.generic import TemplateView
 from django.conf import settings
 from django.conf.urls.static import static
 from chat import views
 from chat.views import send_join_request
+from accounts.views import landing_view
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
 
+<<<<<<< HEAD
     # Página pública inicial
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
     path(
@@ -34,6 +35,11 @@ urlpatterns = [
         ),
         name='support',
     ),
+=======
+    # Página pública inicial — usuário já logado é redirecionado pro dashboard
+    # em vez de ver a landing de novo.
+    path('', landing_view, name='home'),
+>>>>>>> fec6ba8ff1f171490c4901949c7a23ca15be59fe
 
     # URLs próprias
     path('accounts/', include('accounts.urls')),

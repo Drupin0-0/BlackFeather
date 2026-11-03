@@ -54,6 +54,13 @@ class CustomLoginView(LoginView):
         return reverse_lazy('accounts:dashboard')
 
 
+def landing_view(request):
+    if request.user.is_authenticated:
+        return redirect('accounts:dashboard')
+
+    return render(request, 'index.html')
+
+
 @login_required
 def dashboard_view(request):
     projects = list(Project.objects.filter(

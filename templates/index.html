@@ -80,24 +80,112 @@
             <div class="landing-feature-grid">
                 <article class="landing-feature-card feature-projects">
                     <span class="landing-feature-icon" aria-hidden="true">▦</span>
-                    <h3>Projetos com direção</h3>
-                    <p>Reúna pessoas, decisões e tarefas em espaços que deixam claro o que está acontecendo e o que vem depois.</p>
+                    <h3>Projetos com código próprio</h3>
+                    <p>Cada projeto ganha um código único de 6 caracteres. Compartilhe com o time e pronto, todo mundo no mesmo espaço.</p>
                     <span class="landing-feature-link">Cada projeto, no seu espaço <b>↗</b></span>
                 </article>
                 <article class="landing-feature-card feature-team">
                     <span class="landing-feature-icon" aria-hidden="true">◎</span>
-                    <h3>Um time em sintonia</h3>
-                    <p>Converse nos projetos ou em particular, compartilhe contexto e acompanhe notificações importantes.</p>
-                    <span class="landing-feature-link">Colaboração sem desencontro <b>↗</b></span>
+                    <h3>Chat em tempo real</h3>
+                    <p>Cada projeto tem o seu próprio chat. Mensagem enviada aparece na hora pra todo mundo conectado, sem precisar atualizar a página.</p>
+                    <span class="landing-feature-link">Conversa sem atraso <b>↗</b></span>
                 </article>
                 <article class="landing-feature-card feature-insights">
                     <span class="landing-feature-icon" aria-hidden="true">↗</span>
-                    <h3>Progresso que dá para ver</h3>
-                    <p>Acompanhe tarefas por status, consulte o histórico e entenda como o trabalho está avançando.</p>
+                    <h3>Minhas Tarefas, por prazo</h3>
+                    <p>Uma agenda só sua: atrasadas, hoje, essa semana, sem prazo. Marca como concluída com um clique, sem abrir nada.</p>
                     <span class="landing-feature-link">Mais clareza para decidir <b>↗</b></span>
+                </article>
+                <article class="landing-feature-card feature-notify">
+                    <span class="landing-feature-icon" aria-hidden="true">✦</span>
+                    <h3>Central de notificações</h3>
+                    <p>Atividade importante do time cai numa caixa de entrada própria, em tempo real — sem precisar ficar recarregando nada.</p>
+                    <span class="landing-feature-link">Nada passa despercebido <b>↗</b></span>
                 </article>
             </div>
         </section>
+
+        <section class="landing-ai">
+            <div class="landing-ai-copy">
+                <p class="landing-eyebrow"><span></span> Feature com IA</p>
+                <h2>A IA sugere as tarefas.<br>E já diz <em>quem</em> deveria fazer cada uma.</h2>
+                <p>Diga o nome e a descrição do projeto. A IA devolve uma lista de tarefas prontas — e, pra cada uma, indica quem do time tem a skill mais próxima do que precisa ser feito.</p>
+                <ul class="landing-ai-list">
+                    <li>Sugestão de tarefas a partir do nome e da descrição do projeto</li>
+                    <li>Distribuição por skill: compara a tarefa com as tecnologias do perfil de cada membro</li>
+                    <li>Você confirma — revisa, edita ou troca o responsável antes de criar de verdade</li>
+                </ul>
+            </div>
+            <div class="landing-ai-demo" aria-hidden="true">
+                <div class="landing-ai-demo-row">
+                    <div class="landing-ai-demo-task">
+                        <strong>Configurar banco de dados</strong>
+                        <span>PostgreSQL · Modelagem</span>
+                    </div>
+                    <span class="landing-ai-demo-arrow">→</span>
+                    <div class="landing-ai-demo-person">
+                        <img src="{% static 'img/avatars/coruja.jpg' %}" alt="">
+                        <span>Ana</span>
+                    </div>
+                </div>
+                <div class="landing-ai-demo-row">
+                    <div class="landing-ai-demo-task">
+                        <strong>Tela de login</strong>
+                        <span>Frontend · UI</span>
+                    </div>
+                    <span class="landing-ai-demo-arrow">→</span>
+                    <div class="landing-ai-demo-person">
+                        <img src="{% static 'img/avatars/papagaio.jpg' %}" alt="">
+                        <span>Dudu</span>
+                    </div>
+                </div>
+                <div class="landing-ai-demo-row">
+                    <div class="landing-ai-demo-task">
+                        <strong>API de autenticação</strong>
+                        <span>Django · Backend</span>
+                    </div>
+                    <span class="landing-ai-demo-arrow">→</span>
+                    <div class="landing-ai-demo-person">
+                        <img src="{% static 'img/avatars/corvo.jpg' %}" alt="">
+                        <span>Léo</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-birds">
+            <div class="landing-section-heading">
+                <p class="landing-eyebrow"><span></span> Seu espaço, sua cara</p>
+                <h2>Esqueça foto de perfil solta.<br>Escolha a sua ave.</h2>
+                <p>Quatro aves pra escolher, sem upload, sem foto errada, sem constrangimento no meio da equipe.</p>
+            </div>
+            <div class="landing-birds-row">
+                <div class="landing-bird-card">
+                    <img src="{% static 'img/avatars/corvo.jpg' %}" alt="Avatar corvo">
+                    <span>Corvo</span>
+                </div>
+                <div class="landing-bird-card">
+                    <img src="{% static 'img/avatars/aguia.jpg' %}" alt="Avatar águia">
+                    <span>Águia</span>
+                </div>
+                <div class="landing-bird-card">
+                    <img src="{% static 'img/avatars/coruja.jpg' %}" alt="Avatar coruja">
+                    <span>Coruja</span>
+                </div>
+                <div class="landing-bird-card">
+                    <img src="{% static 'img/avatars/papagaio.jpg' %}" alt="Avatar papagaio">
+                    <span>Papagaio</span>
+                </div>
+            </div>
+            <p class="landing-bird-note">Troque quando quiser, direto no seu perfil.</p>
+        </section>
+
+        <div class="landing-tech">
+            <span>Django</span>
+            <span>WebSocket em tempo real</span>
+            <span>IA via n8n</span>
+            <span>PostgreSQL</span>
+        </div>
 
         <section class="landing-how" id="como-funciona">
             <div class="landing-how-intro"><p class="landing-eyebrow"><span></span> Comece do seu jeito</p><h2>Organizar o trabalho<br>pode ser leve.</h2></div>
@@ -105,6 +193,31 @@
                 <article><span>01</span><div><h3>Crie seu espaço</h3><p>Abra um projeto e convide as pessoas que vão construir com você.</p></div></article>
                 <article><span>02</span><div><h3>Transforme planos em tarefas</h3><p>Defina responsáveis, prioridades e prazos para cada próximo passo.</p></div></article>
                 <article><span>03</span><div><h3>Acompanhe o que importa</h3><p>Veja atualizações, converse com o time e celebre cada entrega.</p></div></article>
+            </div>
+        </section>
+
+        <section class="landing-faq">
+            <div class="landing-section-heading">
+                <p class="landing-eyebrow"><span></span> Perguntas rápidas</p>
+                <h2>Antes de criar sua conta</h2>
+            </div>
+            <div class="landing-faq-list">
+                <details class="landing-faq-item" open>
+                    <summary>Preciso instalar alguma coisa?</summary>
+                    <p>Não. É um site — abre no navegador, no computador ou no celular, sem instalar nada.</p>
+                </details>
+                <details class="landing-faq-item">
+                    <summary>Como a IA sabe quem deve fazer cada tarefa?</summary>
+                    <p>Ela compara o que a tarefa pede com as tecnologias cadastradas no perfil de cada membro do projeto. Se ninguém tiver uma skill clara pra aquilo, você sempre pode escolher o responsável na mão.</p>
+                </details>
+                <details class="landing-faq-item">
+                    <summary>O chat é mesmo em tempo real?</summary>
+                    <p>Sim — usa WebSocket, não é polling nem recarregamento de página. A mensagem aparece assim que é enviada.</p>
+                </details>
+                <details class="landing-faq-item">
+                    <summary>Dá pra usar em mais de um projeto ao mesmo tempo?</summary>
+                    <p>Dá. Cada projeto tem seu próprio código, membros, quadro de tarefas e chat — "Minhas Tarefas" reúne tudo o que é seu, de todos os projetos, num lugar só.</p>
+                </details>
             </div>
         </section>
 
