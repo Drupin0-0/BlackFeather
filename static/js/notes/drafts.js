@@ -153,6 +153,27 @@
         return Math.floor((value + Number.EPSILON) * 10 + 0.5) / 10;
     }
 
+    function validFillImage(image, width, height) {
+        const prefix = 'data:image/png;base64,';
+        if (typeof image !== 'string' || !image.startsWith(prefix) || image.length > 1000000) {
+            return false;
+        }
+        try {
+            const binary = window.atob(image.slice(prefix.length));
+            if (binary.length < 24 ||
+                binary.slice(0, 8) !== '\x89PNG\r\n\x1a\n' ||
+                binary.slice(12, 16) !== 'IHDR') {
+                return false;
+            }
+            const view = new DataView(Uint8Array.from(binary, function (character) {
+                return character.charCodeAt(0);
+            }).buffer);
+            return view.getUint32(16) === width && view.getUint32(20) === height;
+        } catch (error) {
+            return false;
+        }
+    }
+
     function normalizeContent(content) {
         if (!content || typeof content !== 'object' || Array.isArray(content) ||
             content.schema !== 1 || !Array.isArray(content.elements)) {
@@ -162,6 +183,7 @@
         const ids = new Set();
         let textCount = 0;
         let strokeCount = 0;
+        let fillCount = 0;
         let totalPoints = 0;
 
         content.elements.forEach(function (element) {
@@ -225,6 +247,31 @@
                     color: element.color,
                     width: element.width,
                     z: element.z,
+                });
+                return;
+            }
+            if (element.type === 'fill') {
+                fillCount += 1;
+                if (fillCount > 5000 || !isIntegerInRange(element.x, 0, 20000) ||
+                    !isIntegerInRange(element.y, 0, 20000) ||
+                    !isIntegerInRange(element.w, 1, 20000) ||
+                    !isIntegerInRange(element.h, 1, 20000) ||
+                    element.x + element.w > 20000 || element.y + element.h > 20000 ||
+                    element.w * element.h > 6000000 ||
+                    !validFillImage(element.image, element.w, element.h) ||
+                    typeof element.color !== 'string' || !/^#[0-9a-f]{6}$/i.test(element.color)) {
+                    throw new Error('O rascunho contém um preenchimento inválido.');
+                }
+                elements.push({
+                    id: id,
+                    type: 'fill',
+                    x: element.x,
+                    y: element.y,
+                    w: element.w,
+                    h: element.h,
+                    z: element.z,
+                    image: element.image,
+                    color: element.color.toLowerCase(),
                 });
                 return;
             }
@@ -428,11 +475,11 @@
         feedback.textContent = '';
         discardButton.hidden = false;
         if (record.version === current.version) {
-            noticeText.textContent = 'Há um rascunho local desta página. Ele não foi aplicado; restaure-o para recuperar suas alterações.';
+            noticeText.textContent = 'Há um rascunho local desta subseção. Ele não foi aplicado; restaure-o para recuperar suas alterações.';
             restoreButton.hidden = false;
             restoreAnywayButton.hidden = true;
         } else {
-            noticeText.textContent = 'O rascunho local é de outra versão. Restaurá-lo substituirá o conteúdo atual da página.';
+            noticeText.textContent = 'O rascunho local é de outra versão. Restaurá-lo substituirá o conteúdo atual da subseção.';
             restoreButton.hidden = true;
             restoreAnywayButton.hidden = false;
         }

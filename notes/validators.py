@@ -1,9 +1,13 @@
 from decimal import Decimal, ROUND_HALF_UP
 
+import base64
+import binascii
 import json
 import math
 import re
+import struct
 import uuid
+import zlib
 
 import nh3
 
@@ -12,6 +16,9 @@ MAX_TEXT_ELEMENTS = 1000
 MAX_STROKES = 5000
 MAX_POINTS_PER_STROKE = 5000
 MAX_TOTAL_POINTS = 120_000
+MAX_FILLS = 5000
+MAX_FILL_IMAGE_BYTES = 750_000
+MAX_FILL_PIXELS = 6_000_000
 MAX_HTML_LENGTH = 50_000
 MAX_CONTENT_BYTES = 2 * 1024 * 1024
 ALLOWED_TAGS = {
@@ -115,9 +122,65 @@ def validate_stroke(element):
     }
 
 
+def validate_fill(element):
+    image = element.get('image')
+    prefix = 'data:image/png;base64,'
+    if not isinstance(image, str) or not image.startswith(prefix):
+        raise ValueError('A imagem de preenchimento deve ser um PNG válido.')
+    try:
+        image_bytes = base64.b64decode(image[len(prefix):], validate=True)
+    except (binascii.Error, ValueError):
+        raise ValueError('A imagem de preenchimento deve ser um PNG válido.') from None
+    if len(image_bytes) > MAX_FILL_IMAGE_BYTES or not image_bytes.startswith(b'\x89PNG\r\n\x1a\n'):
+        raise ValueError('A imagem de preenchimento excede o limite permitido ou não é um PNG.')
+
+    width = height = None
+    has_image_data = False
+    offset = 8
+    while offset + 12 <= len(image_bytes):
+        chunk_length = struct.unpack_from('>I', image_bytes, offset)[0]
+        chunk_end = offset + 12 + chunk_length
+        if chunk_end > len(image_bytes):
+            raise ValueError('A imagem de preenchimento está corrompida.')
+        chunk_type = image_bytes[offset + 4:offset + 8]
+        chunk_data = image_bytes[offset + 8:offset + 8 + chunk_length]
+        expected_crc = struct.unpack_from('>I', image_bytes, offset + 8 + chunk_length)[0]
+        if zlib.crc32(chunk_type + chunk_data) & 0xFFFFFFFF != expected_crc:
+            raise ValueError('A imagem de preenchimento está corrompida.')
+        if offset == 8:
+            if chunk_type != b'IHDR' or chunk_length != 13:
+                raise ValueError('A imagem de preenchimento está corrompida.')
+            width, height, depth, color_type, compression, filtering, interlace = struct.unpack(
+                '>IIBBBBB',
+                chunk_data,
+            )
+            if (depth, color_type, compression, filtering, interlace) != (8, 6, 0, 0, 0):
+                raise ValueError('O formato da imagem de preenchimento não é compatível.')
+        elif chunk_type == b'IDAT':
+            has_image_data = True
+        elif chunk_type == b'IEND':
+            if chunk_length != 0 or chunk_end != len(image_bytes):
+                raise ValueError('A imagem de preenchimento está corrompida.')
+            break
+        offset = chunk_end
+    else:
+        raise ValueError('A imagem de preenchimento está corrompida.')
+
+    if not has_image_data or width != element.get('w') or height != element.get('h'):
+        raise ValueError('As dimensões da imagem de preenchimento são inválidas.')
+    if width * height > MAX_FILL_PIXELS:
+        raise ValueError('A imagem de preenchimento excede o limite de pixels.')
+
+    color = element.get('color')
+    if not isinstance(color, str) or not re.fullmatch(r'#[0-9a-fA-F]{6}', color):
+        raise ValueError('A cor do preenchimento deve ser hexadecimal #rrggbb.')
+    return {'image': image, 'color': color.lower()}
+
+
 VALIDATORS = {
     'text': validate_text,
     'stroke': validate_stroke,
+    'fill': validate_fill,
 }
 
 
@@ -138,6 +201,7 @@ def validate_page_content(content):
     seen_ids = set()
     text_count = 0
     stroke_count = 0
+    fill_count = 0
     total_points = 0
     for element in elements:
         if not isinstance(element, dict):
@@ -176,6 +240,17 @@ def validate_page_content(content):
             stroke_count += 1
             if stroke_count > MAX_STROKES:
                 raise ValueError('A página pode ter no máximo 5.000 traços.')
+        elif element_type == 'fill':
+            fill_count += 1
+            if fill_count > MAX_FILLS:
+                raise ValueError('A página pode ter no máximo 5.000 preenchimentos.')
+            fields = [
+                ('x', 0, 20_000),
+                ('y', 0, 20_000),
+                ('w', 1, 20_000),
+                ('h', 1, 20_000),
+                *fields,
+            ]
         for field, minimum, maximum in fields:
             value = element.get(field)
             if not isinstance(value, int) or isinstance(value, bool) or not minimum <= value <= maximum:
@@ -183,6 +258,10 @@ def validate_page_content(content):
             values[field] = value
 
         validated = validator(element)
+        if element_type == 'fill' and (
+            values['x'] + values['w'] > 20_000 or values['y'] + values['h'] > 20_000
+        ):
+            raise ValueError('As coordenadas do preenchimento devem ficar entre 0 e 20.000.')
         if element_type == 'stroke':
             total_points += len(validated['points']) // 2
             if total_points > MAX_TOTAL_POINTS:

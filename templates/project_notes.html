@@ -29,15 +29,15 @@
                 <div id="notesTree" class="notes-tree" hidden></div>
             </aside>
 
-            <section class="notes-main" aria-label="Página de notas">
+            <section class="notes-main" aria-label="Área de trabalho de notas">
                 <header class="notes-page-heading">
                     <div>
-                        <p class="notes-eyebrow">Página atual</p>
-                        <h1 id="notesPageTitle">Selecione ou crie uma página</h1>
+                        <p class="notes-eyebrow" id="notesSectionTitle"></p>
+                        <h1 id="notesSubsectionTitle">Selecione ou crie uma subseção</h1>
                     </div>
-                    <button class="notes-button" type="button" id="notesRenamePage" hidden>Renomear</button>
+                    <button class="notes-button" type="button" id="notesRenameSubsection" hidden>Renomear</button>
                 </header>
-                <section class="notes-editor" id="notesEditor" aria-label="Editor da página" hidden>
+                <section class="notes-editor" id="notesEditor" aria-label="Editor de conteúdo" hidden>
                     <div class="notes-toolbar-shell">
                         <div class="notes-toolbar-topline">
                             <button class="notes-button notes-toolbar-toggle" type="button" id="notesToolbarToggle"
@@ -52,19 +52,6 @@
                             </div>
                         </div>
                         <div class="notes-toolbar" id="notesToolbar" role="toolbar" aria-label="Ferramentas de edição">
-                            <div class="notes-toolbar-group notes-selection-group" aria-label="Seleção">
-                                <div class="notes-toolbar-controls">
-                                    <button class="notes-paint-button notes-selection-menu-trigger" type="button" data-selection-menu
-                                            aria-label="Menu de seleção" title="Menu de seleção">
-                                        <span aria-hidden="true">⌄</span>
-                                    </button>
-                                    <button class="notes-paint-button" type="button" data-select-all aria-label="Selecionar" title="Selecionar">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4l13 9-6 1-3 6L5 4z"/></svg>
-                                        <span>Selecionar</span>
-                                    </button>
-                                </div>
-                                <span class="notes-toolbar-group-label">Seleção</span>
-                            </div>
                             <div class="notes-toolbar-group notes-tools-group" aria-label="Ferramentas">
                                 <div class="notes-toolbar-controls notes-tool-grid">
                                     <button class="notes-paint-button is-active" type="button" data-tool="select" aria-pressed="true" aria-label="Selecionar" title="Selecionar (V)">
@@ -72,6 +59,9 @@
                                     </button>
                                     <button class="notes-paint-button" type="button" data-tool="pencil" aria-pressed="false" aria-label="Lápis" title="Lápis (P)">
                                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 16 11-11 4 4L8 20H4z"/><path d="m13 7 4 4"/></svg><span>Lápis</span>
+                                    </button>
+                                    <button class="notes-paint-button" type="button" data-tool="bucket" aria-pressed="false" aria-label="Balde de tinta" title="Balde de tinta">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 11.5s-2 2.17-2 3.5a2 2 0 0 0 2 2a2 2 0 0 0 2-2c0-1.33-2-3.5-2-3.5M5.21 10L10 5.21L14.79 10m1.77-1.06L7.62 0L6.21 1.41l2.38 2.38l-5.15 5.15c-.59.56-.59 1.53 0 2.12l5.5 5.5c.29.29.68.44 1.06.44s.77-.15 1.06-.44l5.5-5.5c.59-.59.59-1.56 0-2.12"/></svg><span>Balde</span>
                                     </button>
                                     <button class="notes-paint-button" type="button" data-tool="eraser" aria-pressed="false" aria-label="Borracha" title="Borracha (E)">
                                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 14 9-9 7 7-8 8H7z"/><path d="m11 21 7-7"/></svg><span>Borracha</span>
@@ -109,26 +99,6 @@
                                 <div class="notes-toolbar-controls">
                                     <button class="notes-current-color" type="button" data-palette-open="ink" aria-label="Cor atual do lápis" title="Cores do traço"></button>
                                     <div class="notes-palette-grid" data-palette="ink">
-                                        <button type="button" class="notes-color-swatch notes-auto-swatch" data-ink-color="auto" aria-label="Automática" title="Automática"><span>A</span></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#ffffff" aria-label="Branco" title="Branco"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#ff6b6b" aria-label="Vermelho" title="Vermelho"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#ffb454" aria-label="Laranja" title="Laranja"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#f5d76e" aria-label="Amarelo" title="Amarelo"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#62d995" aria-label="Verde" title="Verde"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#6ca8ff" aria-label="Azul" title="Azul"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#c49bff" aria-label="Violeta" title="Violeta"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#f472b6" aria-label="Rosa" title="Rosa"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#38bdf8" aria-label="Ciano" title="Ciano"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#94a3b8" aria-label="Cinza" title="Cinza"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#ef4444" aria-label="Vermelho escuro" title="Vermelho escuro"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#f97316" aria-label="Laranja escuro" title="Laranja escuro"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#eab308" aria-label="Dourado" title="Dourado"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#22c55e" aria-label="Verde escuro" title="Verde escuro"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#3b82f6" aria-label="Azul escuro" title="Azul escuro"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#8b5cf6" aria-label="Roxo" title="Roxo"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#a16207" aria-label="Marrom" title="Marrom"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#f8fafc" aria-label="Gelo" title="Gelo"></button>
-                                        <button type="button" class="notes-color-swatch" data-ink-color="#111827" aria-label="Preto" title="Preto"></button>
                                         <span class="notes-custom-colors" data-custom-palette="ink"></span>
                                         <button type="button" class="notes-color-wheel" data-color-picker aria-label="Editar cores" title="Editar cores">◉</button>
                                     </div>
@@ -142,33 +112,24 @@
                                     <label class="notes-toolbar-field">Tamanho
                                         <select id="notesFontSize" aria-label="Tamanho da fonte"></select>
                                     </label>
-                                    <button class="notes-toolbar-button" type="button" data-command="bold" aria-label="Negrito" title="Negrito (Ctrl+B)"><strong>B</strong></button>
-                                    <button class="notes-toolbar-button" type="button" data-command="italic" aria-label="Itálico" title="Itálico (Ctrl+I)"><em>I</em></button>
-                                    <button class="notes-toolbar-button" type="button" data-command="underline" aria-label="Sublinhado" title="Sublinhado (Ctrl+U)"><u>U</u></button>
-                                    <button class="notes-toolbar-button" type="button" data-command="insertUnorderedList" aria-label="Lista com marcadores" title="Lista com marcadores">•</button>
-                                    <button class="notes-toolbar-button" type="button" data-command="insertOrderedList" aria-label="Lista numerada" title="Lista numerada">1.</button>
-                                    <button class="notes-toolbar-button" type="button" data-command="justifyLeft" aria-label="Alinhar à esquerda" title="Alinhar à esquerda">⇤</button>
-                                    <button class="notes-toolbar-button" type="button" data-command="justifyCenter" aria-label="Centralizar" title="Centralizar">↔</button>
-                                    <button class="notes-toolbar-button" type="button" data-command="justifyRight" aria-label="Alinhar à direita" title="Alinhar à direita">⇥</button>
-                                    <button class="notes-toolbar-button" type="button" data-command="removeFormat" aria-label="Limpar formatação" title="Limpar formatação">Tx</button>
                                     <button class="notes-text-color-button" type="button" data-palette-open="text" aria-label="Cor do texto" title="Cor do texto (A)"><span>A</span><i data-current-text-color></i></button>
                                     <div class="notes-palette-grid notes-text-palette" data-palette="text">
-                                        <button type="button" class="notes-color-swatch" data-color="#ffffff" aria-label="Branco" title="Branco"></button>
-                                        <button type="button" class="notes-color-swatch" data-color="#ff6b6b" aria-label="Vermelho" title="Vermelho"></button>
-                                        <button type="button" class="notes-color-swatch" data-color="#ffb454" aria-label="Laranja" title="Laranja"></button>
-                                        <button type="button" class="notes-color-swatch" data-color="#f5d76e" aria-label="Amarelo" title="Amarelo"></button>
-                                        <button type="button" class="notes-color-swatch" data-color="#62d995" aria-label="Verde" title="Verde"></button>
-                                        <button type="button" class="notes-color-swatch" data-color="#6ca8ff" aria-label="Azul" title="Azul"></button>
-                                        <button type="button" class="notes-color-swatch" data-color="#c49bff" aria-label="Violeta" title="Violeta"></button>
-                                        <button type="button" class="notes-color-swatch" data-color="#f472b6" aria-label="Rosa" title="Rosa"></button>
-                                        <button type="button" class="notes-color-swatch" data-color="#38bdf8" aria-label="Ciano" title="Ciano"></button>
-                                        <button type="button" class="notes-color-swatch" data-color="#111827" aria-label="Preto" title="Preto"></button>
                                         <span class="notes-custom-colors" data-custom-palette="text"></span>
                                         <button type="button" class="notes-color-wheel" data-color-picker aria-label="Editar cores" title="Editar cores">◉</button>
                                     </div>
                                     <input type="color" id="notesCustomColor" value="#ffffff" aria-label="Editar cor do texto">
                                 </div>
                                 <span class="notes-toolbar-group-label">Texto</span>
+                            </div>
+                            <div class="notes-toolbar-group notes-shapes-group" aria-label="Formas">
+                                <div class="notes-toolbar-controls">
+                                    <button class="notes-paint-button" type="button" data-shape-toggle
+                                            aria-expanded="false" aria-label="Formas" title="Formas">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 17.95q.25.025.488.038T9 18t.513-.012t.487-.038V20h10V10h-2.05q.025-.25.038-.488T18 9t-.012-.513T17.95 8H20q.825 0 1.413.588T22 10v10q0 .825-.587 1.413T20 22H10q-.825 0-1.412-.587T8 20zm-3.962-3.987Q2 11.925 2 9t2.038-4.962T9 2t4.963 2.038T16 9t-2.037 4.963T9 16t-4.962-2.037m8.5-1.425Q14 11.075 14 9t-1.463-3.537T9 4T5.463 5.463T4 9t1.463 3.538T9 14t3.538-1.463M9 9"/></svg>
+                                        <span>Formas</span>
+                                    </button>
+                                </div>
+                                <span class="notes-toolbar-group-label">Formas</span>
                             </div>
                             <div class="notes-toolbar-group notes-history-group" aria-label="Edição">
                                 <div class="notes-toolbar-controls">
@@ -180,7 +141,7 @@
                         </div>
                     </div>
                     <div id="notesRemoteChangeNotice" class="notes-remote-change-notice" role="status" aria-live="polite" hidden>
-                        <span>Esta página foi alterada por outra pessoa. Seu próximo salvamento vai pedir uma decisão.</span>
+                        <span>Este conteúdo foi alterado por outra pessoa. Seu próximo salvamento vai pedir uma decisão.</span>
                         <button id="notesResolveRemoteChange" class="notes-button notes-button-small" type="button">Resolver agora</button>
                     </div>
                     <p id="notesRemoteUpdateMessage" class="notes-remote-update-message" role="status" aria-live="polite" hidden></p>
@@ -199,7 +160,7 @@
     <div class="task-modal-backdrop" data-close-notes-conflict></div>
     <div class="task-modal-panel">
         <div class="task-modal-header">
-            <h3 id="notesConflictTitle">Página alterada por outra pessoa</h3>
+            <h3 id="notesConflictTitle">Conteúdo alterado por outra pessoa</h3>
             <button class="task-modal-close" type="button" aria-label="Fechar" data-close-notes-conflict>×</button>
         </div>
         <p>Escolha se deseja carregar a versão do servidor ou manter suas alterações locais.</p>

@@ -67,6 +67,11 @@
         option.textContent = size + ' px';
         fontSizeSelect.append(option);
     });
+    const shapesButton = toolbar.querySelector('[data-shape-toggle]');
+    if (shapesButton) {
+        shapesButton.classList.toggle('is-active', state.tool === 'shape');
+        shapesButton.setAttribute('aria-pressed', String(state.tool === 'shape'));
+    }
     fontSizeSelect.value = '16';
 
     function cloneElements(elements) {
@@ -138,7 +143,7 @@
             throw parseError;
         }
         if (!response.ok) {
-            const error = new Error(payload.error || 'Não foi possível salvar a página.');
+            const error = new Error(payload.error || 'Não foi possível salvar o conteúdo.');
             error.status = response.status;
             error.payload = payload;
             throw error;
@@ -197,7 +202,7 @@
     }
 
     function showRemoteUpdateMessage() {
-        remoteUpdateMessage.textContent = 'Página atualizada por outra pessoa';
+        remoteUpdateMessage.textContent = 'Conteúdo atualizado por outra pessoa';
         remoteUpdateMessage.hidden = false;
         if (state.remoteMessageTimer) {
             window.clearTimeout(state.remoteMessageTimer);
@@ -324,6 +329,11 @@
                 }
                 return;
             }
+            if (element.type === 'fill') {
+                width = Math.max(width, element.x + element.w + 120);
+                height = Math.max(height, element.y + element.h + 120);
+                return;
+            }
             width = Math.max(width, element.x + element.w + 120);
             const node = world.querySelector('[data-block-id="' + element.id + '"]');
             const nodeHeight = node ? Math.ceil(node.getBoundingClientRect().height) : 120;
@@ -331,20 +341,6 @@
         });
         world.style.width = width + 'px';
         world.style.height = height + 'px';
-    }
-
-    function updateToolbarSelection() {
-        toolbar.querySelectorAll('[data-command]').forEach(function (button) {
-            const command = button.dataset.command;
-            let active = false;
-            try {
-                active = document.queryCommandState(command);
-            } catch (error) {
-                active = false;
-            }
-            button.classList.toggle('is-active', active);
-            button.setAttribute('aria-pressed', String(active));
-        });
     }
 
     function selectBlock(id, focusContent) {
@@ -416,6 +412,9 @@
         }
         element.html = block.innerHTML;
         resizeWorld();
+        if (window.notesInk) {
+            window.notesInk.refreshItemBounds(element.id);
+        }
         markDirty();
     }
 
@@ -464,7 +463,6 @@
             state.selectedId = element.id;
             state.editingId = element.id;
             updateElementFromBlock(block);
-            updateToolbarSelection();
         });
         block.addEventListener('beforeinput', function () {
             recordTypingHistory();
@@ -793,7 +791,7 @@
                 if (error.status === 409 && state.pageId === pageId) {
                     state.dirty = true;
                     setRemoteConflict(error.payload && error.payload.current_version);
-                    setSaveStatus('Falha ao salvar', 'A página foi alterada por outra pessoa. Resolva o conflito para salvar.');
+                    setSaveStatus('Falha ao salvar', 'O conteúdo foi alterado por outra pessoa. Resolva o conflito para salvar.');
                     return;
                 }
                 if (state.pageId === pageId) {
@@ -862,6 +860,14 @@
     function selectedElementBounds(element) {
         if (element.type === 'stroke') {
             return window.NotesInkUtils.bounds(element.points);
+        }
+        if (element.type === 'fill') {
+            return {
+                minX: element.x,
+                minY: element.y,
+                maxX: element.x + element.w,
+                maxY: element.y + element.h,
+            };
         }
         const block = world.querySelector('[data-block-id="' + element.id + '"]');
         const height = block ? Math.ceil(block.getBoundingClientRect().height) : 32;
@@ -950,11 +956,13 @@
     function canUseElements(elements) {
         const textCount = elements.filter(function (element) { return element.type === 'text'; }).length;
         const strokes = elements.filter(function (element) { return element.type === 'stroke'; });
+        const fills = elements.filter(function (element) { return element.type === 'fill'; });
         const pointCount = strokes.reduce(function (count, stroke) {
             return count + stroke.points.length / 2;
         }, 0);
         const bytes = new TextEncoder().encode(JSON.stringify({ schema: 1, elements: elements })).length;
-        return textCount <= 1000 && strokes.length <= 5000 && pointCount <= 120_000 &&
+        return textCount <= 1000 && strokes.length <= 5000 && fills.length <= 5000 &&
+            pointCount <= 120_000 &&
             bytes <= 1_800_000;
     }
 
@@ -1034,7 +1042,7 @@
                 }
             } else {
                 copy.x = Math.min(20_000 - copy.w, copy.x + 20);
-                copy.y = Math.min(20_000 - 32, copy.y + 20);
+                copy.y = Math.min(20_000 - (copy.type === 'fill' ? copy.h : 32), copy.y + 20);
             }
             return copy;
         });
@@ -1080,7 +1088,8 @@
             button.setAttribute('aria-pressed', String(active));
         });
         const textFormatting = toolbar.querySelector('[data-text-formatting]');
-        const drawing = state.tool === 'pencil' || state.tool === 'eraser';
+        const drawing = state.tool === 'pencil' || state.tool === 'eraser' ||
+            state.tool === 'bucket' || state.tool === 'shape';
         textFormatting.querySelectorAll('button, select, input').forEach(function (control) {
             control.disabled = drawing;
         });
@@ -1090,7 +1099,7 @@
     }
 
     function setTool(tool) {
-        if (!['select', 'text', 'pencil', 'eraser'].includes(tool)) {
+        if (!['select', 'text', 'pencil', 'eraser', 'bucket', 'shape'].includes(tool)) {
             return;
         }
         state.tool = tool;
@@ -1135,6 +1144,9 @@
             action.changed = action.changed || delta !== 0;
         }
         resizeWorld();
+        if (window.notesInk) {
+            window.notesInk.refreshItemBounds(element.id);
+        }
     }
 
     function finishPointerAction() {
@@ -1228,7 +1240,6 @@
             block.querySelector('.notes-text-content').focus();
             saveSelection();
             updateElementFromBlock(block.querySelector('.notes-text-content'));
-            updateToolbarSelection();
         }
     }
 
@@ -1256,13 +1267,13 @@
 
     function normalizeContent(content) {
         if (!content || typeof content !== 'object' || Array.isArray(content)) {
-            throw new Error('O conteúdo da página recebido é inválido.');
+            throw new Error('O conteúdo recebido é inválido.');
         }
         if (Object.keys(content).length === 0) {
             return { schema: 1, elements: [] };
         }
         if (content.schema !== 1 || !Array.isArray(content.elements)) {
-            throw new Error('O conteúdo da página recebeu um formato não compatível.');
+            throw new Error('O conteúdo recebido está em um formato não compatível.');
         }
         return {
             schema: 1,
@@ -1275,7 +1286,20 @@
                         Number.isInteger(element.w) && Number.isInteger(element.z) &&
                         typeof element.html === 'string';
                 }
-                return element.type === 'stroke' && window.NotesInkUtils.validStroke(element);
+                if (element.type === 'stroke') {
+                    return window.NotesInkUtils.validStroke(element);
+                }
+                return element.type === 'fill' &&
+                    Number.isInteger(element.x) && Number.isInteger(element.y) &&
+                    Number.isInteger(element.w) && Number.isInteger(element.h) &&
+                    element.x >= 0 && element.y >= 0 && element.w >= 1 && element.h >= 1 &&
+                    element.x + element.w <= 20_000 && element.y + element.h <= 20_000 &&
+                    element.w * element.h <= 6_000_000 &&
+                    Number.isInteger(element.z) && element.z >= 0 && element.z <= 100_000 &&
+                    typeof element.image === 'string' &&
+                    element.image.startsWith('data:image/png;base64,') &&
+                    element.image.length <= 1_000_000 &&
+                    typeof element.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(element.color);
             }),
         };
     }
@@ -1298,7 +1322,7 @@
         state.selectedIds.clear();
         state.editingId = null;
         state.nextZ = state.elements.reduce(function (maximum, element) {
-            return element.type === 'text' ? Math.max(maximum, element.z + 1) : maximum;
+            return Math.max(maximum, element.z + 1);
         }, 1);
         state.savedContent = serializedContent(state.elements);
         state.conflictRetryCount = 0;
@@ -1377,54 +1401,9 @@
         }
     });
     toolbar.addEventListener('click', function (event) {
-        const selectionMenu = event.target.closest('[data-selection-menu]');
-        if (selectionMenu) {
-            let menu = toolbar.querySelector('.notes-selection-menu');
-            if (menu) {
-                menu.remove();
-                selectionMenu.setAttribute('aria-expanded', 'false');
-                return;
-            }
-            menu = document.createElement('div');
-            menu.className = 'notes-selection-menu';
-            [
-                ['Selecionar tudo', function () {
-                    setSelection(state.elements.map(function (element) { return element.id; }));
-                }],
-                ['Inverter seleção', function () {
-                    const selected = state.selectedIds;
-                    setSelection(state.elements.filter(function (element) {
-                        return !selected.has(element.id);
-                    }).map(function (element) { return element.id; }));
-                }],
-                ['Limpar seleção', function () { setSelection([]); }],
-            ].forEach(function (entry) {
-                const item = document.createElement('button');
-                item.type = 'button';
-                item.textContent = entry[0];
-                item.addEventListener('click', function () {
-                    entry[1]();
-                    menu.remove();
-                    selectionMenu.setAttribute('aria-expanded', 'false');
-                });
-                menu.append(item);
-            });
-            selectionMenu.parentElement.append(menu);
-            selectionMenu.setAttribute('aria-expanded', 'true');
-            return;
-        }
-        if (event.target.closest('[data-select-all]')) {
-            setSelection(state.elements.map(function (element) { return element.id; }));
-            return;
-        }
         const toolButton = event.target.closest('[data-tool]');
         if (toolButton) {
             setTool(toolButton.dataset.tool);
-            return;
-        }
-        const commandButton = event.target.closest('[data-command]');
-        if (commandButton) {
-            applyCommand(commandButton.dataset.command);
             return;
         }
         const historyButton = event.target.closest('[data-history]');
@@ -1485,7 +1464,6 @@
         const node = anchor && (anchor.nodeType === Node.ELEMENT_NODE ? anchor : anchor.parentElement);
         if (node && node.closest('.notes-text-block')) {
             saveSelection();
-            updateToolbarSelection();
         }
     });
     document.addEventListener('keydown', function (event) {
@@ -1648,6 +1626,17 @@
             renderWorld();
             markDirty();
         },
+        addFill: function (fill) {
+            const next = state.elements.concat([fill]);
+            if (!canUseElements(next)) {
+                return false;
+            }
+            recordHistory();
+            state.elements.push(fill);
+            renderWorld();
+            markDirty();
+            return true;
+        },
         eraseStrokes: function (ids) {
             const eraseIds = new Set(ids);
             const remaining = state.elements.filter(function (element) {
@@ -1676,7 +1665,7 @@
             state.selectedId = null;
             state.editingId = null;
             state.nextZ = state.elements.reduce(function (maximum, element) {
-                return element.type === 'text' ? Math.max(maximum, element.z + 1) : maximum;
+                return Math.max(maximum, element.z + 1);
             }, 1);
             renderWorld();
             markDirty();

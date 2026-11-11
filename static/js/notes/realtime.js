@@ -64,7 +64,7 @@
                 return;
             }
             if (!response.ok) {
-                throw new Error('Não foi possível verificar a versão da página.');
+                throw new Error('Não foi possível verificar a versão do conteúdo.');
             }
             const payload = await response.json();
             if (Number.isInteger(payload.version) && payload.version > 0) {

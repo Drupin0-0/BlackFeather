@@ -223,6 +223,8 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
         ).click()
         page.get_by_role('button', name='Excluir', exact=True).click()
         dialog = page.get_by_role('dialog', name='Confirmar exclusão')
+        if node_type == 'subsection':
+            dialog.get_by_text('conteúdo escrito e desenhado').wait_for()
         dialog.get_by_role('button', name='Excluir', exact=True).click()
         item.wait_for(state='detached')
 
@@ -233,7 +235,7 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
         )
         return Page.objects.create(subsection=subsection, title='Página de teste')
 
-    def test_owner_creates_renames_moves_and_deletes_all_tree_levels(self):
+    def test_owner_creates_renames_moves_and_deletes_sections_and_subsections(self):
         self.shared.delete()
         self.private.delete()
         page, signals = self._new_page(self.owner, open_notes_from_project=True)
@@ -260,51 +262,197 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
             'Nome da subseção',
             'Subseção A1',
         )
+        page.locator('#notesEditor').wait_for(state='visible')
         self._create(
             page,
             section_a.get_by_role('button', name='Criar subseção'),
             'Nome da subseção',
             'Subseção A2',
         )
+        page.locator('#notesEditor').wait_for(state='visible')
+        self.assertEqual(
+            page.locator('#notesSectionTitle').text_content(),
+            'Seção A renomeada',
+        )
+        page.locator('#notesRenameSubsection').click()
+        page.get_by_role('textbox', name='Nome da subseção').fill('Subseção A2 renomeada')
+        page.get_by_role('button', name='Salvar', exact=True).click()
+        page.get_by_role('button', name='Subseção A2 renomeada', exact=True).wait_for()
         self._rename(page, 'subsection', 'Subseção A1', 'Subseção A1 renomeada')
         self._move_down(page, 'subsection', 'Subseção A1 renomeada')
 
-        subsection = self._item(page, 'subsection', 'Subseção A1 renomeada')
-        self._create(
-            page,
-            subsection.get_by_role('button', name='Criar página'),
-            'Nome da página',
-            'Página A1',
-        )
-        self._create(
-            page,
-            subsection.get_by_role('button', name='Criar página'),
-            'Nome da página',
-            'Página A2',
-        )
-        self._rename(page, 'page', 'Página A1', 'Página A1 renomeada')
-        self._move_down(page, 'page', 'Página A1 renomeada')
-        self._delete(page, 'page', 'Página A2')
-        self._delete(page, 'subsection', 'Subseção A2')
+        self.assertEqual(page.locator('[data-node-type="page"]').count(), 0)
+        self._delete(page, 'subsection', 'Subseção A2 renomeada')
         self._delete(page, 'section', 'Seção B')
         self._delete(page, 'section', 'Seção A renomeada')
         page.get_by_text('Nenhuma seção ainda.').wait_for()
         self._assert_browser_clean(signals)
 
     def test_text_block_autosaves_and_survives_reload(self):
-        note_page = self._shared_page()
+        self.shared.delete()
+        self.private.delete()
         page, signals = self._new_page(self.owner)
-        self._select_page(page, note_page.pk)
+        page.get_by_text('Nenhuma seção ainda.').wait_for()
+        self._create(
+            page,
+            page.locator('.notes-sidebar-heading [data-action="create-section"]'),
+            'Nome da seção',
+            'Seção da área de trabalho',
+        )
+        section = self._item(page, 'section', 'Seção da área de trabalho')
+        self._create(
+            page,
+            section.get_by_role('button', name='Criar subseção'),
+            'Nome da subseção',
+            'Subseção da área de trabalho',
+        )
+        page.locator('#notesEditor').wait_for(state='visible')
+        self.assertEqual(page.locator('[data-node-type="page"]').count(), 0)
         page.locator('[data-tool="text"]').click()
         page.locator('#notesWorkArea').click(position={'x': 250, 'y': 100})
         editor = page.locator('.notes-text-content')
         editor.fill('Texto salvo pelo navegador real')
         page.get_by_text('Salvo', exact=True).wait_for(timeout=10000)
         page.reload()
-        page.locator(f'[data-page-id="{note_page.pk}"]').wait_for()
+        page.locator('.notes-tree-entry[data-node-type="subsection"]').wait_for()
+        self.assertEqual(page.locator('[data-node-type="page"]').count(), 0)
         page.get_by_text('Texto salvo pelo navegador real', exact=True).wait_for(
             timeout=10000
         )
+        self._assert_browser_clean(signals)
+
+    def test_paint_bucket_fills_a_closed_region_and_survives_reload(self):
+        page, signals = self._new_page(self.owner)
+        section = self._item(page, 'section', 'Seção compartilhada')
+        self._create(
+            page,
+            section.get_by_role('button', name='Criar subseção'),
+            'Nome da subseção',
+            'Subseção do balde',
+        )
+        page.locator('#notesEditor').wait_for(state='visible')
+        work_area = page.locator('#notesWorkArea')
+        work_area.scroll_into_view_if_needed()
+        bounds = work_area.bounding_box()
+        self.assertIsNotNone(bounds)
+        left = bounds['x'] + 100
+        top = bounds['y'] + 100
+
+        page.locator('[data-tool="pencil"]').click()
+        corners = [(left, top), (left + 120, top), (left + 120, top + 120),
+                   (left, top + 120), (left, top)]
+        def draw_segment(start, end):
+            page.mouse.move(*start)
+            page.mouse.down()
+            page.mouse.move(*end)
+            page.mouse.up()
+        for index, (start, end) in enumerate(zip(corners, corners[1:])):
+            if index == len(corners) - 2:
+                with page.expect_response(
+                    lambda response: response.request.method == 'PUT' and '/pages/' in response.url,
+                    timeout=10000,
+                ):
+                    draw_segment(start, end)
+            else:
+                draw_segment(start, end)
+        page.wait_for_function('document.querySelectorAll(".notes-ink path").length === 4')
+        page.locator('#notesInkCustomColor').evaluate(
+            """input => {
+                input.value = '#ff0000';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }"""
+        )
+        page.locator('[data-tool="bucket"]').click()
+        with page.expect_response(
+            lambda response: response.request.method == 'PUT' and '/pages/' in response.url,
+            timeout=10000,
+        ):
+            page.mouse.click(left + 60, top + 60)
+        page.wait_for_function('document.querySelector(".notes-ink image") !== null')
+        page_id = page.locator('[data-page-id]').first.get_attribute('data-page-id')
+        saved_page = page.evaluate(
+            """async pageId => {
+                const root = document.getElementById('notesRoot');
+                const response = await fetch(root.dataset.apiBase + 'pages/' + pageId + '/');
+                return await response.json();
+            }""",
+            page_id,
+        )
+        fill = next(element for element in saved_page['content']['elements']
+                    if element['type'] == 'fill')
+        self.assertEqual(fill['color'], '#ff0000')
+        self.assertTrue(fill['image'].startswith('data:image/png;base64,'))
+        page.reload()
+        page.locator('.notes-ink image').wait_for()
+        self._assert_browser_clean(signals)
+
+    def test_shape_picker_draws_with_pencil_color_and_history_stays_on_right(self):
+        note_page = self._shared_page()
+        page, signals = self._new_page(self.owner)
+        self._select_page(page, note_page.pk)
+
+        shape_button = page.locator('[data-shape-toggle]')
+        shape_button.click()
+        options = page.locator('#notesShapesPopover [data-shape]')
+        self.assertEqual(options.count(), 24)
+        page.get_by_role('button', name='Retângulo', exact=True).click()
+        self.assertEqual(page.locator('#notesWorkArea').get_attribute('data-tool'), 'shape')
+        page.locator('#notesInkCustomColor').evaluate(
+            """input => {
+                input.value = '#32aaff';
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }"""
+        )
+        first = self._area_point(page, 180, 90)
+        last = self._area_point(page, 320, 190)
+        page.mouse.move(first['x'], first['y'])
+        page.mouse.down()
+        page.mouse.move(last['x'], last['y'], steps=8)
+        page.mouse.up()
+
+        page.wait_for_function(
+            'window.notesEditor.getElements().some(element => element.type === "stroke")'
+        )
+        shape = page.evaluate(
+            'window.notesEditor.getElements().find(element => element.type === "stroke")'
+        )
+        self.assertEqual(shape['color'], '#32aaff')
+        self.assertGreaterEqual(len(shape['points']), 8)
+        page.locator('[data-history="undo"]').click()
+        page.wait_for_function(
+            'window.notesEditor.getElements().every(element => element.type !== "stroke")'
+        )
+        page.locator('[data-history="redo"]').click()
+        page.wait_for_function(
+            'window.notesEditor.getElements().some(element => element.type === "stroke")'
+        )
+        shape_bounds = page.locator('[data-shape-toggle]').bounding_box()
+        history_bounds = page.locator('.notes-history-group').bounding_box()
+        self.assertGreater(history_bounds['x'], shape_bounds['x'])
+        self._assert_browser_clean(signals)
+
+    def test_notes_palette_uses_neutral_grays_instead_of_blue(self):
+        note_page = self._shared_page()
+        page, signals = self._new_page(self.owner)
+        self._select_page(page, note_page.pk)
+        colors = page.evaluate(
+            """() => ({
+                accent: getComputedStyle(document.querySelector('.notes-editor'))
+                    .getPropertyValue('--notes-ui-accent').trim(),
+                surface: getComputedStyle(document.querySelector('.notes-editor'))
+                    .getPropertyValue('--notes-ui-surface').trim(),
+                active: getComputedStyle(document.querySelector('[data-tool="select"]'))
+                    .backgroundColor,
+                selectedText: getComputedStyle(document.querySelector('.notes-page-heading h1'))
+                    .color,
+            })"""
+        )
+        self.assertEqual(colors['accent'], '#bdbdbd')
+        self.assertIn('10, 10, 10', colors['surface'])
+        self.assertIn('190, 190, 190', colors['active'])
+        self.assertNotIn('blue', str(colors).lower())
         self._assert_browser_clean(signals)
 
     def test_member_can_create_in_shared_section_but_not_see_private_section(self):
@@ -322,13 +470,8 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
             'Nome da subseção',
             'Subseção do integrante',
         )
-        subsection = self._item(page, 'subsection', 'Subseção do integrante')
-        self._create(
-            page,
-            subsection.get_by_role('button', name='Criar página'),
-            'Nome da página',
-            'Página do integrante',
-        )
+        page.locator('#notesEditor').wait_for(state='visible')
+        self.assertEqual(page.locator('[data-node-type="page"]').count(), 0)
         self._assert_browser_clean(signals)
 
     def test_outsider_gets_404_for_notes_page_and_read_endpoints(self):
@@ -351,19 +494,8 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
         )
 
     def test_two_browser_sessions_receive_page_and_tree_updates(self):
-        note_page = self._shared_page()
         first, first_signals = self._new_page(self.owner)
         second, second_signals = self._new_page(self.owner)
-        self._select_page(first, note_page.pk)
-        self._select_page(second, note_page.pk)
-        first.locator('[data-tool="text"]').click()
-        first.locator('#notesWorkArea').click(position={'x': 260, 'y': 100})
-        first.locator('.notes-text-content').fill('Atualização recebida em tempo real')
-        first.get_by_text('Salvo', exact=True).wait_for(timeout=10000)
-        second.get_by_text('Atualização recebida em tempo real', exact=True).wait_for(
-            timeout=10000
-        )
-
         self._create(
             first,
             first.locator('.notes-sidebar-heading [data-action="create-section"]'),
@@ -377,18 +509,23 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
             'Nome da subseção',
             'Subseção da primeira sessão',
         )
-        created_subsection = self._item(
-            first, 'subsection', 'Subseção da primeira sessão'
-        )
-        self._create(
-            first,
-            created_subsection.get_by_role('button', name='Criar página'),
-            'Nome da página',
-            'Página criada na primeira sessão',
-        )
+        first.locator('#notesEditor').wait_for(state='visible')
         second.get_by_role(
-            'button', name='Página criada na primeira sessão', exact=True
+            'button', name='Subseção da primeira sessão', exact=True
         ).wait_for(timeout=10000)
+        self.assertEqual(second.locator('[data-node-type="page"]').count(), 0)
+
+        first.locator('[data-tool="text"]').click()
+        first.locator('#notesWorkArea').click(position={'x': 260, 'y': 100})
+        first.locator('.notes-text-content').fill('Texto compartilhado entre sessões')
+        first.get_by_text('Salvo', exact=True).wait_for(timeout=10000)
+        second.get_by_role(
+            'button', name='Subseção da primeira sessão', exact=True
+        ).click()
+        second.get_by_text('Texto compartilhado entre sessões', exact=True).wait_for(
+            timeout=10000
+        )
+        self.assertEqual(second.locator('[data-node-type="page"]').count(), 0)
         self._assert_browser_clean(first_signals)
         self._assert_browser_clean(second_signals)
 
@@ -418,7 +555,14 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
         note_page = self._shared_page()
         page, signals = self._new_page(self.owner)
         self._select_page(page, note_page.pk)
-        page.locator('[data-ink-color="#f472b6"]').click()
+        page.locator('#notesInkCustomColor').evaluate(
+            '''(input, color) => {
+                input.value = color;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }''',
+            '#f472b6',
+        )
         page.locator('[data-size-toggle]').click()
         page.locator('[data-ink-width="8"]').click()
         page.locator('[data-tool="pencil"]').click()
@@ -449,6 +593,304 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
         strokes = [item for item in note_page.content['elements'] if item['type'] == 'stroke']
         self.assertEqual(len(strokes), 2)
         self.assertTrue(any(len(stroke['points']) == 2 for stroke in strokes))
+        self._assert_browser_clean(signals)
+
+    def test_custom_color_palettes_are_separate_limited_and_migrated(self):
+        note_page = self._shared_page()
+        page, signals = self._new_page(self.owner)
+        self._select_page(page, note_page.pk)
+        old_colors = [
+            '#111111',
+            '#222222',
+            '#333333',
+            '#444444',
+            '#555555',
+            '#666666',
+            'not-a-color',
+        ]
+        page.evaluate(
+            '''({userId, colors}) => {
+                localStorage.setItem(
+                    'sincrow:notes:palette:' + userId,
+                    JSON.stringify(colors)
+                );
+            }''',
+            {'userId': self.owner.pk, 'colors': old_colors},
+        )
+        page.reload()
+        page.locator('#notesEditor').wait_for(state='visible')
+        ink_key = f'sincrow:notes:custom-colors:ink:{self.owner.pk}'
+        text_key = f'sincrow:notes:custom-colors:text:{self.owner.pk}'
+        migrated = page.evaluate(
+            '''({userId, inkKey, textKey}) => ({
+                old: localStorage.getItem('sincrow:notes:palette:' + userId),
+                ink: JSON.parse(localStorage.getItem(inkKey)),
+                text: JSON.parse(localStorage.getItem(textKey))
+            })''',
+            {'userId': self.owner.pk, 'inkKey': ink_key, 'textKey': text_key},
+        )
+        self.assertIsNone(migrated['old'])
+        self.assertEqual(migrated['ink'], old_colors[:5])
+        self.assertEqual(migrated['text'], old_colors[:5])
+        ink_slots = page.locator('[data-custom-palette="ink"] .notes-custom-color-swatch')
+        text_slots = page.locator('[data-custom-palette="text"] .notes-custom-color-swatch')
+        self.assertEqual(ink_slots.count(), 5)
+        self.assertEqual(text_slots.count(), 5)
+        self.assertEqual(
+            ink_slots.first.evaluate('element => getComputedStyle(element).backgroundColor'),
+            'rgb(17, 17, 17)',
+        )
+
+        ink_colors = ['#120001', '#120002', '#120003', '#120004', '#120005', '#120006']
+        text_colors = ['#230001', '#230002', '#230003', '#230004', '#230005', '#230006']
+        for color in ink_colors:
+            page.locator('#notesInkCustomColor').evaluate(
+                '''(input, color) => {
+                    input.value = color;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }''',
+                color,
+            )
+        for color in text_colors:
+            page.locator('#notesCustomColor').evaluate(
+                '''(input, color) => {
+                    input.value = color;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }''',
+                color,
+            )
+        stored = page.evaluate(
+            '''({inkKey, textKey}) => ({
+                ink: JSON.parse(localStorage.getItem(inkKey)),
+                text: JSON.parse(localStorage.getItem(textKey))
+            })''',
+            {'inkKey': ink_key, 'textKey': text_key},
+        )
+        self.assertEqual(stored['ink'], list(reversed(ink_colors[1:])))
+        self.assertEqual(stored['text'], list(reversed(text_colors[1:])))
+        self.assertFalse(set(stored['ink']) & set(stored['text']))
+        self.assertEqual(ink_slots.count(), 5)
+        self.assertEqual(text_slots.count(), 5)
+        self.assertEqual(
+            ink_slots.first.evaluate('element => getComputedStyle(element).backgroundColor'),
+            'rgb(18, 0, 6)',
+        )
+        self.assertEqual(
+            ink_slots.evaluate_all(
+                'elements => elements.map(element => getComputedStyle(element).backgroundColor)'
+            ),
+            [
+                'rgb(18, 0, 6)',
+                'rgb(18, 0, 5)',
+                'rgb(18, 0, 4)',
+                'rgb(18, 0, 3)',
+                'rgb(18, 0, 2)',
+            ],
+        )
+        self.assertEqual(
+            text_slots.evaluate_all(
+                'elements => elements.map(element => getComputedStyle(element).backgroundColor)'
+            ),
+            [
+                'rgb(35, 0, 6)',
+                'rgb(35, 0, 5)',
+                'rgb(35, 0, 4)',
+                'rgb(35, 0, 3)',
+                'rgb(35, 0, 2)',
+            ],
+        )
+        self.assertEqual(ink_slots.first.get_attribute('aria-label'), '#120006')
+        self.assertEqual(ink_slots.first.get_attribute('aria-pressed'), 'true')
+        page.reload()
+        page.locator('#notesEditor').wait_for(state='visible')
+        self.assertEqual(
+            page.evaluate(
+                'key => JSON.parse(localStorage.getItem(key))',
+                ink_key,
+            ),
+            stored['ink'],
+        )
+        page.evaluate(
+            '''key => localStorage.setItem(key, 'invalid JSON')''',
+            text_key,
+        )
+        page.reload()
+        page.locator('#notesEditor').wait_for(state='visible')
+        self.assertEqual(
+            page.locator('[data-custom-palette="text"] .notes-custom-color-swatch.is-empty').count(),
+            5,
+        )
+        page.evaluate(
+            '''({userId, inkKey, textKey}) => {
+                localStorage.removeItem(inkKey);
+                localStorage.removeItem(textKey);
+                localStorage.setItem('sincrow:notes:palette:' + userId, 'invalid JSON');
+            }''',
+            {'userId': self.owner.pk, 'inkKey': ink_key, 'textKey': text_key},
+        )
+        page.reload()
+        page.locator('#notesEditor').wait_for(state='visible')
+        self.assertIsNone(
+            page.evaluate(
+                'userId => localStorage.getItem("sincrow:notes:palette:" + userId)',
+                self.owner.pk,
+            )
+        )
+        self.assertEqual(
+            page.locator('[data-custom-palette="ink"] .notes-custom-color-swatch.is-empty').count(),
+            5,
+        )
+        self.assertEqual(signals['exceptions'], [])
+        self._assert_browser_clean(signals)
+
+    def test_custom_color_slots_stay_five_when_filled(self):
+        note_page = self._shared_page()
+        page, signals = self._new_page(self.owner)
+        self._select_page(page, note_page.pk)
+        for color in ('#120001', '#120002', '#120003', '#120004', '#120005', '#120006'):
+            page.locator('#notesInkCustomColor').evaluate(
+                '''(input, color) => {
+                    input.value = color;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }''',
+                color,
+            )
+        for color in ('#230001', '#230002', '#230003', '#230004', '#230005', '#230006'):
+            page.locator('#notesCustomColor').evaluate(
+                '''(input, color) => {
+                    input.value = color;
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }''',
+                color,
+            )
+        self.assertEqual(
+            page.locator('[data-custom-palette="ink"] .notes-custom-color-swatch').count(),
+            5,
+        )
+        self.assertEqual(
+            page.locator('[data-custom-palette="text"] .notes-custom-color-swatch').count(),
+            5,
+        )
+        self._assert_browser_clean(signals)
+
+    def test_committed_custom_colors_shift_into_distinct_slots(self):
+        note_page = self._shared_page()
+        page, signals = self._new_page(self.owner)
+        self._select_page(page, note_page.pk)
+        ink_key = f'sincrow:notes:custom-colors:ink:{self.owner.pk}'
+        text_key = f'sincrow:notes:custom-colors:text:{self.owner.pk}'
+        ink_colors = ['#120001', '#120002', '#120003', '#120004', '#120005', '#120006']
+        text_colors = ['#230001', '#230002', '#230003', '#230004', '#230005', '#230006']
+        for selector, colors in (
+            ('#notesInkCustomColor', ink_colors),
+            ('#notesCustomColor', text_colors),
+        ):
+            for color in colors:
+                page.locator(selector).evaluate(
+                    '''(input, color) => {
+                        input.value = '#aaaaaa';
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        input.value = color;
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }''',
+                    color,
+                )
+        stored = page.evaluate(
+            '''({inkKey, textKey}) => ({
+                ink: JSON.parse(localStorage.getItem(inkKey)),
+                text: JSON.parse(localStorage.getItem(textKey))
+            })''',
+            {'inkKey': ink_key, 'textKey': text_key},
+        )
+        expected_ink = list(reversed(ink_colors[1:]))
+        expected_text = list(reversed(text_colors[1:]))
+        self.assertEqual(stored['ink'], expected_ink)
+        self.assertEqual(stored['text'], expected_text)
+        for target, expected in (('ink', expected_ink), ('text', expected_text)):
+            slots = page.locator(
+                f'[data-custom-palette="{target}"] .notes-custom-color-swatch'
+            )
+            self.assertEqual(slots.count(), 5)
+            self.assertEqual(
+                slots.evaluate_all('elements => elements.map(element => element.dataset.paletteColor)'),
+                expected,
+            )
+        self._assert_browser_clean(signals)
+
+    def test_custom_color_slots_are_fixed_and_trim_seeded_lists(self):
+        note_page = self._shared_page()
+        page, signals = self._new_page(self.owner)
+        self._select_page(page, note_page.pk)
+        ink_key = f'sincrow:notes:custom-colors:ink:{self.owner.pk}'
+        text_key = f'sincrow:notes:custom-colors:text:{self.owner.pk}'
+        recent_first = ['#00000a', '#000009', '#000008', '#000007', '#000006',
+                        '#000005', '#000004', '#000003', '#000002', '#000001']
+        toolbar = page.locator('#notesToolbar')
+
+        page.evaluate(
+            '''({inkKey, textKey}) => {
+                localStorage.setItem(inkKey, '[]');
+                localStorage.setItem(textKey, '[]');
+            }''',
+            {'inkKey': ink_key, 'textKey': text_key},
+        )
+        page.reload()
+        page.locator('#notesEditor').wait_for(state='visible')
+        initial_height = toolbar.evaluate('element => element.getBoundingClientRect().height')
+        for target in ('ink', 'text'):
+            slots = page.locator(
+                f'[data-custom-palette="{target}"] .notes-custom-color-swatch'
+            )
+            self.assertEqual(slots.count(), 5)
+            self.assertEqual(page.locator(f'[data-palette="{target}"] .notes-color-swatch').count(), 5)
+            self.assertEqual(
+                slots.evaluate_all(
+                    'elements => elements.filter(element => element.classList.contains("is-empty")).length'
+                ),
+                5,
+            )
+        self.assertEqual(page.locator('.notes-auto-swatch').count(), 0)
+
+        for count in (3, 7, 10):
+            page.evaluate(
+                '''({inkKey, textKey, colors}) => {
+                    localStorage.setItem(inkKey, JSON.stringify(colors));
+                    localStorage.setItem(textKey, JSON.stringify(colors));
+                }''',
+                {
+                    'inkKey': ink_key,
+                    'textKey': text_key,
+                    'colors': recent_first[:count],
+                },
+            )
+            page.reload()
+            page.locator('#notesEditor').wait_for(state='visible')
+            for target in ('ink', 'text'):
+                slots = page.locator(
+                    f'[data-custom-palette="{target}"] .notes-custom-color-swatch'
+                )
+                self.assertEqual(slots.count(), 5)
+                self.assertEqual(
+                    page.locator(f'[data-palette="{target}"] .notes-color-swatch').count(),
+                    5,
+                )
+                self.assertEqual(
+                    slots.evaluate_all(
+                        'elements => elements.filter(element => element.classList.contains("is-empty")).length'
+                    ),
+                    5 - min(count, 5),
+                )
+                if count:
+                    self.assertEqual(slots.first.get_attribute('aria-label'), recent_first[0])
+            self.assertEqual(
+                toolbar.evaluate('element => element.getBoundingClientRect().height'),
+                initial_height,
+            )
         self._assert_browser_clean(signals)
 
     def test_partial_eraser_cancel_undo_and_redo(self):
@@ -545,6 +987,105 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
         page.wait_for_function('window.notesEditor.getElements().length === 2')
         page.keyboard.press('Control+z')
         page.wait_for_function('window.notesEditor.getElements().length === 4')
+        self.assertEqual(page.locator('button[data-tool="select"]').count(), 1)
+        self.assertEqual(page.locator('[data-selection-menu], [data-select-all]').count(), 0)
+        self.assertEqual(page.locator('.notes-selection-menu').count(), 0)
+        self.assertNotIn('Inverter seleção', page.locator('#notesToolbar').inner_text())
+        self.assertNotIn('Selecionar tudo', page.locator('#notesToolbar').inner_text())
+        self.assertNotIn('Limpar seleção', page.locator('#notesToolbar').inner_text())
+        page.locator('button[data-tool="pencil"]').click()
+        page.keyboard.press('v')
+        self.assertEqual(page.locator('button[data-tool="select"]').get_attribute('aria-pressed'), 'true')
+        page.evaluate('document.activeElement.blur()')
+        page.keyboard.press('Control+a')
+        self.assertEqual(len(page.evaluate('window.notesEditor.getSelection()')), 4)
+        page.keyboard.press('Escape')
+        self.assertEqual(page.evaluate('window.notesEditor.getSelection()'), [])
+        toolbar = page.locator('#notesToolbar')
+        self.assertEqual(toolbar.evaluate('element => getComputedStyle(element).flexWrap'), 'nowrap')
+        self._assert_browser_clean(signals)
+
+    def test_marquee_selection_uses_intersections_live_preview_and_click_tolerance(self):
+        note_page = self._shared_page()
+        page, signals = self._new_page(self.owner)
+        self._select_page(page, note_page.pk)
+        page.locator('[data-size-toggle]').click()
+        page.locator('[data-ink-width="4"]').click()
+        page.locator('[data-tool="pencil"]').click()
+        self._drag_area(page, (100, 100), (300, 100))
+        page.wait_for_function('document.querySelectorAll(".notes-ink path").length === 1')
+        first_stroke_id = page.locator('.notes-ink path').get_attribute('data-stroke-id')
+
+        page.locator('[data-tool="text"]').click()
+        page.locator('#notesWorkArea').click(position={'x': 500, 'y': 200})
+        page.locator('.notes-text-content').last.fill('Bloco no canto')
+        page.keyboard.press('Escape')
+        page.locator('button[data-tool="select"]').click()
+        blank = self._area_point(page, 30, 250)
+        page.mouse.click(blank['x'], blank['y'])
+
+        start = self._area_point(page, 307, 104)
+        end = self._area_point(page, 299, 96)
+        page.mouse.move(start['x'], start['y'])
+        page.mouse.down()
+        page.mouse.move(end['x'], end['y'], steps=4)
+        page.wait_for_function(
+            '''id => document.querySelector(
+                '.notes-ink path[data-stroke-id="' + id + '"].is-marquee-selected'
+            ) !== null''',
+            arg=first_stroke_id,
+        )
+        page.mouse.up()
+        self.assertEqual(page.evaluate('window.notesEditor.getSelection()'), [first_stroke_id])
+
+        page.keyboard.down('Shift')
+        start = self._area_point(page, 491, 191)
+        end = self._area_point(page, 500, 200)
+        page.mouse.move(start['x'], start['y'])
+        page.mouse.down()
+        page.mouse.move(end['x'], end['y'], steps=4)
+        page.wait_for_function(
+            '''() => document.querySelector(
+                '.notes-text-block.is-marquee-selected'
+            ) !== null'''
+        )
+        page.mouse.up()
+        page.keyboard.up('Shift')
+        selected = page.evaluate('window.notesEditor.getSelection()')
+        self.assertIn(first_stroke_id, selected)
+        self.assertEqual(len(selected), 2)
+
+        page.locator('[data-tool="pencil"]').click()
+        self._drag_area(page, (500, 400), (700, 400))
+        page.wait_for_function('document.querySelectorAll(".notes-ink path").length === 2')
+        second_stroke_id = page.locator('.notes-ink path').nth(1).get_attribute('data-stroke-id')
+        page.locator('button[data-tool="select"]').click()
+        start = self._area_point(page, 710, 405)
+        end = self._area_point(page, 690, 405)
+        page.mouse.move(start['x'], start['y'])
+        page.mouse.down()
+        page.mouse.move(end['x'], end['y'], steps=4)
+        page.mouse.up()
+        self.assertNotIn(second_stroke_id, page.evaluate('window.notesEditor.getSelection()'))
+
+        page.locator('[data-tool="pencil"]').click()
+        page.locator('[data-size-toggle]').click()
+        page.locator('[data-ink-width="2"]').click()
+        self._drag_area(page, (800, 500), (900, 500))
+        page.wait_for_function('document.querySelectorAll(".notes-ink path").length === 3')
+        third_stroke_id = page.locator('.notes-ink path').nth(2).get_attribute('data-stroke-id')
+        self.assertEqual(page.locator('.notes-ink path').nth(2).get_attribute('stroke-width'), '2')
+        page.locator('button[data-tool="select"]').click()
+        point = self._area_point(page, 850, 505)
+        page.mouse.click(point['x'], point['y'])
+        self.assertEqual(page.evaluate('window.notesEditor.getSelection()'), [third_stroke_id])
+
+        point = self._area_point(page, 1500, 1000)
+        page.mouse.move(point['x'], point['y'])
+        page.mouse.down()
+        page.mouse.move(point['x'] + 2, point['y'] + 1)
+        page.mouse.up()
+        self.assertEqual(page.evaluate('window.notesEditor.getSelection()'), [])
         self._assert_browser_clean(signals)
 
     def test_toolbar_size_preview_and_single_scroll_container(self):
@@ -559,6 +1100,23 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
         self.assertEqual(layout['wrap'], 'nowrap')
         self.assertTrue(layout['overflows'])
         page.locator('[data-size-toggle]').click()
+        popover = page.locator('#notesSizePopover')
+        popup_layout = popover.evaluate('''element => {
+            const rect = element.getBoundingClientRect();
+            return {
+                position: getComputedStyle(element).position,
+                zIndex: Number(getComputedStyle(element).zIndex),
+                aboveDrawingLayers: Number(getComputedStyle(element).zIndex) >
+                    Number(getComputedStyle(document.querySelector('.notes-selection-box')).zIndex),
+                insideToolbarRow: document.getElementById('notesToolbar').contains(element),
+                insideViewport: rect.top >= 0 && rect.left >= 0 &&
+                    rect.bottom <= window.innerHeight && rect.right <= window.innerWidth
+            };
+        }''')
+        self.assertEqual(popup_layout['position'], 'fixed')
+        self.assertTrue(popup_layout['aboveDrawingLayers'], popup_layout)
+        self.assertFalse(popup_layout['insideToolbarRow'])
+        self.assertTrue(popup_layout['insideViewport'])
         preview_size = page.locator('#notesInkWidthPreview').evaluate(
             'element => [element.getBoundingClientRect().width, element.getBoundingClientRect().height]'
         )
@@ -579,10 +1137,18 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
         point = work_area.bounding_box()
         page.mouse.move(point['x'] + point['width'] / 2, point['y'] + point['height'] / 2)
         page.mouse.wheel(0, 350)
+        page.wait_for_function(
+            'element => element.scrollTop > 0',
+            arg=work_area.element_handle(),
+        )
         self.assertGreater(work_area.evaluate('element => element.scrollTop'), 0)
         page.keyboard.down('Shift')
         page.mouse.wheel(0, 250)
         page.keyboard.up('Shift')
+        page.wait_for_function(
+            'element => element.scrollLeft > 0',
+            arg=work_area.element_handle(),
+        )
         self.assertGreater(work_area.evaluate('element => element.scrollLeft'), 0)
         before = work_area.evaluate('element => [element.scrollTop, element.scrollLeft]')
         prevented = work_area.evaluate('''element => {
@@ -613,16 +1179,24 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
         self.assertIsNone(page.locator('#projectMenuToggle').get_attribute('data-bound'))
         self._assert_browser_clean(signals)
 
-    def test_tool_shortcuts_text_color_and_disabled_formatting(self):
+    def test_tool_shortcuts_text_color_and_hidden_format_controls(self):
         note_page = self._shared_page()
         page, signals = self._new_page(self.owner)
         self._select_page(page, note_page.pk)
+        self.assertEqual(page.locator('#notesToolbar [data-command]').count(), 0)
         page.locator('[data-tool="text"]').click()
         page.locator('#notesWorkArea').click(position={'x': 220, 'y': 30})
         content = page.locator('.notes-text-content').last
         content.fill('Texto colorido')
         content.press('Control+a')
-        page.locator('button[data-color="#62d995"]').click()
+        page.locator('#notesCustomColor').evaluate(
+            '''(input, color) => {
+                input.value = color;
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }''',
+            '#62d995',
+        )
         style_color = page.locator('.notes-text-content').last.locator('span').evaluate(
             'element => element.style.color'
         )
@@ -639,6 +1213,24 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
         page.keyboard.press('p')
         self.assertEqual(page.locator('button[data-tool="text"]').get_attribute('aria-pressed'), 'true')
         page.locator('button[data-tool="select"]').click()
+        self._assert_browser_clean(signals)
+
+    def test_formatting_shortcuts_work_without_toolbar_buttons(self):
+        note_page = self._shared_page()
+        page, signals = self._new_page(self.owner)
+        self._select_page(page, note_page.pk)
+        self.assertEqual(page.locator('#notesToolbar [data-command]').count(), 0)
+        page.locator('[data-tool="text"]').click()
+        page.locator('#notesWorkArea').click(position={'x': 220, 'y': 30})
+        content = page.locator('.notes-text-content').last
+        content.fill('Atalhos preservados')
+        content.press('Control+a')
+        content.press('Control+b')
+        self.assertEqual(content.locator('b, strong').count(), 1)
+        content.press('Control+i')
+        self.assertEqual(content.locator('i, em').count(), 1)
+        content.press('Control+u')
+        self.assertEqual(content.locator('u').count(), 1)
         self._assert_browser_clean(signals)
 
     def test_canvas_fills_remaining_height_at_all_requested_viewports(self):
@@ -795,6 +1387,8 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
     def test_tree_loading_indicator_is_hidden_after_load_and_retry_appears_on_error(self):
         page, signals = self._new_page(self.owner)
         status = page.locator('#notesTreeStatus')
+        page.locator('#notesTree').wait_for(state='visible')
+        status.wait_for(state='hidden')
         self.assertFalse(status.is_visible())
         self.assertFalse(status.get_by_text('Carregando notas…').is_visible())
         self.assertTrue(page.locator('#notesTree').is_visible())
@@ -818,9 +1412,14 @@ class NotesBrowserFlowTests(ChannelsLiveServerTestCase):
         page.get_by_role('button', name='Tentar de novo').wait_for()
         page.get_by_role('button', name='Tentar de novo').click()
         page.get_by_role('button', name='Seção compartilhada', exact=True).wait_for()
+        status.wait_for(state='hidden')
         self.assertFalse(status.is_visible())
         self.assertFalse(status.get_by_text('Carregando notas…').is_visible())
-        self._assert_browser_clean(signals, allowed_statuses=(503,))
+        self._assert_browser_clean(
+            signals,
+            allowed_statuses=(503,),
+            allowed_console=('status of 503 (Service Unavailable)',),
+        )
 
     def test_realtime_initialization_failure_does_not_block_tree(self):
         context = self.browser.new_context()

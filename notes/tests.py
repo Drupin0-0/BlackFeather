@@ -1,12 +1,16 @@
+import base64
 import json
+import struct
+import zlib
 from unittest.mock import patch
 from uuid import uuid4
 
 from asgiref.sync import async_to_sync, sync_to_async
 from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError, transaction
 from django.test import Client, TestCase, TransactionTestCase
-from django.urls import reverse
+from django.urls import Resolver404, resolve, reverse
 
 from Sincrow.asgi import application
 from Tasks.models import Project, ProjectMember
@@ -24,6 +28,22 @@ def make_stroke(points=None, color='auto', width=4, element_id=None, z=7):
         'width': width,
         'z': z,
     }
+
+
+def make_fill_png_data_uri():
+    def chunk(name, data):
+        return (
+            struct.pack('>I', len(data)) + name + data +
+            struct.pack('>I', zlib.crc32(name + data) & 0xFFFFFFFF)
+        )
+
+    image = (
+        b'\x89PNG\r\n\x1a\n' +
+        chunk(b'IHDR', struct.pack('>IIBBBBB', 1, 1, 8, 6, 0, 0, 0)) +
+        chunk(b'IDAT', zlib.compress(b'\x00\x00\x00\x00\xff')) +
+        chunk(b'IEND', b'')
+    )
+    return 'data:image/png;base64,' + base64.b64encode(image).decode('ascii')
 
 
 class NotesPermissionTests(TestCase):
@@ -64,6 +84,8 @@ class NotesPermissionTests(TestCase):
         self.assertNotIn(self.private, visible_sections(self.project, self.other))
 
     def test_project_notes_tree_returns_only_visible_sections(self):
+        subsection = Subsection.objects.create(section=self.shared, title='Subseção visível')
+        page = Page.objects.create(subsection=subsection, title='Documento interno')
         self.client.force_login(self.member)
         response = self.client.get(reverse('project_notes_tree', args=[self.project.pk]))
 
@@ -72,6 +94,14 @@ class NotesPermissionTests(TestCase):
         section_titles = {section['title'] for section in payload['sections']}
         self.assertIn('Seção compartilhada', section_titles)
         self.assertIn('Seção privada', section_titles)
+        serialized_subsection = next(
+            subsection
+            for section in payload['sections']
+            for subsection in section['subsections']
+        )
+        self.assertEqual(serialized_subsection['page_id'], page.pk)
+        self.assertNotIn('pages', serialized_subsection)
+        self.assertNotIn('content', serialized_subsection)
 
     def test_project_notes_page_renders_for_member_with_correct_navigation_links(self):
         self.client.force_login(self.member)
@@ -230,7 +260,7 @@ class NotesRealtimeTests(TransactionTestCase):
 
         async_to_sync(exercise)()
 
-    def test_page_rename_broadcasts_tree_change_with_valid_origin(self):
+    def test_subsection_rename_broadcasts_tree_change_with_valid_origin(self):
         client_id = 'aba-42'
         client = Client()
         client.force_login(self.member)
@@ -241,11 +271,12 @@ class NotesRealtimeTests(TransactionTestCase):
             await observer.send_json_to({'action': 'ping'})
             self.assertEqual(await observer.receive_json_from(), {'type': 'pong'})
             response = await sync_to_async(client.post, thread_sensitive=True)(
-                reverse('notes_page_rename', args=[self.project.pk, self.page.pk]),
+                reverse('notes_subsection_rename', args=[self.project.pk, self.subsection.pk]),
                 {'title': 'Novo título'},
                 HTTP_X_NOTES_CLIENT=client_id,
             )
             self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()['subsection']['page_id'], self.page.pk)
             self.assertEqual(await observer.receive_json_from(), {
                 'type': 'tree_changed',
                 'origin': client_id,
@@ -301,7 +332,7 @@ class NotesRealtimeTests(TransactionTestCase):
 
         async_to_sync(exercise)()
 
-    def test_deleting_observed_page_sends_access_lost(self):
+    def test_deleting_observed_subsection_sends_access_lost_and_deletes_page(self):
         client = Client()
         client.force_login(self.owner)
         communicator = self.websocket(self.member)
@@ -312,7 +343,7 @@ class NotesRealtimeTests(TransactionTestCase):
             await communicator.send_json_to({'action': 'ping'})
             self.assertEqual(await communicator.receive_json_from(), {'type': 'pong'})
             response = await sync_to_async(client.post, thread_sensitive=True)(
-                reverse('notes_page_delete', args=[self.project.pk, self.page.pk]),
+                reverse('notes_subsection_delete', args=[self.project.pk, self.subsection.pk]),
             )
             self.assertEqual(response.status_code, 200)
             events = []
@@ -327,6 +358,7 @@ class NotesRealtimeTests(TransactionTestCase):
             await communicator.disconnect()
 
         async_to_sync(exercise)()
+        self.assertFalse(Page.objects.filter(pk=self.page.pk).exists())
 
     def test_realtime_send_failure_does_not_fail_page_save(self):
         class FailingLayer:
@@ -404,6 +436,58 @@ class NotesContentTests(TestCase):
         tree_url = reverse('project_notes_tree', args=[self.project.pk])
         self.assertEqual(tree_url, page_url + 'api/tree/')
 
+    def test_subsection_creation_creates_one_empty_page_and_returns_its_id(self):
+        self.client.force_login(self.member)
+
+        response = self.client.post(
+            reverse('notes_subsection_create', args=[self.project.pk, self.shared.pk]),
+            {'title': 'Nova subseção'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        subsection = Subsection.objects.get(pk=response.json()['subsection']['id'])
+        page = Page.objects.get(subsection=subsection)
+        self.assertEqual(response.json()['subsection']['page_id'], page.pk)
+        self.assertEqual(subsection.pages.count(), 1)
+        self.assertEqual(page.title, subsection.title)
+        self.assertEqual(page.content, {})
+        self.assertEqual(page.version, 1)
+
+    def test_subsection_creation_rolls_back_if_page_creation_fails(self):
+        self.client.force_login(self.member)
+        previous_count = self.shared.subsections.count()
+
+        with patch('notes.views.Page.objects.create', side_effect=RuntimeError('falha simulada')):
+            with self.assertRaises(RuntimeError):
+                self.client.post(
+                    reverse('notes_subsection_create', args=[self.project.pk, self.shared.pk]),
+                    {'title': 'Subseção incompleta'},
+                )
+
+        self.assertEqual(self.shared.subsections.count(), previous_count)
+
+    def test_database_rejects_a_second_page_for_one_subsection(self):
+        subsection = Subsection.objects.create(section=self.shared, title='Subseção')
+        Page.objects.create(subsection=subsection, title='Documento')
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Page.objects.create(subsection=subsection, title='Duplicata')
+
+    def test_page_create_and_page_mutation_routes_are_removed(self):
+        base = reverse('project_notes', args=[self.project.pk]) + 'api/'
+        removed_paths = (
+            'subsections/1/pages/create/',
+            'pages/1/rename/',
+            'pages/1/delete/',
+            'pages/1/reorder/',
+        )
+
+        for path in removed_paths:
+            with self.subTest(path=path):
+                with self.assertRaises(Resolver404):
+                    resolve(base + path)
+
     def test_page_content_update_requires_matching_version(self):
         subsection = Subsection.objects.create(section=self.shared, title='Subseção')
         existing_content = {
@@ -479,6 +563,62 @@ class NotesContentTests(TestCase):
         self.assertEqual(page.content, sanitized)
         self.assertEqual(page.version, 2)
         self.assertEqual(page.updated_by, self.member)
+
+    def test_fill_png_is_validated_and_persisted(self):
+        subsection = Subsection.objects.create(section=self.shared, title='Subseção')
+        page = Page.objects.create(subsection=subsection, title='Página')
+        fill = {
+            'id': str(uuid4()),
+            'type': 'fill',
+            'x': 10,
+            'y': 20,
+            'w': 1,
+            'h': 1,
+            'z': 3,
+            'image': make_fill_png_data_uri(),
+            'color': '#12abef',
+        }
+        self.client.force_login(self.member)
+
+        response = self.client.put(
+            reverse('notes_page_content', args=[self.project.pk, page.pk]),
+            data=json.dumps({'content': {'schema': 1, 'elements': [fill]}, 'version': 1}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['content']['elements'], [fill])
+        page.refresh_from_db()
+        self.assertEqual(page.content['elements'], [fill])
+
+    def test_fill_with_invalid_png_or_mismatched_dimensions_is_rejected(self):
+        subsection = Subsection.objects.create(section=self.shared, title='Subseção')
+        page = Page.objects.create(subsection=subsection, title='Página')
+        self.client.force_login(self.member)
+        valid_fill = {
+            'id': str(uuid4()),
+            'type': 'fill',
+            'x': 0,
+            'y': 0,
+            'w': 1,
+            'h': 1,
+            'z': 1,
+            'image': make_fill_png_data_uri(),
+            'color': '#12abef',
+        }
+
+        for overrides in ({'image': 'data:image/png;base64,invalid'}, {'w': 2}):
+            with self.subTest(overrides=overrides):
+                fill = {**valid_fill, **overrides}
+                response = self.client.put(
+                    reverse('notes_page_content', args=[self.project.pk, page.pk]),
+                    data=json.dumps({'content': {'schema': 1, 'elements': [fill]}, 'version': 1}),
+                    content_type='application/json',
+                )
+                self.assertEqual(response.status_code, 400)
+
+        page.refresh_from_db()
+        self.assertEqual(page.version, 1)
 
     def test_unknown_block_type_is_rejected_without_saving(self):
         subsection = Subsection.objects.create(section=self.shared, title='Subseção')

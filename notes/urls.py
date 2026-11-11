@@ -14,10 +14,6 @@ urlpatterns = [
     path('api/subsections/<int:subsection_id>/rename/', views.subsection_rename, name='notes_subsection_rename'),
     path('api/subsections/<int:subsection_id>/delete/', views.subsection_delete, name='notes_subsection_delete'),
     path('api/subsections/<int:subsection_id>/reorder/', views.subsection_reorder, name='notes_subsection_reorder'),
-    path('api/subsections/<int:subsection_id>/pages/create/', views.page_create, name='notes_page_create'),
     path('api/pages/<int:page_id>/', views.page_content_view, name='notes_page_content'),
     path('api/pages/<int:page_id>/version/', views.page_version_view, name='notes_page_version'),
-    path('api/pages/<int:page_id>/rename/', views.page_rename, name='notes_page_rename'),
-    path('api/pages/<int:page_id>/delete/', views.page_delete, name='notes_page_delete'),
-    path('api/pages/<int:page_id>/reorder/', views.page_reorder, name='notes_page_reorder'),
 ]

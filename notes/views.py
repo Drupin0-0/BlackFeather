@@ -75,18 +75,18 @@ def _serialize_section(section):
 
 
 def _serialize_subsection(subsection):
+    page = subsection.pages.all()[0]
     return {
         'id': subsection.pk,
         'title': subsection.title,
         'order': subsection.order,
-        'pages': [_serialize_page(page) for page in subsection.pages.all()],
+        'page_id': page.pk,
     }
 
 
 def _serialize_page(page):
     return {
         'id': page.pk,
-        'title': page.title,
         'order': page.order,
     }
 
@@ -296,12 +296,14 @@ def subsection_create(request, project_id, section_id):
     if error:
         return JsonResponse({'error': error}, status=400)
 
-    subsection = Subsection.objects.create(
-        section=section,
-        title=title,
-        order=section.subsections.count(),
-        theme=request.POST.get('theme', 'dark'),
-    )
+    with transaction.atomic():
+        subsection = Subsection.objects.create(
+            section=section,
+            title=title,
+            order=section.subsections.count(),
+            theme=request.POST.get('theme', 'dark'),
+        )
+        Page.objects.create(subsection=subsection, title=title)
     publish_tree_changed(project.pk, _client_origin(request))
     return JsonResponse({'success': True, 'subsection': _serialize_subsection(subsection)})
 
@@ -320,8 +322,9 @@ def subsection_rename(request, project_id, subsection_id):
     if error:
         return JsonResponse({'error': error}, status=400)
 
-    subsection.title = title
-    subsection.save(update_fields=['title'])
+    with transaction.atomic():
+        subsection.title = title
+        subsection.save(update_fields=['title'])
     publish_tree_changed(project.pk, _client_origin(request))
     return JsonResponse({'success': True, 'subsection': _serialize_subsection(subsection)})
 
@@ -366,28 +369,6 @@ def subsection_reorder(request, project_id, subsection_id):
 
 
 @login_required
-@require_http_methods(['POST'])
-def page_create(request, project_id, subsection_id):
-    try:
-        project = _project_member_project(project_id, request.user)
-    except PermissionDenied:
-        return JsonResponse({'error': 'Você não tem acesso a este projeto.'}, status=404)
-
-    subsection = _subsection_for_project(project, subsection_id, request.user)
-    title, error = _normalize_title(request.POST.get('title'))
-    if error:
-        return JsonResponse({'error': error}, status=400)
-
-    page = Page.objects.create(
-        subsection=subsection,
-        title=title,
-        order=subsection.pages.count(),
-    )
-    publish_tree_changed(project.pk, _client_origin(request))
-    return JsonResponse({'success': True, 'page': _serialize_page(page)})
-
-
-@login_required
 @require_http_methods(['GET', 'PUT'])
 def page_content_view(request, project_id, page_id):
     try:
@@ -404,7 +385,6 @@ def page_content_view(request, project_id, page_id):
             return JsonResponse({'error': str(error)}, status=400)
         return JsonResponse({
             'id': page.pk,
-            'title': page.title,
             'content': content,
             'version': page.version,
             'updated_at': page.updated_at.isoformat() if page.updated_at else None,
@@ -426,12 +406,12 @@ def page_content_view(request, project_id, page_id):
 
     sent_version = payload.get('version')
     if not isinstance(sent_version, int) or isinstance(sent_version, bool):
-        return JsonResponse({'error': 'A versão atual da página é obrigatória.'}, status=400)
+        return JsonResponse({'error': 'A versão atual do conteúdo é obrigatória.'}, status=400)
     with transaction.atomic():
         page = _page_for_project(project, page_id, request.user, for_update=True)
         if sent_version != page.version:
             return JsonResponse({
-                'error': 'A página foi alterada por outra pessoa. Suas alterações locais serão mantidas.',
+                'error': 'O conteúdo foi alterado por outra pessoa. Suas alterações locais serão mantidas.',
                 'current_version': page.version,
             }, status=409)
 
@@ -467,61 +447,3 @@ def page_version_view(request, project_id, page_id):
 
     page = _page_for_project(project, page_id, request.user)
     return JsonResponse({'version': page.version})
-
-
-@login_required
-@require_http_methods(['POST'])
-def page_rename(request, project_id, page_id):
-    try:
-        project = _project_member_project(project_id, request.user)
-    except PermissionDenied:
-        return JsonResponse({'error': 'Você não tem acesso a este projeto.'}, status=404)
-
-    page = _page_for_project(project, page_id, request.user)
-
-    title, error = _normalize_title(request.POST.get('title'))
-    if error:
-        return JsonResponse({'error': error}, status=400)
-
-    page.title = title
-    page.save(update_fields=['title'])
-    publish_tree_changed(project.pk, _client_origin(request))
-    return JsonResponse({'success': True, 'page': _serialize_page(page)})
-
-
-@login_required
-@require_http_methods(['POST'])
-def page_delete(request, project_id, page_id):
-    try:
-        project = _project_member_project(project_id, request.user)
-    except PermissionDenied:
-        return JsonResponse({'error': 'Você não tem acesso a este projeto.'}, status=404)
-
-    page = _page_for_project(project, page_id, request.user)
-
-    page.delete()
-    origin = _client_origin(request)
-    publish_tree_changed(project.pk, origin)
-    publish_access_changed(project.pk)
-    return JsonResponse({'success': True, 'deleted_page_id': page_id})
-
-
-@login_required
-@require_http_methods(['POST'])
-def page_reorder(request, project_id, page_id):
-    try:
-        project = _project_member_project(project_id, request.user)
-    except PermissionDenied:
-        return JsonResponse({'error': 'Você não tem acesso a este projeto.'}, status=404)
-
-    page = _page_for_project(project, page_id, request.user)
-
-    try:
-        order = int(request.POST.get('order', page.order))
-    except ValueError:
-        return JsonResponse({'error': 'Ordem inválida.'}, status=400)
-
-    page.order = order
-    page.save(update_fields=['order'])
-    publish_tree_changed(project.pk, _client_origin(request))
-    return JsonResponse({'success': True, 'page': _serialize_page(page)})

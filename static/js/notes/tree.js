@@ -9,9 +9,11 @@
     const treeElement = document.getElementById('notesTree');
     const treeStatus = document.getElementById('notesTreeStatus');
     const messageElement = document.getElementById('notesMessage');
-    const pageTitleElement = document.getElementById('notesPageTitle');
+    const sectionTitleElement = document.getElementById('notesSectionTitle');
+    const subsectionTitleElement = document.getElementById('notesSubsectionTitle');
+    const pageTitleElement = subsectionTitleElement;
     const pageTitleContainer = pageTitleElement.parentElement;
-    const renamePageButton = document.getElementById('notesRenamePage');
+    const renameSubsectionButton = document.getElementById('notesRenameSubsection');
     const apiBase = root.dataset.apiBase;
     const projectId = JSON.parse(document.getElementById('notes-project-id').textContent);
     const userId = JSON.parse(document.getElementById('notes-user-id').textContent);
@@ -137,17 +139,19 @@
 
     function allAccessibleNodes() {
         const keys = new Set();
-        const pages = new Set();
+        const pageIds = new Set();
         state.sections.forEach(function (section) {
             keys.add('section:' + section.id);
             (section.subsections || []).forEach(function (subsection) {
-                keys.add('subsection:' + subsection.id);
-                (subsection.pages || []).forEach(function (page) {
-                    pages.add(page.id);
-                });
+                if (Number.isSafeInteger(subsection.id)) {
+                    keys.add('subsection:' + subsection.id);
+                }
+                if (Number.isSafeInteger(subsection.page_id) && subsection.page_id > 0) {
+                    pageIds.add(subsection.page_id);
+                }
             });
         });
-        return { keys: keys, pages: pages };
+        return { keys: keys, pageIds: pageIds };
     }
 
     function restoreState() {
@@ -168,11 +172,11 @@
             });
         }
 
-        if (state.selectedPageId && !nodes.pages.has(state.selectedPageId)) {
+        if (state.selectedPageId && !nodes.pageIds.has(state.selectedPageId)) {
             state.selectedPageId = null;
             state.currentVersion = null;
         }
-        if (!state.selectedPageId && state.savedState && nodes.pages.has(state.savedState.lastPageId)) {
+        if (!state.selectedPageId && state.savedState && nodes.pageIds.has(state.savedState.lastPageId)) {
             state.selectedPageId = state.savedState.lastPageId;
         }
         saveState();
@@ -224,16 +228,18 @@
         if (!page) {
             state.selectedPageId = null;
             state.currentVersion = null;
-            pageTitleElement.textContent = 'Selecione ou crie uma página';
-            renamePageButton.hidden = true;
+            sectionTitleElement.textContent = '';
+            pageTitleElement.textContent = 'Selecione ou crie uma subseção';
+            renameSubsectionButton.hidden = true;
             window.dispatchEvent(new CustomEvent('notes:clear-page'));
             saveState();
             return;
         }
+        sectionTitleElement.textContent = page.sectionTitle;
         if (!pageTitleContainer.querySelector('.notes-inline-form input')) {
             pageTitleElement.textContent = page.title;
         }
-        renamePageButton.hidden = false;
+        renameSubsectionButton.hidden = false;
     }
 
     function findPage(pageId) {
@@ -242,38 +248,13 @@
         }
         for (const section of state.sections) {
             for (const subsection of section.subsections || []) {
-                const page = (subsection.pages || []).find(function (item) {
-                    return Number(item.id) === Number(pageId);
-                });
-                if (page) {
-                    return page;
-                }
-            }
-        }
-        return null;
-    }
-
-    function findItem(type, id) {
-        if (type === 'section') {
-            return state.sections.find(function (item) { return Number(item.id) === Number(id); });
-        }
-        for (const section of state.sections) {
-            if (type === 'subsection') {
-                const subsection = (section.subsections || []).find(function (item) {
-                    return Number(item.id) === Number(id);
-                });
-                if (subsection) {
-                    return subsection;
-                }
-            }
-            for (const subsection of section.subsections || []) {
-                if (type === 'page') {
-                    const page = (subsection.pages || []).find(function (item) {
-                        return Number(item.id) === Number(id);
-                    });
-                    if (page) {
-                        return page;
-                    }
+                if (Number(subsection.page_id) === Number(pageId)) {
+                    return {
+                        id: subsection.page_id,
+                        title: subsection.title,
+                        sectionTitle: section.title,
+                        subsection: subsection,
+                    };
                 }
             }
         }
@@ -323,8 +304,8 @@
                 const result = await options.submit(title);
                 setMessage('');
                 await loadTree();
-                if (result && result.page) {
-                    await selectPage(result.page.id);
+                if (result && result.subsection && result.subsection.page_id) {
+                    await selectPage(result.subsection.page_id);
                 }
             } catch (error) {
                 await loadTree();
@@ -390,7 +371,6 @@
         if (type !== 'section' || canManageSections) {
             popoverButton(popover, 'Renomear', function () {
                 const title = container.querySelector('.notes-node-title');
-                const original = item.title;
                 beginTitleEntry(title.parentElement, {
                     placeholder: 'Nome',
                     cancel: function () {
@@ -443,19 +423,12 @@
         popover.setAttribute('role', 'dialog');
         popover.setAttribute('aria-label', 'Confirmar exclusão');
         const details = document.createElement('p');
-        const descendants = type === 'section'
-            ? (item.subsections || []).reduce(function (count, subsection) {
-                return count + (subsection.pages || []).length;
-            }, 0)
-            : type === 'subsection' ? (item.pages || []).length : 0;
         if (type === 'section') {
             details.textContent = 'Excluir esta seção apagará ' + (item.subsections || []).length +
-                ' subseções e ' + descendants + ' páginas. Esta ação não pode ser desfeita.';
-        } else if (type === 'subsection') {
-            details.textContent = 'Excluir esta subseção apagará ' + descendants +
-                ' páginas. Esta ação não pode ser desfeita.';
+                ' subseções e todo o conteúdo delas. Esta ação não pode ser desfeita.';
         } else {
-            details.textContent = 'Excluir esta página? Esta ação não pode ser desfeita.';
+            details.textContent = 'Excluir esta subseção também apagará o conteúdo escrito e desenhado. ' +
+                'Esta ação não pode ser desfeita.';
         }
         const actions = document.createElement('div');
         actions.className = 'notes-confirm-actions';
@@ -466,10 +439,10 @@
             confirm.disabled = true;
             try {
                 if (window.notesEditor && !(await window.notesEditor.flush())) {
-                    throw new Error('Salve a página atual antes de excluí-la.');
+                    throw new Error('Salve o conteúdo atual antes de excluí-lo.');
                 }
                 await postForm(itemEndpoints(type, item.id) + 'delete/', {});
-                if (type === 'page' && Number(state.selectedPageId) === Number(item.id)) {
+                if (type === 'subsection' && Number(state.selectedPageId) === Number(item.page_id)) {
                     clearSelectedPage();
                     window.dispatchEvent(new CustomEvent('notes:clear-page'));
                 }
@@ -497,8 +470,9 @@
         window.dispatchEvent(new CustomEvent('notes:unwatch-page'));
         state.selectedPageId = null;
         state.currentVersion = null;
-        pageTitleElement.textContent = 'Selecione ou crie uma página';
-        renamePageButton.hidden = true;
+        sectionTitleElement.textContent = '';
+        pageTitleElement.textContent = 'Selecione ou crie uma subseção';
+        renameSubsectionButton.hidden = true;
         saveState();
     }
 
@@ -613,39 +587,13 @@
             list.prepend(wrapper);
             const createPath = type === 'section'
                 ? 'sections/create/'
-                : type === 'subsection'
-                    ? 'sections/' + parent.id + '/subsections/create/'
-                    : 'subsections/' + parent.id + '/pages/create/';
+                : 'sections/' + parent.id + '/subsections/create/';
             beginTitleEntry(wrapper, {
-                placeholder: type === 'section' ? 'Nome da seção' : type === 'subsection' ? 'Nome da subseção' : 'Nome da página',
+                placeholder: type === 'section' ? 'Nome da seção' : 'Nome da subseção',
                 cancel: function () { wrapper.remove(); },
                 submit: function (title) { return postForm(createPath, { title: title }); },
             });
         });
-    }
-
-    function renderPage(page, siblings, parentList) {
-        const entry = document.createElement('li');
-        entry.className = 'notes-tree-entry';
-        entry.dataset.nodeType = 'page';
-        entry.dataset.nodeId = String(page.id);
-        const row = document.createElement('div');
-        row.className = 'notes-tree-row notes-page-row';
-        const select = createButton(page.title, 'notes-node-title notes-page-select', 'select-page');
-        select.dataset.pageId = String(page.id);
-        select.classList.toggle('is-selected', Number(state.selectedPageId) === Number(page.id));
-        select.addEventListener('dblclick', function () {
-            beginTitleEntry(select.parentElement, {
-                placeholder: 'Nome da página',
-                cancel: function () { renderTree(); },
-                submit: function (title) { return postForm(titleEndpoint('page', page.id), { title: title }); },
-            });
-        });
-        row.append(select);
-        createMenuButton(row, 'page', page, siblings);
-        entry.append(row);
-        parentList.append(entry);
-        return entry;
     }
 
     function renderSubsection(subsection, siblings, parentList) {
@@ -655,28 +603,12 @@
         entry.dataset.nodeId = String(subsection.id);
         const row = document.createElement('div');
         row.className = 'notes-tree-row';
-        const children = createNodeList('notes-tree-children notes-page-list');
-        const key = 'subsection:' + subsection.id;
-        const expanded = state.expanded.has(key);
-        const toggle = addExpandButton(row, key, children, expanded);
-        const title = createButton(subsection.title, 'notes-node-title', '');
-        title.addEventListener('dblclick', function () {
-            beginTitleEntry(title.parentElement, {
-                placeholder: 'Nome da subseção',
-                cancel: function () { renderTree(); },
-                submit: function (newTitle) { return postForm(titleEndpoint('subsection', subsection.id), { title: newTitle }); },
-            });
-        });
+        const title = createButton(subsection.title, 'notes-node-title notes-page-select', 'select-subsection');
+        title.dataset.pageId = String(subsection.page_id);
+        title.classList.toggle('is-selected', Number(state.selectedPageId) === Number(subsection.page_id));
         row.append(title);
-        const addPage = createButton('+', 'notes-button notes-button-small notes-add-node', 'create-page', 'Criar página');
-        row.append(addPage);
-        makeAddAction(addPage, subsection, 'page', children, key);
         createMenuButton(row, 'subsection', subsection, siblings);
-        (subsection.pages || []).forEach(function (page) {
-            renderPage(page, subsection.pages, children);
-        });
-        children.hidden = !expanded;
-        entry.append(row, children);
+        entry.append(row);
         parentList.append(entry);
         return entry;
     }
@@ -744,8 +676,9 @@
                 neutral.textContent = 'Ainda não há seções disponíveis neste projeto.';
                 treeStatus.append(neutral);
             }
-            pageTitleElement.textContent = 'Selecione ou crie uma página';
-            renamePageButton.hidden = true;
+            sectionTitleElement.textContent = '';
+            pageTitleElement.textContent = 'Selecione ou crie uma subseção';
+            renameSubsectionButton.hidden = true;
             return;
         }
 
@@ -766,7 +699,7 @@
             window.notesEditor &&
             !(await window.notesEditor.flush())
         ) {
-            setMessage('Salve a página atual antes de abrir outra.', true);
+            setMessage('Salve o conteúdo atual antes de abrir outra subseção.', true);
             return;
         }
         if (state.pageRequest) {
@@ -778,8 +711,10 @@
         window.dispatchEvent(new CustomEvent('notes:clear-page'));
         state.selectedPageId = Number(pageId);
         state.currentVersion = null;
-        pageTitleElement.textContent = 'Carregando página…';
-        renamePageButton.hidden = true;
+        const subsection = findPage(pageId);
+        sectionTitleElement.textContent = subsection ? subsection.sectionTitle : '';
+        pageTitleElement.textContent = subsection ? subsection.title : 'Abrindo subseção…';
+        renameSubsectionButton.hidden = true;
         saveState();
         renderTree();
         try {
@@ -801,7 +736,7 @@
                 throw parseError;
             }
             if (!response.ok) {
-                const error = new Error(payload.error || 'Não foi possível abrir esta página.');
+                const error = new Error(payload.error || 'Não foi possível abrir o conteúdo.');
                 error.status = response.status;
                 throw error;
             }
@@ -809,8 +744,7 @@
                 return;
             }
             state.currentVersion = payload.version;
-            pageTitleElement.textContent = payload.title;
-            renamePageButton.hidden = false;
+            updatePageSelectionDisplay();
             window.dispatchEvent(new CustomEvent('notes:watch-page', {
                 detail: { pageId: Number(payload.id) },
             }));
@@ -831,7 +765,7 @@
             }
             if (state.pageRequest === controller) {
                 state.currentVersion = null;
-                pageTitleElement.textContent = 'Não foi possível abrir a página.';
+                pageTitleElement.textContent = 'Não foi possível abrir a subseção.';
                 setMessage(error.message, true);
             }
         } finally {
@@ -886,9 +820,7 @@
             treeElement.scrollTop = scrollTop;
             const pageStillVisible = payload.sections.some(function (section) {
                 return (section.subsections || []).some(function (subsection) {
-                    return (subsection.pages || []).some(function (page) {
-                        return Number(page.id) === Number(previousPageId);
-                    });
+                    return Number(subsection.page_id) === Number(previousPageId);
                 });
             });
             if (previousPageId && !pageStillVisible) {
@@ -908,29 +840,30 @@
             detail: { pageId: Number(pageId) },
         }));
         window.dispatchEvent(new CustomEvent('notes:clear-page'));
-        setMessage('Você não tem mais acesso a esta página.', true);
+        setMessage('Você não tem mais acesso a este conteúdo.', true);
         window.dispatchEvent(new CustomEvent('notes:refresh-tree'));
     }
 
-    function renameSelectedPage() {
+    function renameSelectedSubsection() {
         const page = findPage(state.selectedPageId);
         if (!page) {
             return;
         }
         const heading = pageTitleElement.parentElement;
-        const eyebrow = heading.querySelector('.notes-eyebrow');
         const currentTitle = page.title;
         beginTitleEntry(heading, {
-            placeholder: 'Nome da página',
+            placeholder: 'Nome da subseção',
             cancel: function () {
                 pageTitleElement.textContent = currentTitle;
-                heading.replaceChildren(eyebrow, pageTitleElement);
+                heading.replaceChildren(sectionTitleElement, pageTitleElement);
             },
             submit: async function (newTitle) {
-                await postForm(titleEndpoint('page', page.id), { title: newTitle });
-                page.title = newTitle;
-                pageTitleElement.textContent = newTitle;
-                heading.replaceChildren(eyebrow, pageTitleElement);
+                const result = await postForm(
+                    titleEndpoint('subsection', page.subsection.id),
+                    { title: newTitle },
+                );
+                heading.replaceChildren(sectionTitleElement, pageTitleElement);
+                return result;
             },
         });
     }
@@ -959,8 +892,8 @@
         }
     });
 
-    renamePageButton.addEventListener('click', renameSelectedPage);
-    pageTitleElement.addEventListener('dblclick', renameSelectedPage);
+    renameSubsectionButton.addEventListener('click', renameSelectedSubsection);
+    pageTitleElement.addEventListener('dblclick', renameSelectedSubsection);
     document.addEventListener('click', function (event) {
         if (!event.target.closest('.notes-popover, .notes-menu-trigger')) {
             closePopovers();

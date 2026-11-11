@@ -69,6 +69,7 @@ class Page(models.Model):
         on_delete=models.CASCADE,
         related_name='pages',
     )
+    # Legacy storage only; the workspace title is always taken from Subsection.
     title = models.CharField(max_length=100)
     order = models.PositiveIntegerField(default=0)
     content = models.JSONField(default=dict, blank=True)
@@ -86,6 +87,9 @@ class Page(models.Model):
     class Meta:
         ordering = ['order', 'id']
         indexes = [models.Index(fields=['subsection', 'order'])]
+        constraints = [
+            models.UniqueConstraint(fields=['subsection'], name='notes_page_one_per_subsection'),
+        ]
 
     def __str__(self):
         return self.title
