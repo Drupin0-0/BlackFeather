@@ -20,7 +20,13 @@ from django.shortcuts import redirect
 from django.utils.dateparse import parse_date
 from django.views.decorators.http import require_POST
 
-from .models import Project, ProjectMember, Task, TaskHistory, record_task_history
+from .models import Project, ProjectColumn, ProjectMember, Task, TaskHistory, TechnicalBlocker, record_task_history
+from .github_service import (
+    GitHubRepositoryError,
+    get_open_pull_request_activity,
+    get_repository_activity,
+    parse_github_repository_url,
+)
 from .serializers import ProjectSerializer, TaskSerializer
 from accounts.models import UserProfile, Technology
 from chat.models import JoinRequest
@@ -472,11 +478,23 @@ def create_task_view(request):
                 status=403,
             )
 
+        project_column = None
+        project_column_id = request.POST.get('project_column_id')
+        if project_column_id:
+            project_column = get_object_or_404(
+                ProjectColumn,
+                pk=project_column_id,
+                project=project,
+            )
+        else:
+            project_column = project.columns.filter(default_status=status).first()
+
         task = Task.objects.create(
             project=project,
             title=title,
             description=description or '',
             status=status,
+            project_column=project_column,
             priority=priority,
             deadline=deadline or None,
             task_responsible=project.members.filter(pk=responsible_id).first() if responsible_id else None,
@@ -545,6 +563,71 @@ def update_task_status_view(request, task_id):
 
 
 @login_required
+@require_POST
+def create_project_column_view(request, project_id):
+    project = get_object_or_404(Project, pk=project_id)
+    if project.owner != request.user and not project.members.filter(pk=request.user.pk).exists():
+        return JsonResponse({'error': 'Você não tem acesso a este projeto.'}, status=403)
+    if not (
+        project.can_manage_settings(request.user)
+        or project.user_can(request.user, 'can_create_boards')
+    ):
+        return JsonResponse({'error': 'Você não tem permissão para criar fases.'}, status=403)
+
+    name = (request.POST.get('name') or '').strip()[:100]
+    if not name:
+        messages.error(request, 'Informe o nome da nova fase.')
+        return redirect('project_detail', project_id=project.pk)
+
+    if project.columns.filter(name__iexact=name).exists():
+        messages.error(request, 'Já existe uma fase com esse nome neste projeto.')
+        return redirect('project_detail', project_id=project.pk)
+
+    ProjectColumn.objects.create(
+        project=project,
+        name=name,
+        position=(project.columns.order_by('-position').values_list('position', flat=True).first() or 0) + 1,
+    )
+    return redirect('project_detail', project_id=project.pk)
+
+
+@login_required
+@require_POST
+def update_task_project_column_view(request, task_id):
+    task = get_object_or_404(Task.objects.select_related('project'), pk=task_id)
+    if task.project.owner != request.user and not task.project.members.filter(pk=request.user.pk).exists():
+        return JsonResponse({'error': 'Você não tem acesso a esta tarefa.'}, status=403)
+    if not task.project.user_can(request.user, 'can_edit_tasks'):
+        return JsonResponse({'error': 'Você não tem permissão para editar tarefas neste projeto.'}, status=403)
+
+    column = get_object_or_404(
+        ProjectColumn,
+        pk=request.POST.get('project_column_id'),
+        project=task.project,
+    )
+    previous_column_id = task.project_column_id
+    task.project_column = column
+    task.save(update_fields=['project_column', 'updated_at'])
+
+    if previous_column_id != column.pk:
+        previous_column = ProjectColumn.objects.filter(pk=previous_column_id).first()
+        record_task_history(
+            project=task.project,
+            user=request.user,
+            action='updated',
+            task=task,
+            changes=[{
+                'field': 'project_column',
+                'label': 'Fase',
+                'from': previous_column.name if previous_column else None,
+                'to': column.name,
+            }],
+        )
+
+    return JsonResponse({'success': True, 'task_id': task.pk, 'project_column_id': column.pk})
+
+
+@login_required
 def setup_profile_view(request):
     profile, created = UserProfile.objects.get_or_create(user=request.user)
 
@@ -576,6 +659,28 @@ def setup_profile_view(request):
 
     return render(request, 'accounts/setup.html', {'profile': profile})
 
+def _ensure_project_default_columns(project):
+    defaults = [
+        ('pending', 'A fazer'),
+        ('in_progress', 'Em andamento'),
+        ('completed', 'Concluído'),
+    ]
+    for position, (status, name) in enumerate(defaults):
+        ProjectColumn.objects.get_or_create(
+            project=project,
+            default_status=status,
+            defaults={'name': name, 'position': position},
+        )
+
+    for status, _name in defaults:
+        column = project.columns.filter(default_status=status).first()
+        Task.objects.filter(
+            project=project,
+            status=status,
+            project_column__isnull=True,
+        ).update(project_column=column)
+
+
 @login_required
 def project_detail(request, project_id):
     project = get_object_or_404(
@@ -589,6 +694,8 @@ def project_detail(request, project_id):
     ):
         return redirect('project_list')
 
+    _ensure_project_default_columns(project)
+
     tasks = (
         Task.objects
         .filter(project=project)
@@ -601,20 +708,11 @@ def project_detail(request, project_id):
 
     kanban_columns = [
         {
-            'key': 'pending',
-            'label': 'A fazer',
-            'tasks': tasks.filter(status='pending'),
-        },
-        {
-            'key': 'in_progress',
-            'label': 'Em andamento',
-            'tasks': tasks.filter(status='in_progress'),
-        },
-        {
-            'key': 'completed',
-            'label': 'Concluído',
-            'tasks': tasks.filter(status='completed'),
-        },
+            'id': column.pk,
+            'label': column.name,
+            'tasks': tasks.filter(project_column=column),
+        }
+        for column in project.columns.all()
     ]
 
     return render(
@@ -627,6 +725,11 @@ def project_detail(request, project_id):
             'can_edit': project.user_can(request.user, 'can_edit_tasks'),
             'can_delete': project.user_can(request.user, 'can_delete_tasks'),
             'can_manage_settings': project.can_manage_settings(request.user),
+            'can_manage_columns': (
+                project.can_manage_settings(request.user)
+                or project.user_can(request.user, 'can_create_boards')
+            ),
+            'project_columns': project.columns.all(),
             'active_tab': 'board',
         }
     )
@@ -804,6 +907,214 @@ def project_summary_assignment_view(request, project_id):
     return JsonResponse({'success': True, 'rows': rows, 'total': total_tasks})
 
 
+@login_required
+def project_summary_github_view(request, project_id):
+    project = _get_user_project(request, project_id)
+    if not project.github_repo_url:
+        return JsonResponse({'success': True, 'configured': False})
+
+    try:
+        activity = get_repository_activity(project.github_repo_url)
+    except (GitHubRepositoryError, ValueError) as error:
+        return JsonResponse({
+            'success': False,
+            'configured': True,
+            'error': str(error),
+        })
+
+    pull_request_activity = {}
+    try:
+        pull_request_activity = get_open_pull_request_activity(project.github_repo_url)
+    except (GitHubRepositoryError, ValueError) as error:
+        pull_request_activity = {'pull_requests_error': str(error)}
+
+    return JsonResponse({**activity, **pull_request_activity, 'configured': True})
+
+
+@login_required
+def project_blockers_view(request, project_id):
+    project = _get_user_project(request, project_id)
+    if request.method == 'POST':
+        title = (request.POST.get('title') or '').strip()
+        description = (request.POST.get('description') or '').strip()
+        unblock_action = (request.POST.get('unblock_action') or '').strip()
+        category = request.POST.get('category', TechnicalBlocker.Category.OTHER)
+        severity = request.POST.get('severity', TechnicalBlocker.Severity.MEDIUM)
+        valid_categories = {value for value, _label in TechnicalBlocker.Category.choices}
+        valid_severities = {value for value, _label in TechnicalBlocker.Severity.choices}
+
+        if not title or not description:
+            messages.error(request, 'Informe um título e descreva o impedimento.')
+            return redirect('project_blockers', project_id=project.pk)
+        if category not in valid_categories or severity not in valid_severities:
+            messages.error(request, 'A categoria ou a severidade selecionada é inválida.')
+            return redirect('project_blockers', project_id=project.pk)
+
+        task = None
+        task_id = (request.POST.get('task_id') or '').strip()
+        if task_id:
+            if not task_id.isdecimal():
+                messages.error(request, 'A tarefa selecionada é inválida.')
+                return redirect('project_blockers', project_id=project.pk)
+            task = project.tasks.filter(pk=task_id).first()
+            if task is None:
+                messages.error(request, 'A tarefa selecionada não pertence a este projeto.')
+                return redirect('project_blockers', project_id=project.pk)
+
+        assigned_to = None
+        assigned_to_id = (request.POST.get('assigned_to') or '').strip()
+        if assigned_to_id:
+            if not assigned_to_id.isdecimal():
+                messages.error(request, 'O responsável selecionado é inválido.')
+                return redirect('project_blockers', project_id=project.pk)
+            if assigned_to_id == str(project.owner_id):
+                assigned_to = project.owner
+            else:
+                assigned_to = project.members.filter(pk=assigned_to_id).first()
+            if assigned_to is None:
+                messages.error(request, 'O responsável deve fazer parte deste projeto.')
+                return redirect('project_blockers', project_id=project.pk)
+
+        TechnicalBlocker.objects.create(
+            project=project,
+            task=task,
+            title=title[:140],
+            category=category,
+            severity=severity,
+            description=description,
+            unblock_action=unblock_action,
+            created_by=request.user,
+            assigned_to=assigned_to,
+        )
+        messages.success(request, 'Impedimento registrado. O time já pode acompanhar o bloqueio.')
+        return redirect('project_blockers', project_id=project.pk)
+
+    blockers = list(
+        project.technical_blockers
+        .select_related('task', 'created_by__profile', 'assigned_to__profile')
+        .all()
+    )
+    for blocker in blockers:
+        blocker.can_manage = (
+            blocker.created_by_id == request.user.pk
+            or project.user_can(request.user, 'can_edit_tasks')
+        )
+        blocker.can_delete = (
+            blocker.created_by_id == request.user.pk
+            or project.user_can(request.user, 'can_delete_tasks')
+        )
+
+    members = {project.owner.pk: project.owner}
+    for member in project.members.select_related('profile').all():
+        members.setdefault(member.pk, member)
+
+    open_blockers = [item for item in blockers if item.status == TechnicalBlocker.Status.OPEN]
+    progress_blockers = [item for item in blockers if item.status == TechnicalBlocker.Status.IN_PROGRESS]
+    resolved_blockers = [item for item in blockers if item.status == TechnicalBlocker.Status.RESOLVED]
+
+    context = {
+        'project': project,
+        'can_manage_settings': project.can_manage_settings(request.user),
+        'active_tab': 'blockers',
+        'tasks': project.tasks.order_by('-updated_at'),
+        'members': sorted(members.values(), key=lambda user: user.email.lower()),
+        'open_blockers': open_blockers,
+        'progress_blockers': progress_blockers,
+        'resolved_blockers': resolved_blockers,
+        'blocker_columns': [
+            ('open', 'Aberto', open_blockers),
+            ('in_progress', 'Em andamento', progress_blockers),
+            ('resolved', 'Resolvido', resolved_blockers),
+        ],
+        'total_open': sum(item.status != TechnicalBlocker.Status.RESOLVED for item in blockers),
+        'critical_open': sum(
+            item.status != TechnicalBlocker.Status.RESOLVED
+            and item.severity == TechnicalBlocker.Severity.CRITICAL
+            for item in blockers
+        ),
+        'resolved_total': sum(item.status == TechnicalBlocker.Status.RESOLVED for item in blockers),
+        'category_choices': TechnicalBlocker.Category.choices,
+        'severity_choices': TechnicalBlocker.Severity.choices,
+        'status_choices': TechnicalBlocker.Status.choices,
+    }
+    return render(request, 'project_blockers.html', context)
+
+
+@login_required
+@require_POST
+def update_project_blocker_view(request, project_id, blocker_id):
+    project = _get_user_project(request, project_id)
+    blocker = get_object_or_404(
+        TechnicalBlocker,
+        pk=blocker_id,
+        project=project,
+    )
+    if (
+        blocker.created_by_id != request.user.pk
+        and not project.user_can(request.user, 'can_edit_tasks')
+    ):
+        return JsonResponse({'error': 'Você não tem permissão para atualizar este impedimento.'}, status=403)
+
+    status = request.POST.get('status')
+    valid_statuses = {value for value, _label in TechnicalBlocker.Status.choices}
+    if status not in valid_statuses:
+        messages.error(request, 'O status selecionado é inválido.')
+        return redirect('project_blockers', project_id=project.pk)
+
+    resolution = (request.POST.get('resolution') or '').strip()
+    if status == TechnicalBlocker.Status.RESOLVED and not resolution:
+        messages.error(request, 'Descreva a solução antes de marcar o impedimento como resolvido.')
+        return redirect('project_blockers', project_id=project.pk)
+
+    assigned_to_id = (request.POST.get('assigned_to') or '').strip()
+    assigned_to = None
+    if assigned_to_id:
+        if not assigned_to_id.isdecimal():
+            messages.error(request, 'O responsável selecionado é inválido.')
+            return redirect('project_blockers', project_id=project.pk)
+        if assigned_to_id == str(project.owner_id):
+            assigned_to = project.owner
+        else:
+            assigned_to = project.members.filter(pk=assigned_to_id).first()
+        if assigned_to is None:
+            messages.error(request, 'O responsável deve fazer parte deste projeto.')
+            return redirect('project_blockers', project_id=project.pk)
+
+    was_resolved = blocker.status == TechnicalBlocker.Status.RESOLVED
+    blocker.status = status
+    blocker.resolution = resolution
+    blocker.assigned_to = assigned_to
+    if status == TechnicalBlocker.Status.RESOLVED and not was_resolved:
+        blocker.resolved_at = timezone.now()
+    elif status != TechnicalBlocker.Status.RESOLVED:
+        blocker.resolved_at = None
+    blocker.save(update_fields=['status', 'resolution', 'assigned_to', 'resolved_at', 'updated_at'])
+    messages.success(request, 'Impedimento atualizado.')
+    return redirect('project_blockers', project_id=project.pk)
+
+
+@login_required
+@require_POST
+def delete_project_blocker_view(request, project_id, blocker_id):
+    project = _get_user_project(request, project_id)
+    blocker = get_object_or_404(
+        TechnicalBlocker,
+        pk=blocker_id,
+        project=project,
+    )
+    if (
+        blocker.created_by_id != request.user.pk
+        and not project.user_can(request.user, 'can_delete_tasks')
+    ):
+        return JsonResponse({'error': 'Você não tem permissão para excluir este impedimento.'}, status=403)
+    if request.POST.get('confirmation') != 'on':
+        return JsonResponse({'error': 'Confirme a exclusão do impedimento.'}, status=400)
+
+    blocker.delete()
+    messages.success(request, 'Impedimento removido.')
+    return redirect('project_blockers', project_id=project.pk)
+
+
 def _get_user_project(request, project_id):
     return get_object_or_404(
         Project.objects.filter(
@@ -862,6 +1173,38 @@ def project_settings_view(request, project_id):
             },
         },
     )
+
+
+@login_required
+@require_POST
+def update_project_github_repository_view(request, project_id):
+    project = _get_user_project(request, project_id)
+    if not project.can_manage_settings(request.user):
+        return JsonResponse(
+            {'error': 'Apenas o Chefe ou um Líder pode alterar o repositório.'},
+            status=403,
+        )
+
+    repository_url = (request.POST.get('github_repo_url') or '').strip()
+    if repository_url:
+        try:
+            owner, repository = parse_github_repository_url(repository_url)
+            repository_url = f'https://github.com/{owner}/{repository}'
+            get_repository_activity(repository_url)
+        except GitHubRepositoryError as error:
+            messages.error(request, str(error))
+            return redirect('project_settings', project_id=project.pk)
+        except ValueError as error:
+            messages.error(request, str(error))
+            return redirect('project_settings', project_id=project.pk)
+
+    project.github_repo_url = repository_url
+    project.save(update_fields=['github_repo_url'])
+    if repository_url:
+        messages.success(request, 'Repositório do GitHub vinculado ao projeto.')
+    else:
+        messages.success(request, 'Repositório do GitHub removido do projeto.')
+    return redirect('project_settings', project_id=project.pk)
 
 
 @login_required
@@ -1119,6 +1462,7 @@ def update_task_view(request, task_id):
         'title': task.title,
         'description': task.description,
         'status': task.status,
+        'project_column_id': task.project_column_id,
         'priority': task.priority,
         'deadline': task.deadline.isoformat() if task.deadline else None,
         'task_responsible': task.task_responsible_id,
@@ -1134,6 +1478,14 @@ def update_task_view(request, task_id):
     status = request.POST.get('status')
     if status in valid_statuses:
         task.status = status
+
+    project_column_id = request.POST.get('project_column_id')
+    if project_column_id:
+        task.project_column = get_object_or_404(
+            ProjectColumn,
+            pk=project_column_id,
+            project=task.project,
+        )
 
     valid_priorities = {c[0] for c in Task._meta.get_field('priority').choices}
     priority = request.POST.get('priority')
@@ -1166,6 +1518,13 @@ def update_task_view(request, task_id):
         changes.append({'field': 'description', 'label': 'Descrição', 'from': previous_values['description'], 'to': task.description})
     if task.status != previous_values['status']:
         changes.append({'field': 'status', 'label': 'Status', 'from': previous_values['status'], 'to': task.status})
+    if task.project_column_id != previous_values['project_column_id']:
+        changes.append({
+            'field': 'project_column',
+            'label': 'Fase',
+            'from': ProjectColumn.objects.filter(pk=previous_values['project_column_id']).values_list('name', flat=True).first(),
+            'to': task.project_column.name if task.project_column else None,
+        })
     if task.priority != previous_values['priority']:
         changes.append({'field': 'priority', 'label': 'Prioridade', 'from': previous_values['priority'], 'to': task.priority})
     if (task.deadline.isoformat() if task.deadline else None) != previous_values['deadline']:

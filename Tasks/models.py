@@ -63,6 +63,12 @@ class Project(models.Model):
 
     description = models.TextField(null=True, blank=True)
 
+    github_repo_url = models.URLField(
+        max_length=255,
+        blank=True,
+        help_text='URL de um repositório público do GitHub.',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -162,11 +168,53 @@ class ProjectMember(models.Model):
         unique_together = ('project', 'user')
 
 
+class ProjectColumn(models.Model):
+    DEFAULT_STATUS_CHOICES = [
+        ('pending', 'Pendente'),
+        ('in_progress', 'Em andamento'),
+        ('completed', 'Concluída'),
+    ]
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='columns',
+    )
+    name = models.CharField(max_length=100)
+    position = models.PositiveIntegerField(default=0)
+    default_status = models.CharField(
+        max_length=20,
+        choices=DEFAULT_STATUS_CHOICES,
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ['position', 'pk']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['project', 'default_status'],
+                condition=models.Q(default_status__isnull=False),
+                name='unique_project_default_column_status',
+            ),
+        ]
+
+    def __str__(self):
+        return f'{self.project.title} - {self.name}'
+
+
 class Task(models.Model):
     project = models.ForeignKey(
         Project,
         on_delete=models.CASCADE,
         related_name='tasks'
+    )
+    project_column = models.ForeignKey(
+        ProjectColumn,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tasks',
     )
 
     title = models.CharField(max_length=100)
@@ -247,6 +295,82 @@ class TaskHistory(models.Model):
 
     def __str__(self):
         return f'{self.project.title} - {self.action}'
+
+
+class TechnicalBlocker(models.Model):
+    class Category(models.TextChoices):
+        BUG = 'bug', 'Bug'
+        DEPENDENCY = 'dependency', 'Dependência'
+        ENVIRONMENT = 'environment', 'Ambiente/infraestrutura'
+        SPECIFICATION = 'specification', 'Requisito indefinido'
+        REVIEW = 'review', 'Aguardando revisão'
+        OTHER = 'other', 'Outro'
+
+    class Severity(models.TextChoices):
+        CRITICAL = 'critical', 'Crítica'
+        HIGH = 'high', 'Alta'
+        MEDIUM = 'medium', 'Média'
+        LOW = 'low', 'Baixa'
+
+    class Status(models.TextChoices):
+        OPEN = 'open', 'Aberto'
+        IN_PROGRESS = 'in_progress', 'Em andamento'
+        RESOLVED = 'resolved', 'Resolvido'
+
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='technical_blockers',
+    )
+    task = models.ForeignKey(
+        Task,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='technical_blockers',
+    )
+    title = models.CharField(max_length=140)
+    category = models.CharField(
+        max_length=20,
+        choices=Category.choices,
+        default=Category.OTHER,
+    )
+    severity = models.CharField(
+        max_length=10,
+        choices=Severity.choices,
+        default=Severity.MEDIUM,
+    )
+    description = models.TextField()
+    unblock_action = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.OPEN,
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='reported_technical_blockers',
+    )
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_technical_blockers',
+    )
+    resolution = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['project', 'status', '-created_at'])]
+
+    def __str__(self):
+        return f'{self.project.title} - {self.title}'
 
 
 def record_task_history(project, user=None, action='updated', task=None, task_title=None, changes=None, task_id=None):

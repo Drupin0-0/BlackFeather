@@ -16,7 +16,43 @@
         <div class="settings-content">
             <p class="project-settings-intro">Gerencie integrantes, cargos e permissões deste projeto.</p>
 
+            {% if messages %}
+                {% for message in messages %}
+                    <p class="project-settings-notice" role="status">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+
             <p id="settingsFeedback" role="status" aria-live="polite" hidden></p>
+
+            <section class="settings-group" aria-labelledby="settingsGithubTitle">
+                <div class="settings-group-header">
+                    <span>DESENVOLVIMENTO</span>
+                    <h2 id="settingsGithubTitle">Repositório GitHub</h2>
+                    <p>Vincule um repositório público para mostrar commits e atividade no resumo do projeto.</p>
+                </div>
+                <div class="settings-card">
+                    <form method="post" action="{% url 'project_github_repository_update' project.pk %}" class="project-github-form">
+                        {% csrf_token %}
+                        <label for="githubRepoUrl">URL do repositório</label>
+                        <input
+                            type="url"
+                            id="githubRepoUrl"
+                            name="github_repo_url"
+                            value="{{ project.github_repo_url }}"
+                            placeholder="https://github.com/usuario/repositorio"
+                            maxlength="255"
+                            autocomplete="url"
+                        >
+                        <p>Por enquanto, apenas repositórios públicos são suportados. Não cole tokens ou senhas aqui.</p>
+                        <div class="project-github-actions">
+                            <button type="submit" class="settings-button">Salvar repositório</button>
+                            {% if project.github_repo_url %}
+                                <button type="submit" class="settings-button" name="github_repo_url" value="">Desvincular</button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </section>
 
             <section class="settings-group" aria-labelledby="settingsMembersTitle">
                 <div class="settings-group-header">

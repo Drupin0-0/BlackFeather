@@ -34,14 +34,21 @@
                         +
                     </button>
                     {% endif %}
+                    {% if can_manage_columns %}
+                    <form method="POST" action="{% url 'project_column_create' project.pk %}" class="project-add-column-form">
+                        {% csrf_token %}
+                        <input type="text" name="name" maxlength="100" placeholder="Nome da fase" aria-label="Nome da nova fase" required>
+                        <button type="submit" class="project-add-column-button">+ Fase</button>
+                    </form>
+                    {% endif %}
                 </div>
 
-                <div class="project-kanban-board">
+                <div class="project-kanban-board" style="--kanban-column-count: {{ kanban_columns|length }}">
 
                     {% for column in kanban_columns %}
                         <div
                             class="kanban-column project-kanban-column"
-                            data-status="{{ column.key }}"
+                            data-column-id="{{ column.id }}"
                         >
                             <div class="project-kanban-column-header">
                                 <h3>{{ column.label }}</h3>
@@ -54,6 +61,7 @@
     class="project-kanban-task"
     data-task-id="{{ task.pk }}"
     data-status="{{ task.status }}"
+    data-project-column-id="{{ task.project_column_id }}"
     data-title="{{ task.title }}"
     data-description="{{ task.description|default:'' }}"
     data-priority="{{ task.priority }}"
@@ -229,6 +237,15 @@
 
                 </div>
 
+                <div class="task-field">
+                    <label for="project_task_column">Fase do projeto</label>
+                    <select id="project_task_column" name="project_column_id">
+                        {% for column in project_columns %}
+                        <option value="{{ column.pk }}">{{ column.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
 
                 <div class="task-field full">
 
@@ -383,6 +400,7 @@ document.addEventListener('DOMContentLoaded', function () {
             field('title').value            = card.dataset.title || '';
             field('description').value      = card.dataset.description || '';
             field('status').value           = card.dataset.status;
+            field('project_column_id').value = card.dataset.projectColumnId;
             field('priority').value         = card.dataset.priority;
             field('deadline').value         = card.dataset.deadline || '';
             field('task_responsible').value = card.dataset.responsible || '';
@@ -402,9 +420,11 @@ document.addEventListener('DOMContentLoaded', function () {
         projectTaskModal.setAttribute('aria-hidden', 'true');
     }
 
-    projectAddTaskBtn.addEventListener('click', function () {
-        openTaskModal('create');
-    });
+    if (projectAddTaskBtn) {
+        projectAddTaskBtn.addEventListener('click', function () {
+            openTaskModal('create');
+        });
+    }
 
     document
         .querySelectorAll('[data-close-project-task-modal]')
@@ -663,25 +683,25 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function moveTask(taskId, newStatus, card, sourceColumn, targetColumn) {
+    function moveTask(taskId, newColumnId, card, sourceColumn, targetColumn) {
 
-        const oldStatus = sourceColumn.dataset.status;
+        const oldColumnId = sourceColumn.dataset.columnId;
 
         function revert() {
             sourceColumn.querySelector('.project-kanban-tasks').appendChild(card);
-            card.dataset.status = oldStatus;
+            card.dataset.projectColumnId = oldColumnId;
             refreshColumn(sourceColumn);
             refreshColumn(targetColumn);
         }
 
-        fetch('/tarefas/' + taskId + '/status/', {
+        fetch('/tarefas/' + taskId + '/fase/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                 'X-CSRFToken': csrfToken,
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: new URLSearchParams({ status: newStatus })
+            body: new URLSearchParams({ project_column_id: newColumnId })
         })
         .then(function (response) { return response.json(); })
         .then(function (data) {
@@ -738,17 +758,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const sourceColumn = draggedTask.closest('.project-kanban-column');
             const taskId       = draggedTask.dataset.taskId;
-            const newStatus    = column.dataset.status;
+            const newColumnId  = column.dataset.columnId;
 
-            if (!taskId || !newStatus || sourceColumn === column) return;
+            if (!taskId || !newColumnId || sourceColumn === column) return;
 
             column.querySelector('.project-kanban-tasks').appendChild(draggedTask);
-            draggedTask.dataset.status = newStatus;
+            draggedTask.dataset.projectColumnId = newColumnId;
 
             refreshColumn(sourceColumn);
             refreshColumn(column);
 
-            moveTask(taskId, newStatus, draggedTask, sourceColumn, column);
+            moveTask(taskId, newColumnId, draggedTask, sourceColumn, column);
         });
     });
 });

@@ -83,6 +83,37 @@
                     <div class="summary-assignment-table" id="summaryAssignmentTable"></div>
                 </article>
 
+                <article class="summary-block" data-block="github">
+                    <div class="summary-block-header">
+                        <div>
+                            <h3>Atividade do GitHub</h3>
+                            <a class="summary-github-repository" id="summaryGithubRepository" hidden target="_blank" rel="noopener noreferrer"></a>
+                        </div>
+                        <a class="summary-github-link" id="summaryGithubLink" hidden target="_blank" rel="noopener noreferrer">Abrir no GitHub ↗</a>
+                    </div>
+                    <div class="summary-github-stats" id="summaryGithubStats" hidden></div>
+                    <div class="summary-github-content">
+                        <section class="summary-github-contributors" aria-labelledby="summaryGithubContributorsTitle">
+                            <h4 id="summaryGithubContributorsTitle">Commits por colaborador <small>(amostra dos últimos 100)</small></h4>
+                            <div id="summaryGithubContributors"></div>
+                        </section>
+                        <section class="summary-github-commits" aria-labelledby="summaryGithubCommitsTitle">
+                            <h4 id="summaryGithubCommitsTitle">Commits recentes</h4>
+                            <div id="summaryGithubCommits"></div>
+                        </section>
+                    </div>
+                    <section class="summary-github-pr-section" aria-labelledby="summaryGithubPrTitle">
+                        <div class="summary-github-pr-heading">
+                            <div>
+                                <h4 id="summaryGithubPrTitle">Fila de revisão</h4>
+                                <p>Até 30 PRs abertas mais recentes; destaque para itens sem atualização há 72 horas.</p>
+                            </div>
+                            <div class="summary-github-pr-stats" id="summaryGithubPrStats" hidden></div>
+                        </div>
+                        <div class="summary-github-pr-list" id="summaryGithubPullRequests"></div>
+                    </section>
+                </article>
+
             </div>
         </section>
     </main>
@@ -137,6 +168,13 @@
     var endInput      = document.getElementById('summaryEndDate');
     var historyList   = document.getElementById('summaryHistoryList');
     var assignmentTable = document.getElementById('summaryAssignmentTable');
+    var githubRepository = document.getElementById('summaryGithubRepository');
+    var githubLink = document.getElementById('summaryGithubLink');
+    var githubStats = document.getElementById('summaryGithubStats');
+    var githubContributors = document.getElementById('summaryGithubContributors');
+    var githubCommits = document.getElementById('summaryGithubCommits');
+    var githubPullRequests = document.getElementById('summaryGithubPullRequests');
+    var githubPrStats = document.getElementById('summaryGithubPrStats');
 
     var state = { chartType: 'bar', start: '', end: '' };
     var firstTaskDate = '';
@@ -733,6 +771,189 @@
 
 
     /* ==========================================================
+       ATIVIDADE DO GITHUB
+       ========================================================== */
+
+    function renderGithubEmpty(message) {
+        [githubContributors, githubCommits].forEach(function (container) {
+            container.replaceChildren();
+            var empty = document.createElement('div');
+            empty.className = 'summary-empty';
+            empty.textContent = message;
+            container.appendChild(empty);
+        });
+        githubPullRequests.replaceChildren();
+        var pullRequestEmpty = document.createElement('div');
+        pullRequestEmpty.className = 'summary-empty';
+        pullRequestEmpty.textContent = message;
+        githubPullRequests.appendChild(pullRequestEmpty);
+        githubPrStats.hidden = true;
+        githubStats.hidden = true;
+    }
+
+    function renderGithubPullRequests(payload) {
+        githubPrStats.replaceChildren();
+        [
+            { label: 'PRs abertas · até 30', value: payload.open_count || 0 },
+            { label: 'Revisores solicitados', value: payload.review_requested_count || 0 },
+            { label: 'Paradas há 72h+', value: payload.stale_count || 0 }
+        ].forEach(function (stat) {
+            var item = document.createElement('span');
+            var value = document.createElement('strong');
+            value.textContent = stat.value;
+            var label = document.createElement('small');
+            label.textContent = stat.label;
+            item.append(value, label);
+            githubPrStats.appendChild(item);
+        });
+        githubPrStats.hidden = false;
+        githubPullRequests.replaceChildren();
+
+        (payload.pull_requests || []).forEach(function (pullRequest) {
+            var card = document.createElement('article');
+            card.className = 'summary-github-pr' + (pullRequest.stale && !pullRequest.draft ? ' is-stale' : '');
+
+            var top = document.createElement('div');
+            top.className = 'summary-github-pr-top';
+            var number = document.createElement('span');
+            number.textContent = '#' + pullRequest.number + ' · ' + pullRequest.author;
+            var flag = document.createElement('span');
+            flag.className = pullRequest.draft ? 'is-draft' : (pullRequest.stale ? 'is-stale-label' : 'is-active');
+            flag.textContent = pullRequest.draft ? 'Rascunho' : (pullRequest.stale ? 'Sem atualização há 72h+' : 'Aberta');
+            top.append(number, flag);
+
+            var title = document.createElement('a');
+            title.href = pullRequest.url;
+            title.target = '_blank';
+            title.rel = 'noopener noreferrer';
+            title.textContent = pullRequest.title;
+
+            var metadata = document.createElement('div');
+            metadata.className = 'summary-github-pr-meta';
+            var branch = document.createElement('code');
+            branch.textContent = pullRequest.branch;
+            var age = document.createElement('span');
+            var days = Math.floor((Number(pullRequest.age_hours) || 0) / 24);
+            age.textContent = days > 0 ? 'Atualizada há ' + days + (days === 1 ? ' dia' : ' dias') : 'Atualizada hoje';
+            metadata.append(branch, age);
+
+            var reviewers = document.createElement('p');
+            reviewers.className = 'summary-github-pr-reviewers';
+            reviewers.textContent = pullRequest.requested_reviewers && pullRequest.requested_reviewers.length
+                ? 'Revisão solicitada: ' + pullRequest.requested_reviewers.join(', ')
+                : 'Nenhum revisor solicitado no GitHub';
+
+            card.append(top, title, metadata, reviewers);
+            githubPullRequests.appendChild(card);
+        });
+
+        if (!githubPullRequests.children.length) {
+            var empty = document.createElement('div');
+            empty.className = 'summary-empty';
+            empty.textContent = 'Nenhuma pull request aberta. O time está sem fila de revisão.';
+            githubPullRequests.appendChild(empty);
+        }
+    }
+
+    function fetchGithubActivity() {
+        fetch('/projetos/' + projectId + '/resumo/github/', {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function (response) {
+            if (!response.ok) throw new Error('Falha ao carregar os dados do GitHub.');
+            return response.json();
+        })
+        .then(function (payload) {
+            if (!payload.configured) {
+                renderGithubEmpty('Nenhum repositório vinculado. Um líder ou o chefe pode configurá-lo nas configurações do projeto.');
+                return;
+            }
+            if (!payload.success) {
+                renderGithubEmpty(payload.error || 'Não foi possível carregar a atividade do GitHub.');
+                return;
+            }
+
+            var repositoryUrl = 'https://github.com/' + payload.repository;
+            githubRepository.href = repositoryUrl;
+            githubRepository.textContent = payload.repository;
+            githubRepository.hidden = false;
+            githubLink.href = repositoryUrl;
+            githubLink.hidden = false;
+
+            githubStats.replaceChildren();
+            [
+                { label: 'Commits na amostra', value: payload.total_commits },
+                { label: 'Colaboradores', value: payload.contributors_count }
+            ].forEach(function (stat) {
+                var card = document.createElement('div');
+                card.className = 'summary-github-stat';
+                var value = document.createElement('strong');
+                value.textContent = stat.value;
+                var label = document.createElement('span');
+                label.textContent = stat.label;
+                card.append(value, label);
+                githubStats.appendChild(card);
+            });
+            githubStats.hidden = false;
+
+            githubContributors.replaceChildren();
+            (payload.contributors || []).forEach(function (contributor) {
+                var row = document.createElement('div');
+                row.className = 'summary-github-contributor';
+                var name = document.createElement('span');
+                name.textContent = contributor.login ? '@' + contributor.login : contributor.name;
+                var count = document.createElement('strong');
+                count.textContent = contributor.count + (contributor.count === 1 ? ' commit' : ' commits');
+                row.append(name, count);
+                githubContributors.appendChild(row);
+            });
+
+            githubCommits.replaceChildren();
+            (payload.commits || []).forEach(function (commit) {
+                var row = document.createElement('a');
+                row.className = 'summary-github-commit';
+                row.href = commit.url;
+                row.target = '_blank';
+                row.rel = 'noopener noreferrer';
+                var message = document.createElement('strong');
+                message.textContent = commit.message;
+                var meta = document.createElement('span');
+                var commitDate = commit.date ? new Date(commit.date).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+                meta.textContent = commit.author + (commitDate ? ' · ' + commitDate : '');
+                row.append(message, meta);
+                githubCommits.appendChild(row);
+            });
+            if (!githubContributors.children.length) {
+                var noContributors = document.createElement('div');
+                noContributors.className = 'summary-empty';
+                noContributors.textContent = 'Nenhum commit encontrado.';
+                githubContributors.appendChild(noContributors);
+            }
+            if (!githubCommits.children.length) {
+                var noCommits = document.createElement('div');
+                noCommits.className = 'summary-empty';
+                noCommits.textContent = 'Nenhum commit encontrado.';
+                githubCommits.appendChild(noCommits);
+            }
+
+            if (payload.pull_requests_error) {
+                githubPullRequests.replaceChildren();
+                var pullRequestError = document.createElement('div');
+                pullRequestError.className = 'summary-empty';
+                pullRequestError.textContent = payload.pull_requests_error;
+                githubPullRequests.appendChild(pullRequestError);
+                githubPrStats.hidden = true;
+            } else {
+                renderGithubPullRequests(payload);
+            }
+        })
+        .catch(function () {
+            renderGithubEmpty('Não foi possível carregar a atividade do GitHub agora.');
+        });
+    }
+
+
+    /* ==========================================================
        EVENTOS
        ========================================================== */
 
@@ -830,6 +1051,7 @@
     fetchChart();
     fetchHistory();
     fetchAssignments();
+    fetchGithubActivity();
 
 })();
 </script>

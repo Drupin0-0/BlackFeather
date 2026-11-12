@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}Impedimentos de {{ project.title }} - Sincrow{% endblock %}
+
+{% block content %}
+<div class="project-page project-blockers-page" style="--project-accent: {{ project.accent_color }}">
+    {% include 'includes/project_header.html' with project=project active_tab='blockers' can_manage_settings=can_manage_settings %}
+
+    <main class="project-content">
+        <section class="project-blockers-layout">
+            <header class="project-blockers-heading">
+                <div>
+                    <p class="section-kicker">{{ project.code }} · FLUXO DE DESENVOLVIMENTO</p>
+                    <h2>Impedimentos técnicos</h2>
+                    <p>Deixe visível o que está travando o time, quem pode ajudar e o que falta para destravar.</p>
+                </div>
+                <div class="blocker-stats" aria-label="Resumo dos impedimentos">
+                    <div><strong>{{ total_open }}</strong><span>em aberto</span></div>
+                    <div class="is-critical"><strong>{{ critical_open }}</strong><span>críticos</span></div>
+                    <div><strong>{{ resolved_total }}</strong><span>resolvidos</span></div>
+                </div>
+            </header>
+
+            {% if messages %}
+                <div class="blocker-messages" role="status" aria-live="polite">
+                    {% for message in messages %}<p class="{{ message.tags }}">{{ message }}</p>{% endfor %}
+                </div>
+            {% endif %}
+
+            <details class="blocker-create" open>
+                <summary><span>+</span> Registrar um impedimento</summary>
+                <form method="post" class="blocker-create-form">
+                    {% csrf_token %}
+                    <div class="blocker-form-grid">
+                        <label class="blocker-field blocker-field-wide">
+                            <span>O que está bloqueando?</span>
+                            <input type="text" name="title" maxlength="140" required placeholder="Ex.: Ambiente de staging não sobe após a migração">
+                        </label>
+                        <label class="blocker-field">
+                            <span>Tipo</span>
+                            <select name="category">
+                                {% for value, label in category_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="blocker-field">
+                            <span>Impacto</span>
+                            <select name="severity">
+                                {% for value, label in severity_choices %}<option value="{{ value }}" {% if value == 'medium' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="blocker-field">
+                            <span>Tarefa relacionada <small>opcional</small></span>
+                            <select name="task_id">
+                                <option value="">Sem tarefa vinculada</option>
+                                {% for task in tasks %}<option value="{{ task.pk }}">{{ task.title }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="blocker-field">
+                            <span>Quem pode ajudar? <small>opcional</small></span>
+                            <select name="assigned_to">
+                                <option value="">Ainda não atribuído</option>
+                                {% for member in members %}<option value="{{ member.pk }}">{{ member.profile.name|default:member.email }}</option>{% endfor %}
+                            </select>
+                        </label>
+                        <label class="blocker-field blocker-field-wide">
+                            <span>Contexto técnico</span>
+                            <textarea name="description" rows="3" required placeholder="O que tentou, qual erro apareceu e como isso afeta o trabalho?"></textarea>
+                        </label>
+                        <label class="blocker-field blocker-field-wide">
+                            <span>O que precisa acontecer para destravar? <small>opcional</small></span>
+                            <textarea name="unblock_action" rows="2" placeholder="Ex.: revisar a variável DATABASE_URL no ambiente de staging"></textarea>
+                        </label>
+                    </div>
+                    <div class="blocker-form-footer">
+                        <p>Qualquer integrante pode registrar um bloqueio. Registre contexto, não credenciais ou segredos.</p>
+                        <button type="submit" class="settings-button">Publicar impedimento</button>
+                    </div>
+                </form>
+            </details>
+
+            <div class="blocker-columns">
+                {% for column_key, column_title, column_items in blocker_columns %}
+                    <section class="blocker-column blocker-column-{{ column_key }}" aria-labelledby="blockerColumn{{ column_key }}">
+                        <header><h3 id="blockerColumn{{ column_key }}">{{ column_title }}</h3><span>{{ column_items|length }}</span></header>
+                        {% for blocker in column_items %}
+                            <article class="blocker-card severity-{{ blocker.severity }}">
+                                <div class="blocker-card-topline">
+                                    <span class="blocker-severity">{{ blocker.get_severity_display }}</span>
+                                    <span class="blocker-age">há {{ blocker.created_at|timesince }}</span>
+                                </div>
+                                <h4>{{ blocker.title }}</h4>
+                                <div class="blocker-tags">
+                                    <span>{{ blocker.get_category_display }}</span>
+                                    {% if blocker.task %}<span>Tarefa: {{ blocker.task.title }}</span>{% endif %}
+                                </div>
+                                <p class="blocker-description">{{ blocker.description|linebreaksbr }}</p>
+                                {% if blocker.unblock_action %}
+                                    <div class="blocker-next-step"><strong>Para destravar</strong><p>{{ blocker.unblock_action|linebreaksbr }}</p></div>
+                                {% endif %}
+                                <div class="blocker-card-meta">
+                                    <span>Reportado por {{ blocker.created_by.profile.name|default:blocker.created_by.email|default:'Integrante removido' }}</span>
+                                    {% if blocker.assigned_to %}<span>Ajuda: {{ blocker.assigned_to.profile.name|default:blocker.assigned_to.email }}</span>{% endif %}
+                                </div>
+
+                                {% if blocker.status == 'resolved' %}
+                                    <div class="blocker-resolution"><strong>Como foi resolvido</strong><p>{{ blocker.resolution|linebreaksbr }}</p><small>{{ blocker.resolved_at|date:'d/m/Y H:i' }}</small></div>
+                                {% endif %}
+
+                                {% if blocker.can_manage %}
+                                    <form method="post" action="{% url 'project_blocker_update' project.pk blocker.pk %}" class="blocker-update-form">
+                                        {% csrf_token %}
+                                        <label><span>Status</span>
+                                            <select name="status">
+                                                {% for value, label in status_choices %}<option value="{{ value }}" {% if blocker.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                                            </select>
+                                        </label>
+                                        <label><span>Responsável</span>
+                                            <select name="assigned_to">
+                                                <option value="">Sem responsável</option>
+                                                {% for member in members %}<option value="{{ member.pk }}" {% if blocker.assigned_to_id == member.pk %}selected{% endif %}>{{ member.profile.name|default:member.email }}</option>{% endfor %}
+                                            </select>
+                                        </label>
+                                        <label class="blocker-resolution-input"><span>Solução <small>obrigatória para resolver</small></span>
+                                            <textarea name="resolution" rows="2" placeholder="Descreva a causa e o que resolveu o problema">{{ blocker.resolution }}</textarea>
+                                        </label>
+                                        <div class="blocker-update-actions">
+                                            <button type="submit" class="settings-button">Salvar atualização</button>
+                                            {% if blocker.can_delete %}
+                                                <button type="submit" class="blocker-delete-button" form="deleteBlocker{{ blocker.pk }}">Excluir</button>
+                                            {% endif %}
+                                        </div>
+                                    </form>
+                                    {% if blocker.can_delete %}
+                                        <form id="deleteBlocker{{ blocker.pk }}" method="post" action="{% url 'project_blocker_delete' project.pk blocker.pk %}" hidden>
+                                            {% csrf_token %}
+                                            <input type="hidden" name="confirmation" value="on">
+                                        </form>
+                                    {% endif %}
+                                {% endif %}
+                            </article>
+                        {% empty %}
+                            <div class="blocker-column-empty">Nenhum impedimento nesta etapa.</div>
+                        {% endfor %}
+                    </section>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var toggleButton = document.getElementById('projectMenuToggle');
+    var navigation = document.getElementById('projectNavigation');
+    if (toggleButton && navigation) {
+        toggleButton.addEventListener('click', function () {
+            navigation.classList.toggle('collapsed');
+            var collapsed = navigation.classList.contains('collapsed');
+            toggleButton.textContent = collapsed ? '↑' : '↓';
+            toggleButton.title = collapsed ? 'Abrir barra' : 'Minimizar barra';
+            toggleButton.setAttribute('aria-label', toggleButton.title);
+        });
+    }
+    document.querySelectorAll('.blocker-delete-button').forEach(function (button) {
+        button.addEventListener('click', function (event) {
+            if (!window.confirm('Excluir este impedimento e seu registro de resolução?')) event.preventDefault();
+        });
+    });
+});
+</script>
+{% endblock %}

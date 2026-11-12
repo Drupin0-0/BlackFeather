@@ -2887,10 +2887,12 @@ body { overflow-x: hidden; }
     min-height: 0;
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--kanban-column-count, 3), minmax(240px, 1fr));
     grid-template-rows: minmax(0, 1fr);   /* adicione esta linha */
     gap: 16px;
     align-items: stretch;
+    overflow-x: auto;
+    overflow-y: hidden;
 }
 
 .project-kanban-column {
@@ -3063,7 +3065,7 @@ body { overflow-x: hidden; }
     }
 
     .project-kanban-board {
-        grid-template-columns: repeat(3, minmax(240px, 1fr));
+        grid-template-columns: repeat(var(--kanban-column-count, 3), minmax(240px, 1fr));
         overflow-x: auto;
         overflow-y: hidden;
         padding-bottom: 6px;
@@ -3091,7 +3093,7 @@ body { overflow-x: hidden; }
     }
 
     .project-kanban-board {
-        grid-template-columns: repeat(3, minmax(220px, 1fr));
+        grid-template-columns: repeat(var(--kanban-column-count, 3), minmax(220px, 1fr));
         min-width: 0;
     }
 
@@ -3155,6 +3157,34 @@ body { overflow-x: hidden; }
     top: -38px;
     right: 0;
     z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.project-add-column-form {
+    display: flex;
+    gap: 6px;
+}
+
+.project-add-column-form input {
+    width: 130px;
+    min-width: 0;
+    padding: 6px 8px;
+    background: #090909;
+    border: 1px solid #222;
+    color: #eee;
+    font: inherit;
+    font-size: 11px;
+}
+
+.project-add-column-button {
+    padding: 5px 8px;
+    background: #111;
+    border: 1px solid #333;
+    color: #ddd;
+    font-size: 11px;
+    cursor: pointer;
 }
 
 .project-add-task-button {
@@ -3827,6 +3857,248 @@ button.project-members-button {
     grid-column: 1 / -1;
 }
 
+.summary-block[data-block="github"] {
+    grid-column: 1 / -1;
+    min-height: 360px;
+}
+
+.summary-github-repository,
+.summary-github-link {
+    display: inline-block;
+    margin-top: 5px;
+    color: #9dbdf6;
+    font-size: 11px;
+    text-decoration: none;
+}
+
+.summary-github-link {
+    white-space: nowrap;
+}
+
+.summary-github-repository[hidden],
+.summary-github-link[hidden],
+.summary-github-stats[hidden] {
+    display: none;
+}
+
+.summary-github-stats {
+    display: flex;
+    gap: 12px;
+    padding: 16px 0;
+}
+
+.summary-github-stat {
+    min-width: 130px;
+    padding: 12px 14px;
+    background: #101010;
+    border: 1px solid #202020;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.summary-github-stat strong {
+    color: #fff;
+    font-size: 20px;
+}
+
+.summary-github-stat span,
+.summary-github-contributors h4 small {
+    color: #828282;
+    font-size: 11px;
+    font-weight: 400;
+}
+
+.summary-github-content {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
+    gap: 24px;
+}
+
+.summary-github-content h4 {
+    margin-bottom: 10px;
+    color: #d7d7d7;
+    font-size: 12px;
+}
+
+.summary-github-contributor,
+.summary-github-commit {
+    min-height: 38px;
+    padding: 9px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    border-bottom: 1px solid #191919;
+    color: #c9c9c9;
+    font-size: 12px;
+}
+
+.summary-github-contributor strong {
+    color: #fff;
+    white-space: nowrap;
+}
+
+.summary-github-commit {
+    flex-direction: column;
+    text-decoration: none;
+}
+
+.summary-github-commit:hover strong,
+.summary-github-repository:hover,
+.summary-github-link:hover {
+    color: #fff;
+}
+
+.summary-github-commit strong {
+    max-width: 100%;
+    color: #e4e4e4;
+    overflow-wrap: anywhere;
+    font-weight: 500;
+}
+
+.summary-github-commit span {
+    color: #777;
+    font-size: 11px;
+}
+
+.summary-github-pr-section {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid #222;
+}
+
+.summary-github-pr-heading {
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 18px;
+}
+
+.summary-github-pr-heading h4 {
+    margin-bottom: 4px;
+}
+
+.summary-github-pr-heading p {
+    color: #777;
+    font-size: 11px;
+}
+
+.summary-github-pr-stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.summary-github-pr-stats[hidden] {
+    display: none;
+}
+
+.summary-github-pr-stats > span {
+    min-width: 90px;
+    padding: 8px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: #101010;
+    border: 1px solid #222;
+}
+
+.summary-github-pr-stats strong {
+    color: #f1f1f1;
+    font-size: 16px;
+}
+
+.summary-github-pr-stats small {
+    color: #777;
+    font-size: 9px;
+}
+
+.summary-github-pr-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+    gap: 10px;
+}
+
+.summary-github-pr {
+    min-width: 0;
+    padding: 13px;
+    background: #090909;
+    border: 1px solid #202020;
+    border-left: 2px solid #477f58;
+}
+
+.summary-github-pr.is-stale {
+    border-left-color: #d26a54;
+}
+
+.summary-github-pr-top,
+.summary-github-pr-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.summary-github-pr-top {
+    color: #8c8c8c;
+    font-size: 10px;
+}
+
+.summary-github-pr-top > span:last-child {
+    color: #a7d4a9;
+    white-space: nowrap;
+}
+
+.summary-github-pr-top > .is-draft {
+    color: #aaa;
+}
+
+.summary-github-pr-top > .is-stale-label {
+    color: #ee947f;
+}
+
+.summary-github-pr > a {
+    margin: 9px 0;
+    display: block;
+    color: #e8e8e8;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.45;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.summary-github-pr > a:hover {
+    color: #a9c8ff;
+}
+
+.summary-github-pr-meta {
+    color: #777;
+    font-size: 10px;
+}
+
+.summary-github-pr-meta code {
+    max-width: 65%;
+    padding: 4px 6px;
+    background: #151515;
+    color: #bdbdbd;
+    font-size: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.summary-github-pr-reviewers {
+    margin-top: 9px;
+    color: #929292;
+    font-size: 10px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
 .summary-block-header {
     display: flex;
     align-items: center;
@@ -4156,6 +4428,51 @@ button.project-members-button {
     .summary-assignment-row {
         grid-template-columns: 120px minmax(0, 1fr);
     }
+
+    .summary-github-content {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 18px;
+    }
+}
+
+.project-github-form {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 18px 20px;
+}
+
+.project-github-form label {
+    color: #d9d9d9;
+    font-size: 12px;
+}
+
+.project-github-form input {
+    width: min(100%, 560px);
+    min-height: 40px;
+    padding: 0 12px;
+    background: #080808;
+    border: 1px solid #292929;
+    color: #fff;
+}
+
+.project-github-form > p,
+.project-settings-notice {
+    color: #8d8d8d;
+    font-size: 11px;
+}
+
+.project-settings-notice {
+    margin: 0 0 18px;
+    color: #b7d5a5;
+}
+
+.project-github-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 5px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -4177,6 +4494,397 @@ button.project-members-button {
     font-size: 12px;
     pointer-events: none;
     white-space: nowrap;
+}
+
+/* ---------- CENTRAL DE IMPEDIMENTOS TÉCNICOS ---------- */
+.project-blockers-page .project-content {
+    padding-top: 30px;
+}
+
+.project-blockers-layout {
+    width: min(1440px, 100%);
+    margin: 0 auto;
+}
+
+.project-blockers-heading {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.project-blockers-heading h2 {
+    margin: 5px 0 7px;
+    color: #fff;
+    font-size: clamp(22px, 3vw, 30px);
+}
+
+.project-blockers-heading > div:first-child > p:last-child {
+    max-width: 650px;
+    color: #858585;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.blocker-stats {
+    display: flex;
+    gap: 8px;
+}
+
+.blocker-stats > div {
+    min-width: 90px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: #0c0c0c;
+    border: 1px solid #222;
+}
+
+.blocker-stats strong {
+    color: #fff;
+    font-size: 20px;
+}
+
+.blocker-stats span {
+    color: #858585;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.blocker-stats .is-critical strong {
+    color: #ff7777;
+}
+
+.blocker-messages p {
+    padding: 10px 12px;
+    border: 1px solid #262626;
+    color: #ddd;
+    font-size: 12px;
+}
+
+.blocker-messages .success {
+    border-color: #24422b;
+    color: #b7d5a5;
+}
+
+.blocker-messages .error {
+    border-color: #512929;
+    color: #ffaaaa;
+}
+
+.blocker-create {
+    margin-bottom: 24px;
+    background: #0b0b0b;
+    border: 1px solid #222;
+}
+
+.blocker-create > summary {
+    padding: 16px 18px;
+    color: #eee;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+}
+
+.blocker-create > summary::-webkit-details-marker {
+    display: none;
+}
+
+.blocker-create > summary span {
+    margin-right: 8px;
+    color: var(--project-accent, #a3c7ff);
+    font-size: 18px;
+}
+
+.blocker-create-form {
+    padding: 0 18px 18px;
+    border-top: 1px solid #1d1d1d;
+}
+
+.blocker-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    padding-top: 16px;
+}
+
+.blocker-field,
+.blocker-update-form label {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.blocker-field-wide {
+    grid-column: 1 / -1;
+}
+
+.blocker-field > span,
+.blocker-update-form label > span {
+    color: #aaa;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.blocker-field small,
+.blocker-update-form small {
+    color: #717171;
+    font-weight: 400;
+}
+
+.blocker-field input,
+.blocker-field select,
+.blocker-field textarea,
+.blocker-update-form select,
+.blocker-update-form textarea {
+    width: 100%;
+    min-height: 38px;
+    padding: 9px 10px;
+    background: #060606;
+    border: 1px solid #292929;
+    color: #e8e8e8;
+    font: inherit;
+    font-size: 12px;
+}
+
+.blocker-field textarea,
+.blocker-update-form textarea {
+    resize: vertical;
+    line-height: 1.55;
+}
+
+.blocker-form-footer {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.blocker-form-footer p {
+    color: #707070;
+    font-size: 10px;
+}
+
+.blocker-columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: 14px;
+}
+
+.blocker-column {
+    min-width: 0;
+    padding: 12px;
+    background: #080808;
+    border: 1px solid #1a1a1a;
+}
+
+.blocker-column > header {
+    margin-bottom: 12px;
+    padding: 3px 2px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #1c1c1c;
+}
+
+.blocker-column > header h3 {
+    color: #ddd;
+    font-size: 12px;
+}
+
+.blocker-column > header span {
+    min-width: 22px;
+    padding: 3px 6px;
+    background: #171717;
+    color: #aaa;
+    font-size: 10px;
+    text-align: center;
+}
+
+.blocker-card {
+    margin-bottom: 10px;
+    padding: 14px;
+    background: #0d0d0d;
+    border: 1px solid #222;
+    border-left: 2px solid #797979;
+}
+
+.blocker-card.severity-critical {
+    border-left-color: #f04e4e;
+}
+
+.blocker-card.severity-high {
+    border-left-color: #e89a45;
+}
+
+.blocker-card.severity-medium {
+    border-left-color: #d3bf55;
+}
+
+.blocker-card.severity-low {
+    border-left-color: #6d9fcf;
+}
+
+.blocker-card-topline,
+.blocker-card-meta,
+.blocker-tags,
+.blocker-update-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.blocker-severity {
+    color: #d8d8d8;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.blocker-age,
+.blocker-card-meta,
+.blocker-resolution small {
+    color: #777;
+    font-size: 10px;
+}
+
+.blocker-card h4 {
+    margin: 10px 0;
+    color: #f3f3f3;
+    font-size: 14px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+
+.blocker-tags {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+}
+
+.blocker-tags span {
+    max-width: 100%;
+    padding: 4px 6px;
+    background: #171717;
+    color: #aaa;
+    font-size: 9px;
+    overflow-wrap: anywhere;
+}
+
+.blocker-description,
+.blocker-next-step p,
+.blocker-resolution p {
+    margin-top: 11px;
+    color: #aaa;
+    font-size: 11px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.blocker-next-step,
+.blocker-resolution {
+    margin-top: 12px;
+    padding: 10px;
+    background: #111;
+    border: 1px solid #202020;
+}
+
+.blocker-next-step strong,
+.blocker-resolution strong {
+    color: #d1d1d1;
+    font-size: 10px;
+}
+
+.blocker-next-step p,
+.blocker-resolution p {
+    margin-top: 5px;
+}
+
+.blocker-card-meta {
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.blocker-update-form {
+    margin-top: 14px;
+    padding-top: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    border-top: 1px solid #202020;
+}
+
+.blocker-resolution-input,
+.blocker-update-actions {
+    grid-column: 1 / -1;
+}
+
+.blocker-update-actions {
+    justify-content: flex-start;
+}
+
+.blocker-update-actions .settings-button {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 10px;
+}
+
+.blocker-delete-button {
+    min-height: 32px;
+    padding: 0 10px;
+    background: transparent;
+    border: 1px solid #392020;
+    color: #d78a8a;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.blocker-column-empty {
+    padding: 22px 10px;
+    color: #666;
+    font-size: 11px;
+    text-align: center;
+}
+
+@media (max-width: 1000px) {
+    .blocker-columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+    .project-blockers-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .blocker-stats {
+        width: 100%;
+    }
+
+    .blocker-stats > div {
+        flex: 1;
+    }
+
+    .blocker-form-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .blocker-field-wide {
+        grid-column: auto;
+    }
+
+    .blocker-form-footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
 }
 
 .summary-chart-tooltip[hidden] {

@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from unittest.mock import patch
 
-from Tasks.models import Project, ProjectMember, Task, TaskHistory
+from Tasks.models import Project, ProjectColumn, ProjectMember, Task, TaskHistory, TechnicalBlocker
+from Tasks.github_service import parse_github_repository_url
 from accounts.models import UserProfile
 
 
@@ -21,6 +23,176 @@ class CreateTaskViewTests(TestCase):
             owner=self.user,
         )
         self.project.members.add(self.user)
+
+    def test_github_repository_url_parser_accepts_only_repository_urls(self):
+        self.assertEqual(
+            parse_github_repository_url('https://github.com/acme/demo.git'),
+            ('acme', 'demo'),
+        )
+        for invalid_url in (
+            'http://github.com/acme/demo',
+            'https://github.com.evil.example/acme/demo',
+            'https://github.com/acme/demo/issues',
+        ):
+            with self.subTest(url=invalid_url):
+                with self.assertRaises(ValueError):
+                    parse_github_repository_url(invalid_url)
+
+    @patch('Tasks.views.get_repository_activity')
+    def test_boss_can_link_public_github_repository(self, get_activity):
+        response = self.client.post(
+            reverse('project_github_repository_update', args=[self.project.pk]),
+            {'github_repo_url': 'https://github.com/acme/demo.git'},
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('project_settings', args=[self.project.pk]),
+        )
+        self.project.refresh_from_db()
+        self.assertEqual(self.project.github_repo_url, 'https://github.com/acme/demo')
+        get_activity.assert_called_once_with('https://github.com/acme/demo')
+
+    def test_project_member_cannot_change_github_repository(self):
+        member = get_user_model().objects.create_user(
+            email='integrante@example.com',
+            password='Senha123!',
+        )
+        self.project.members.add(member)
+        self.client.force_login(member)
+
+        response = self.client.post(
+            reverse('project_github_repository_update', args=[self.project.pk]),
+            {'github_repo_url': 'https://github.com/acme/demo'},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.project.refresh_from_db()
+        self.assertEqual(self.project.github_repo_url, '')
+
+    @patch('Tasks.views.get_repository_activity')
+    @patch('Tasks.views.get_open_pull_request_activity')
+    def test_project_summary_returns_github_activity(self, get_pull_requests, get_activity):
+        self.project.github_repo_url = 'https://github.com/acme/demo'
+        self.project.save(update_fields=['github_repo_url'])
+        get_activity.return_value = {
+            'success': True,
+            'repository': 'acme/demo',
+            'commits': [],
+            'contributors': [],
+            'total_commits': 0,
+            'contributors_count': 0,
+            'sample_limit': 100,
+        }
+        get_pull_requests.return_value = {
+            'pull_requests': [{
+                'number': 42,
+                'title': 'Corrigir falha no deploy',
+                'requested_reviewers': ['dev-reviewer'],
+                'stale': True,
+            }],
+            'open_count': 1,
+            'review_requested_count': 1,
+            'stale_count': 1,
+            'sample_limit': 30,
+        }
+
+        response = self.client.get(
+            reverse('project_summary_github', args=[self.project.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['configured'])
+        self.assertEqual(response.json()['repository'], 'acme/demo')
+        self.assertEqual(response.json()['review_requested_count'], 1)
+        self.assertTrue(response.json()['pull_requests'][0]['stale'])
+        get_activity.assert_called_once_with(self.project.github_repo_url)
+        get_pull_requests.assert_called_once_with(self.project.github_repo_url)
+
+    def test_project_member_can_report_technical_blocker_with_task(self):
+        task = Task.objects.create(project=self.project, title='Corrigir autenticação')
+
+        response = self.client.post(
+            reverse('project_blockers', args=[self.project.pk]),
+            {
+                'title': 'Token expira antes de concluir o fluxo',
+                'category': TechnicalBlocker.Category.BUG,
+                'severity': TechnicalBlocker.Severity.HIGH,
+                'description': 'O token perde a validade no meio do teste de integração.',
+                'unblock_action': 'Precisamos revisar a duração configurada.',
+                'task_id': task.pk,
+                'assigned_to': self.user.pk,
+            },
+        )
+
+        self.assertRedirects(response, reverse('project_blockers', args=[self.project.pk]))
+        blocker = TechnicalBlocker.objects.get(project=self.project)
+        self.assertEqual(blocker.created_by, self.user)
+        self.assertEqual(blocker.task, task)
+        self.assertEqual(blocker.assigned_to, self.user)
+        self.assertEqual(blocker.status, TechnicalBlocker.Status.OPEN)
+
+    def test_blocker_cannot_be_linked_to_task_from_another_project(self):
+        other_project = Project.objects.create(title='Outro projeto', owner=self.user)
+        foreign_task = Task.objects.create(project=other_project, title='Tarefa privada')
+
+        response = self.client.post(
+            reverse('project_blockers', args=[self.project.pk]),
+            {
+                'title': 'Bloqueio inválido',
+                'description': 'Tentativa de vincular uma tarefa externa.',
+                'task_id': foreign_task.pk,
+            },
+        )
+
+        self.assertRedirects(response, reverse('project_blockers', args=[self.project.pk]))
+        self.assertFalse(TechnicalBlocker.objects.filter(project=self.project).exists())
+
+    def test_blocker_must_have_resolution_before_being_resolved(self):
+        blocker = TechnicalBlocker.objects.create(
+            project=self.project,
+            created_by=self.user,
+            title='Problema de build',
+            description='O build falha no pipeline.',
+        )
+
+        response = self.client.post(
+            reverse('project_blocker_update', args=[self.project.pk, blocker.pk]),
+            {'status': TechnicalBlocker.Status.RESOLVED, 'resolution': ''},
+        )
+
+        self.assertRedirects(response, reverse('project_blockers', args=[self.project.pk]))
+        blocker.refresh_from_db()
+        self.assertEqual(blocker.status, TechnicalBlocker.Status.OPEN)
+        self.assertIsNone(blocker.resolved_at)
+
+    def test_non_author_without_edit_permission_cannot_update_blocker(self):
+        member = get_user_model().objects.create_user(
+            email='integrante@example.com',
+            password='Senha123!',
+        )
+        self.project.members.add(member)
+        ProjectMember.objects.create(
+            project=self.project,
+            user=member,
+            can_edit_tasks=False,
+        )
+        blocker = TechnicalBlocker.objects.create(
+            project=self.project,
+            created_by=self.user,
+            title='Impedimento da equipe',
+            description='Aguardando uma decisão técnica.',
+        )
+        self.client.force_login(member)
+
+        response = self.client.post(
+            reverse('project_blocker_update', args=[self.project.pk, blocker.pk]),
+            {'status': TechnicalBlocker.Status.IN_PROGRESS, 'resolution': ''},
+        )
+
+        self.assertEqual(response.status_code, 403)
+        blocker.refresh_from_db()
+        self.assertEqual(blocker.status, TechnicalBlocker.Status.OPEN)
 
     def test_project_summary_payloads_include_the_selected_bird(self):
         UserProfile.objects.create(
@@ -276,6 +448,56 @@ class CreateTaskViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         task.refresh_from_db()
         self.assertEqual(task.status, 'in_progress')
+
+    def test_project_can_add_custom_phase_and_move_task_into_it(self):
+        self.client.get(reverse('project_detail', args=[self.project.pk]))
+        response = self.client.post(
+            reverse('project_column_create', args=[self.project.pk]),
+            {'name': 'Em revisão'},
+        )
+        self.assertRedirects(response, reverse('project_detail', args=[self.project.pk]))
+
+        custom_column = ProjectColumn.objects.get(project=self.project, name='Em revisão')
+        task = Task.objects.create(project=self.project, title='Tarefa customizada')
+        move_response = self.client.post(
+            reverse('update_task_project_column', args=[task.pk]),
+            {'project_column_id': custom_column.pk},
+        )
+
+        self.assertEqual(move_response.status_code, 200)
+        task.refresh_from_db()
+        self.assertEqual(task.project_column, custom_column)
+
+        board_response = self.client.get(reverse('project_detail', args=[self.project.pk]))
+        self.assertEqual(len(board_response.context['kanban_columns']), 4)
+        self.assertContains(board_response, 'Em revisão')
+
+    def test_project_phase_cannot_receive_task_from_another_project(self):
+        self.client.get(reverse('project_detail', args=[self.project.pk]))
+        other_project = Project.objects.create(title='Outro projeto', owner=self.user)
+        self.client.get(reverse('project_detail', args=[other_project.pk]))
+        other_column = other_project.columns.get(default_status='pending')
+        task = Task.objects.create(project=self.project, title='Tarefa protegida')
+
+        response = self.client.post(
+            reverse('update_task_project_column', args=[task.pk]),
+            {'project_column_id': other_column.pk},
+        )
+
+        self.assertEqual(response.status_code, 404)
+        task.refresh_from_db()
+        self.assertIsNone(task.project_column_id)
+
+    def test_dashboard_keeps_the_three_general_status_columns(self):
+        ProjectColumn.objects.create(project=self.project, name='Fase extra')
+
+        response = self.client.get(reverse('accounts:dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [column['key'] for column in response.context['kanban_columns']],
+            ['pending', 'in_progress', 'completed'],
+        )
 
     def test_member_without_task_permissions_is_denied_by_task_endpoints(self):
         member = get_user_model().objects.create_user(
